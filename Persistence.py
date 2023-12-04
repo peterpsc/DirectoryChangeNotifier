@@ -60,7 +60,7 @@ def remote_found():
 
 
 def readlines(file_path, strip=True):
-    f = open(file_path, mode="r", encoding="utf-8")
+    f = open(file_path, mode="r", encoding=UTF_8)
     lines = f.readlines()
     f.close()
 
@@ -85,22 +85,26 @@ def get_file_path(filename, path=PRIVATE_PATH):
         raise Exception("Invalid path")
 
 
-def get_full_file_path(file_path):
+def full_file_path(file_path):
     if os.path.exists(file_path):
         full_file_path = os.path.abspath(file_path)
-        return full_file_path
+        return single_back_slash(full_file_path)
     return None
 
 
-def get_lines(filename, path=PRIVATE_PATH, strip=True):
+def get_lines(filename, path=PRIVATE_PATH, strip=True, only_single_back_slash=True):
     file_path = get_file_path(filename, path=path)
     lines = readlines(file_path, strip=strip)
     if not strip:
         for i in range(len(lines)):
             if lines[i][-1] == "\n":
                 lines[i] = lines[i][:-1]
+            if only_single_back_slash:
+                lines[i] = single_back_slash(lines[i])
     return lines
 
+def single_back_slash(line):
+    return line.replace("\\\\", "\\")
 
 def append_lines(filename, lines, path=PRIVATE_PATH):
     file_path = get_file_path(filename, path)
@@ -174,7 +178,7 @@ def get_string(file_path):
 
 
 def write_string(file_path, string):
-    f = open(file_path, mode="w", encoding="utf-8")
+    f = open(file_path, mode="w", encoding=UTF_8)
     f.write(string)
     f.close()
 
@@ -194,7 +198,7 @@ class PersistentSet:
             self.readlines(self.file_path)
 
     def save(self):
-        with open(self.file_path, mode="w", encoding='utf-8') as file:
+        with open(self.file_path, mode="w", encoding=UTF_8) as file:
             for line in self.set:
                 file.write(line + "\n")
 
@@ -208,7 +212,7 @@ class PersistentSet:
 
     def readlines(self, file_path):
         if os.path.exists(file_path):
-            with open(file_path, encoding='utf-8') as file:
+            with open(file_path, encoding=UTF_8) as file:
                 while True:
                     line = file.readline()
                     if not line:
@@ -269,5 +273,9 @@ if __name__ == '__main__':
 
     s.save()
     s.print()
+
+    file_path = 'C:\\\\Users\\peter\\PycharmProjects\\webdriver\\AudioCreate.py'
+    PrintHelper.printInBox(file_path)
+    PrintHelper.printInBox(single_back_slash(file_path))
 
     PrintHelper.printInBox()

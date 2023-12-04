@@ -1,12 +1,11 @@
 import os
 import pathlib
+from os.path import exists
 
 import Persistence
 import PrintHelper
 from Gmail import Gmail
 
-PATHS = [".", ".\\Resources", ".\\Private", "g:\\ /S"]
-# PATHS = ["g: /S"]
 DIR_TREE_FILENAME = "DirTreeToday.txt"
 SIGNATURE = "Change Notifier"
 
@@ -16,42 +15,25 @@ NOTIFICATION_LIST_FILENAME = "NotificationList.txt"
 class DirChangeNotifier:
 
     @classmethod
-    def find_private(cls):
-        possible_paths = ['Private', '../Private']
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path + "/"
-        return ""
+    def save_date_previous_and_file_paths(cls, save_file_name, file_paths):
 
-    @classmethod
-    def open_private(cls, filename, mode="r", encoding="utf-8"):
-        private_filename = cls.find_private() + filename
-        f = open(private_filename, mode, encoding=encoding)
-        return f
-
-    @classmethod
-    def save_date_previous_file_paths(cls, save_file_name, paths):
-        file_paths = cls.get_file_paths(paths)
-
-        f = cls.open_private(save_file_name, mode="w")
+        save_file_path = Persistence.private_file_path(save_file_name)
+        f = open(save_file_path, mode="w", encoding=Persistence.UTF_8)
         f.write(PrintHelper.get_now_string() + "\n")
+
         for file_path in file_paths:
             f.write(file_path + "\n")
         f.close()
-
-    @classmethod
-    def private_exists(cls, filename):
-        resource_filename = cls.find_private() + filename
-        return os.path.exists(resource_filename)
 
     @classmethod
     def get_date_previous_file_paths(cls, save_file_name):
         previous_file_paths = []
 
         previous_date_string = ""
-        if cls.private_exists(save_file_name):
-            f = cls.open_private(save_file_name)
-            previous_date_string = f.readline().replace("\n", "")
+        save_file_path = Persistence.private_file_path(save_file_name)
+        if exists(save_file_path):
+            f = open(save_file_path, mode="r", encoding=Persistence.UTF_8)
+            previous_date_string = f.readline().strip()
             lines = f.readlines()
             f.close()
             for file_path in lines:
@@ -73,30 +55,41 @@ class DirChangeNotifier:
             options = default_options
         return path, options
 
-    @classmethod
-    def append_file_paths(cls, file_paths, path):
-        paths = list(pathlib.Path(path).iterdir())
-        for item in paths:
-            if item.is_file():
-                file_paths.append(f'{path}\\{item.name}')
 
     @classmethod
-    def get_file_paths(cls, path_options):
+    def get_file_paths(cls, path_options, ignore_paths):
         file_paths = []
-        for path_options in path_options:
-            path, options = cls.split_path_options(path_options)
-            if "S" in options:
-                cls.append_file_paths_include_subdirs(file_paths, path)
-            else:
-                cls.append_file_paths(file_paths, path)
+        for path_option in path_options:
+            if path_option:
+                path, option = cls.split_path_options(path_option)
+                if "S" in option:
+                    cls.append_file_paths_include_subdirs(file_paths, path, ignore_paths)
+                else:
+                    cls.append_file_paths(file_paths, path, ignore_paths)
         return file_paths
 
     @classmethod
-    def append_file_paths_include_subdirs(cls, file_paths, path):
-        for root, d_names, f_names in os.walk(path):
-            for f in f_names:
-                file_path = os.path.join(root, f)
-                file_paths.append(file_path)
+    def append_file_paths(cls, file_paths, path, ignore_paths):
+        if path in ignore_paths:
+            return
+        paths = list(pathlib.Path(path).iterdir())
+        for item in paths:
+            file_path = str(item.absolute())
+            file_path = Persistence.single_back_slash(file_path)
+            if file_path not in ignore_paths:
+                if item.is_file():
+                    file_paths.append(file_path)
+
+    @classmethod
+    def append_file_paths_include_subdirs(cls, file_paths, path, ignore_paths):
+        paths = list(pathlib.Path(path).iterdir())
+        for item in paths:
+            file_path = str(item.absolute())
+            if file_path not in ignore_paths:
+                if item.is_file():
+                    file_paths.append(file_path)
+                elif item.is_dir():
+                    cls.append_file_paths_include_subdirs(file_paths, file_path, ignore_paths)
 
     @classmethod
     def get_added_removed(cls, previous_file_paths, current_file_paths):
@@ -123,18 +116,22 @@ class DirChangeNotifier:
         previous = "Previous"
         previous = f'{" " * (len(title) - len(previous))}{previous}: {previous_date}'
         title = f'Changes to {paths}'
+        ignoring = f'Ignoring: {ignore_paths}'
+
         PrintHelper.printInBox(subject, force_style=PrintHelper.RIGHT)
         PrintHelper.printInBox(previous, force_style=PrintHelper.RIGHT)
         PrintHelper.printInBox(title, force_style=PrintHelper.LEFT)
+        PrintHelper.printInBox(ignoring, force_style=PrintHelper.LEFT)
+
 
         if not previous_file_paths:
-            PrintHelper.printInBox(f'First time for {paths}')
-            return False
+            PrintHelper.printInBox(f' First time')
+            return True
         if not file_paths_added and not file_paths_removed:
-            PrintHelper.printInBox(f'No changes since {previous_date}')
+            PrintHelper.printInBox(f' No changes since {previous_date}')
             return False
 
-        content = f'{subject}\n{previous}\n{title}\n\n'
+        content = f'{subject}\n{previous}\n{title}\n{ignoring}\n\n'
         if file_paths_added:
             content += "Added:\n"
             for added in file_paths_added:
@@ -167,12 +164,14 @@ if __name__ == '__main__':
 
     dcn = DirChangeNotifier()
     previous_date_string, previous_file_paths = dcn.get_date_previous_file_paths(DIR_TREE_FILENAME)
-    current_file_paths = dcn.get_file_paths(PATHS)
+    paths = Persistence.get_lines("DirChangePaths.txt")
+    ignore_paths = Persistence.get_lines("DirChangeIgnorePaths.txt")
+    current_file_paths = dcn.get_file_paths(paths, ignore_paths)
 
-    changed = dcn.notify("Title.txt", NOTIFICATION_LIST_FILENAME, PATHS, previous_date_string, previous_file_paths,
+    changed = dcn.notify("Title.txt", NOTIFICATION_LIST_FILENAME, paths, previous_date_string, previous_file_paths,
                          current_file_paths)
 
     if changed or not previous_date_string:
-        dcn.save_date_previous_file_paths(DIR_TREE_FILENAME, PATHS)
+        dcn.save_date_previous_and_file_paths(DIR_TREE_FILENAME, current_file_paths)
 
     PrintHelper.printInBox()

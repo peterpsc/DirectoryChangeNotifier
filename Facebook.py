@@ -220,7 +220,7 @@ class Facebook:
     def get_nickname_messages(cls):
         private_filename = cls.find_private() + NICKNAMES_FILENAME
         dictionary = {}
-        with open(private_filename, newline='', encoding='utf-8') as csvfile:
+        with open(private_filename, newline='', encoding=Persistence.UTF_8) as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=NICKNAMES_COLUMNS)
             next(reader)  # This skips the first row of the CSV file.
 
@@ -248,7 +248,7 @@ class Facebook:
         today = datetime.date.today().strftime('%Y:%m:%d')
         resource_filename = cls.find_private() + BIRTHDAYS_POSTED_TODAY_FILENAME
         dictionary = {}
-        with open(resource_filename, newline='', encoding='utf-8') as csvfile:
+        with open(resource_filename, newline='', encoding=Persistence.UTF_8) as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=BIRTHDAYS_POSTED_TODAY_COLUMNS)
             next(reader)  # This skips the first row of the CSV file.
 
@@ -441,7 +441,7 @@ class Facebook:
             return
         try:
             add_file_attachment_element = self.driver.find_element(By.XPATH, '//input[@type="file"]')
-            file_path = Persistence.get_full_file_path(attachment_file_path)
+            file_path = Persistence.full_file_path(attachment_file_path)
             add_file_attachment_element.send_keys(file_path)
         except Exception as e:
             PrintHelper.printInBoxException(e)
