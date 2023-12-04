@@ -1,3 +1,4 @@
+import datetime
 import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
@@ -8,7 +9,6 @@ from time import sleep
 import Persistence
 import PrintHelper
 from Facebook import Facebook
-from WordListAnalyzer import WordListAnalyzer
 
 DATE_LAST_SENT = "Gmail_Friends_updated.txt"
 CREDENTIALS_NOTIFIER = "CredentialsNotifier.txt"
@@ -40,7 +40,7 @@ class Gmail:
             lines = wordle.result_boxes.split("\n")
             subject = lines[0]
             if subject.startswith("Wordle "):
-                subject = f"WordleBot the Red {subject[7:]} {WordListAnalyzer.get_day_of_week()}"
+                subject = f"WordleBot the Red {subject[7:]} {self.get_day_of_week()}"
 
             content = '\r\n'.join(lines[2:])
             if message:
@@ -49,6 +49,10 @@ class Gmail:
             self.send_emails_or_fb(to_email_list, subject, content)
         Persistence.updated_today(last_sent_file_path)
         Persistence.updated_today(remote_last_sent_file_path)
+
+    @staticmethod
+    def get_day_of_week():
+        return datetime.date.today().strftime('%A')
 
     def send_emails_or_fb(self, email_or_fb_list, subject, content, cc_emails="", bcc_emails="", signature=None,
                           attachment_file_path=None):
@@ -108,11 +112,12 @@ class Gmail:
 
         for text in to_list:
             if "@" not in text and text[:2] != "FB":
-                to_list.append(self.load_list(text))
+                to_list.append(Persistence.get_lines(text))
 
         return to_list
 
-    def waitfor_session(self, host, port):
+    @staticmethod
+    def waitfor_session(host, port):
         while True:
             try:
                 return smtplib.SMTP(host, port)
@@ -120,7 +125,8 @@ class Gmail:
                 sleep(30)
                 pass
 
-    def attach(self, message, attachment_file_path):
+    @staticmethod
+    def attach(message, attachment_file_path):
         attachment = open(attachment_file_path, "rb")
 
         # instance of MIMEBase and named as p
@@ -137,8 +143,8 @@ class Gmail:
         # attach the instance 'p' to instance 'msg'
         message.attach(p)
 
-
-    def split_emails_fb(self, email_or_fb_list):
+    @staticmethod
+    def split_emails_fb(email_or_fb_list):
         if type(email_or_fb_list) == str:
             email_or_fb_list = email_or_fb_list.split(",")
         to_email_list = []

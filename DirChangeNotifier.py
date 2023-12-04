@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 
+import Persistence
 import PrintHelper
 from Gmail import Gmail
 
@@ -82,7 +83,7 @@ class DirChangeNotifier:
         paths = list(pathlib.Path(path).iterdir())
         for item in paths:
             if item.is_file():
-                file_paths.append_row(f'{path}\\{item.name}')
+                file_paths.append(f'{path}\\{item.name}')
 
     @classmethod
     def get_file_paths(cls, path_options):
@@ -100,7 +101,7 @@ class DirChangeNotifier:
         for root, d_names, f_names in os.walk(path):
             for f in f_names:
                 file_path = os.path.join(root, f)
-                file_paths.append_row(file_path)
+                file_paths.append(file_path)
 
     @classmethod
     def get_added_removed(cls, previous_file_paths, current_file_paths):
@@ -143,14 +144,14 @@ class DirChangeNotifier:
         subject = f'Changes to {paths}'
         PrintHelper.printInBox(notification_list)
         PrintHelper.printInBox(subject)
-        print(content)
+        PrintHelper.printInBox(content)
         gmail = Gmail()
         gmail.send_emails_or_fb(notification_list, subject, content, signature=SIGNATURE)
         return True
 
     @classmethod
     def load_list(cls, notify_list_filename):
-        notification_list = Gmail.get_list(notify_list_filename)
+        notification_list = Persistence.get_lines(notify_list_filename)
         return notification_list
 
 

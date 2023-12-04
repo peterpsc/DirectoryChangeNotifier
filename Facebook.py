@@ -11,10 +11,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+import Persistence
 import PrintHelper
 import Substitutions
-from WordListAnalyzer import WordListAnalyzer
-from WordleEngine import WordleEngine
+
+NOT_READY = True
 
 URL = "https://www.facebook.com/?sk=h_chr"
 HOME_URL = "https://www.facebook.com/"
@@ -28,13 +29,13 @@ NICKNAMES_FILENAME = "Nicknames.csv"
 NICKNAMES_SORTED_FILENAME = "Nicknames.csv"
 NICKNAMES_COLUMNS = ["FullName", "Nickname", "Message"]
 DEADPOOL_FILENAME = "Deadpool.txt"  # for you Clock
-FRIENDS_POSTED_TODAY_FILENAME = "FriendsPostedToday.csv"
-FRIENDS_POSTED_TODAY_COLUMNS = ["FullName", "Date"]
 BIRTHDAYS_POSTED_TODAY_FILENAME = "BirthdaysPostedToday.csv"
 BIRTHDAYS_POSTED_TODAY_COLUMNS = ["FullName", "Nickname", "Message", "Date"]
 
+
 EMOJI_NAMES = ["Like", "Love", "Care", "Haha", "Wow", "Sad", "Angry"]
 EMOJIS_WIDTH = 580
+EMOJI_BORDER = 7
 SCALE = 1.75
 
 
@@ -103,27 +104,17 @@ class Facebook:
                 return path + "/"
         return ""
 
-    @classmethod
-    def open_resource(cls, filename, mode="r", encoding="utf-8"):
-        resource_file_path = cls.find_resources() + filename
-        f = open(resource_file_path, mode, encoding=encoding)
-        return f
-
-    @classmethod
-    def open_private(cls, filename, mode="r", encoding="utf-8"):
-        private_file_path = cls.find_private() + filename
-        f = open(private_file_path, mode, encoding=encoding)
-        return f
 
     def login(self, url):
         self.driver = webdriver.Firefox()
         driver = self.driver
+        driver.set_page_load_timeout(120)
         driver.maximize_window()
         driver.get(url)
         # sleep(5)
         # assert 'Facebook - log in or sign up' == driver.title
 
-        username, password = self.getCredentials()
+        username, password = Persistence.get_credentials(CREDENTIAL_FILENAME)
 
         email_element = self.driver.find_element(By.ID, "email")
         email_element.send_keys(username)
@@ -142,7 +133,7 @@ class Facebook:
         driver.set_page_load_timeout(60)
         driver.get(BIRTHDAYS_URL)
 
-        username, password = self.getCredentials()
+        username, password = Persistence.get_credentials(CREDENTIAL_FILENAME)
         email_element = self.wait_for_element(f'//input[@aria-label="Email or phone"]', 60)
         password_element = self.wait_for_element(f'//input[@aria-label="Password"]', 60)
         email_element.send_keys(username)
@@ -155,13 +146,6 @@ class Facebook:
         birthdays_element = self.wait_for_element(f'//span[text()="Birthdays"]', 60)
         self.click(birthdays_element)
 
-    def getCredentials(self, credential_filename=CREDENTIAL_FILENAME):
-        f = self.open_private(credential_filename)
-        username = f.readline()
-        password = f.readline()
-        f.close()
-        return username, password
-
     def click(self, element, timeout=10 * 60):
         while True:
             try:
@@ -170,243 +154,7 @@ class Facebook:
                 return element
             except Exception as e:
                 PrintHelper.printInBoxException(e)
-                sleep(30)
-        """ ALWAYS WAIT FOR SOMETHING AFTER CLICKING """
-
-    def post_comments_to_friends_who_posted(self, wordle_text, commit=True):
-        """ Search "Wordle ###" Posts/Recent Posts/Your Friends """
-        num, tries, hard_mode = WordleHelper.get_wordle_num_tries_hardmode(wordle_text)
-
-        wordle_text = WordleHelper.add_signature_to_text(wordle_text)
-        file_path = self.find_private() + FRIENDS_POSTED_TODAY_FILENAME
-        remote_file_path = WordListAnalyzer.get_remote_private_path() + FRIENDS_POSTED_TODAY_FILENAME
-        friend_names_posted_today, today = self.get_friend_names_posted_today(file_path, remote_file_path)
-
-        self.login_friends_who_posted(num)
-        try:
-            feed_element = self.wait_for_element(f'//div[@role="feed"]', 10)
-
-            if not self.scroll_to_end_of_results():
-                self.end_friends_posted_today(friend_names_posted_today, 0)
-                return
-        except Exception as e:
-            PrintHelper.printInBox("No friends posted yet")
-            self.close()
-            return
-
-        friend_elements = feed_element.find_elements(By.XPATH, f'./div')
-        comment_buttons = feed_element.find_elements(By.XPATH, f'//div[@aria-label="Leave a comment"]/..')
-        emoji_elements = self.get_emoji_elements(comment_buttons)
-        num_comment_buttons = len(comment_buttons)
-        num_comments = 0
-
-        try:
-            friend_names = self.get_friend_names(friend_elements)
-            num_friends = len(friend_names)
-            assert num_friends > 0, f"No friends posted Wordle {num} yet"
-            assert num_friends == num_comment_buttons, f"Not the same number of friends({num_friends}) and comments({num_comment_buttons})"
-
-            numbers, their_tries, hard_modes = self.get_friend_results(friend_elements, num)
-
-            for i in range(num_friends):
-                friend_element = friend_elements[i]
-                friend_name = friend_names[i]
-
-                self.driver.execute_script("arguments[0].scrollIntoView();", friend_element)
-
-                their_num = numbers[i]
-                theirs = their_tries[i]
-                hard_mode = hard_modes[i]
-                emoji_element = emoji_elements[i]
-
-                status = WordleEngine.get_status_for_count_string(theirs, hard_mode)
-                comment = f'{friend_name} {status}'
-                if their_num != num or theirs == 0:
-                    continue
-                elif theirs <= 2:
-                    self.emoji_friend(emoji_element, "Wow", comment)
-                elif theirs < tries:
-                    self.emoji_friend(emoji_element, "Care", comment)
-                elif theirs == tries:
-                    self.emoji_friend(emoji_element, "Like", comment)
-                elif theirs == 7:
-                    self.emoji_friend(emoji_element, "Sad", comment)
-                else:
-                    PrintHelper.printInBox(f'{comment}')
-
-                if self.has_friend_been_posted_today(friend_names_posted_today, friend_name):
-                    continue
-
-                if theirs < tries < 5:
-                    comment_elements = friend_element.find_elements(By.XPATH, f'//div[@aria-label="Write a comment…"]')
-
-                    comment_button = comment_buttons[i]
-                    self.click(comment_button)
-                    dialog_comment_element = self.get_dialog_comment_element(friend_element, comment_elements)
-
-                    if dialog_comment_element:  # dialog
-                        dialog_elements = self.driver.find_elements(By.XPATH,
-                                                                    f'//h2[contains(., "\'s Post")]/../../../../..')
-                        assert len(dialog_elements) == 1, f"dialog error {len(dialog_elements)}"
-                        dialog_element = dialog_elements[0]
-
-                        num_comments += self.add_comment_from_dialog(dialog_element, dialog_comment_element,
-                                                                     friend_names_posted_today, friend_name, today,
-                                                                     theirs, tries,
-                                                                     wordle_text, commit)
-                    else:  # directly
-                        num_comments += self.add_comment_directly(friend_element,
-                                                                  friend_names_posted_today, friend_name, today,
-                                                                  theirs, tries,
-                                                                  wordle_text, commit)
-                pass
-        except Exception as e:
-            PrintHelper.printInBoxException(e)
-        finally:
-            self.end_friends_posted_today(friend_names_posted_today, num_comments)
-
-    def get_dialog_comment_element(self, friend_element, comment_elements):
-        sleep(1)
-        dialog_comment_element = None
-        dialog_comment_elements = friend_element.find_elements(By.XPATH, f'//div[@aria-label="Write a comment…"]')
-        if len(dialog_comment_elements) > len(comment_elements):
-            return dialog_comment_elements[-1]
-        return dialog_comment_element
-
-    def end_friends_posted_today(self, friend_names_posted_today, num_comments):
-        file_path = self.find_private() + FRIENDS_POSTED_TODAY_FILENAME
-        self.write_friend_names_posted_today(friend_names_posted_today, file_path)
-
-        remote_file_path = WordListAnalyzer.get_remote_private_path() + FRIENDS_POSTED_TODAY_FILENAME
-        self.write_friend_names_posted_today(friend_names_posted_today, remote_file_path)
-        PrintHelper.printInBox(self.num_comments_string(num_comments))
-        self.close()
-
-    def get_emoji_elements(self, comment_buttons):
-        emoji_elements = []
-        for comment_button in comment_buttons:
-            emoji_element = comment_button.find_element(By.XPATH, f'preceding-sibling::div[1]')
-            emoji_elements.append(emoji_element)
-        return emoji_elements
-
-    def emoji_friend(self, emoji_element, emoji_type, comment):
-        a = ActionChains(self.driver)
-        a.move_to_element(emoji_element).perform()
-        sleep(1)
-        size = emoji_element.size
-        width = size["width"]
-        dx = self.get_emoji_x_offset(emoji_type, width)
-        dy = -30
-        a.move_to_element_with_offset(emoji_element, dx, dy).perform()
-        a.click().perform()
-        emoji = self.get_emoji(emoji_type)
-        PrintHelper.printInBox(f'{comment} {emoji}')
-
-    def get_emoji_x_offset(self, emoji_type, width):
-        EMOJI_BORDER = 7
-        for i in range(len(EMOJI_NAMES)):
-            if emoji_type == EMOJI_NAMES[i]:
-                return EMOJI_OFFSETS[i] - width / 2 + EMOJI_BORDER
-
-        raise Exception("Not a valid emoji_type", emoji_type)
-
-    def get_emoji(self, emoji_type):
-        for i in range(len(EMOJI_NAMES)):
-            if emoji_type == EMOJI_NAMES[i]:
-                return EMOJIS[i]
-
-        raise Exception("Not a valid emoji_type", emoji_type)
-
-    def add_comment_from_dialog(self, dialog_element, comment_element,
-                                friend_names_posted_today, friend_name, today,
-                                their_tries, tries, wordle_text, commit):
-        self.assertIsFriendName(dialog_element, friend_name)
-        if their_tries < tries:
-            self.comment_you_beat_me(comment_element, wordle_text)
-            if commit:
-                comment_element.send_keys(Keys.ENTER)
-                friend_names_posted_today[friend_name] = [today]
-                PrintHelper.printInBox(f'{friend_name} {their_tries} < {tries}')
-                comment_element.send_keys(Keys.ESCAPE)
-                return 1
-            else:
-                comment_element.send_keys(Keys.ESCAPE)
-                button_elements = self.driver.find_elements(By.XPATH, f'//span[text()="Leave Page"]')
-                if len(button_elements) > 0:
-                    self.click(button_elements[0])
-                return 0
-
-    def add_comment_directly(self, friend_element,
-                             friend_names_posted_today, friend_name, today,
-                             their_tries, tries,
-                             wordle_text, commit):
-        comment_element = friend_element.find_element(By.XPATH, f'.//div[@aria-label="Write a comment…"]')
-        if their_tries < tries:
-            self.assertIsFriendName(friend_element, friend_name)
-            self.comment_you_beat_me(comment_element, wordle_text)
-        if commit:
-            comment_element.send_keys(Keys.ENTER)
-            friend_names_posted_today[friend_name] = [today]
-            PrintHelper.printInBox(f'{friend_name} {their_tries} < {tries}')
-            return 1
-        return 0
-
-    def comment_you_beat_me(self, comment_element, wordle_text):
-        comment = "You beat me [T][O][D][A][Y]!\n"
-        text = comment + wordle_text
-        clipboard.copy(text)
-        comment_element.send_keys(Keys.CONTROL, "v")
-        sleep(1)
-
-    def get_their_wordle_from_dialog(self):
-        their_message_element = self.driver.find_element(By.XPATH,
-                                                         f'/html/body/div[1]/div/div[1]/div/div[4]/div/div/div[1]/div/div[2]/div/div/div/div/div/div/div[2]')
-        their_message = their_message_element.text
-        return their_message
-
-    def get_their_wordle_directly(self, i):
-        person_element = self.driver.find_element(By.XPATH,
-                                                  f'/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[{i + 1}]')
-        their_message = person_element.text
-        return their_message
-
-    def scroll_to_end_of_results(self):
-        while True:
-            self.driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-            sleep(.5)
-            end_of_results = self.driver.find_elements(By.XPATH, f'//span[text() = "End of results"]')
-            if len(end_of_results) > 0:
-                return True
-            no_results = self.driver.find_elements(By.XPATH, f'//span[text() = "We didn\'t find any results"]')
-            if len(no_results) > 0:
-                return False
-
-    def get_friend_names(self, friend_elements):
-        friend_names = []
-        for i in range(len(friend_elements) - 1):
-            friend_element = friend_elements[i]
-            friend_name_element = friend_element.find_element(By.XPATH, f'.//h3')
-            friend_name = friend_name_element.text
-            friend_names.append(friend_name)
-        return friend_names
-
-    def get_friend_results(self, feed_elements, num):
-        numbers = []
-        friend_results = []
-        hard_modes = []
-        num_friends = len(feed_elements) - 1
-        for i in range(num_friends):
-            message_preview_element = feed_elements[i].find_element(By.XPATH, f'./div')
-            text = message_preview_element.text
-            pattern = f"Wordle {num} "
-            pos = text.find(pattern)
-            wordle_text = text[pos:]
-            number, tries, hard_mode = WordleHelper.get_wordle_num_tries_hardmode(wordle_text)
-            numbers.append(number)
-            friend_results.append(tries)
-            hard_modes.append(hard_mode)
-
-        return numbers, friend_results, hard_modes
+                sleep(5)
 
     def add_signature_to_clipboard(self, comment):
         comment += "\n" + "https://wordle.tiddlyhost.com"
@@ -524,74 +272,6 @@ class Facebook:
         PrintHelper.printInBox()
 
     @classmethod
-    def get_friend_names_posted_today(cls, file_path, remote_file_path):
-        today = datetime.date.today().strftime('%Y:%m:%d')
-        dictionary = {}
-        cls.get_friend_names_posted_today_from_filepath(dictionary, file_path, today)
-        cls.get_friend_names_posted_today_from_filepath(dictionary, remote_file_path, today)
-
-        return dictionary, today
-
-    @classmethod
-    def get_friend_names_posted_today_from_filepath(cls, dictionary, file_path, today):
-        with open(file_path, newline='', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames=FRIENDS_POSTED_TODAY_COLUMNS)
-            next(reader)  # This skips the first row of the CSV file.
-
-            for row in reader:
-                if row["Date"] == today:
-                    dictionary[row["FullName"]] = [today]
-
-    @classmethod
-    def write_friend_names_posted_today(cls, friend_names_posted_today, file_path):
-        with open(file_path, 'w', newline='', encoding="utf-8") as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(FRIENDS_POSTED_TODAY_COLUMNS)
-            for name in friend_names_posted_today.keys():
-                name_today = friend_names_posted_today[name]
-                row = [name, name_today[0]]
-                writer.writerow(row)
-
-    @classmethod
-    def get_lines(cls, filename):
-        result = []
-        try:
-            f = cls.open_private(filename)
-        except:
-            return result
-        if f:
-            lines = f.readlines()
-            f.close()
-            for line in lines:
-                line = line.replace("\n", "")
-                if line:
-                    result.append(line)
-        return result
-
-    @classmethod
-    def append_lines(cls, filename, lines):
-        f = cls.open_private(filename, mode="a")
-        for line in lines:
-            f.write(line + "\n")
-        f.close()
-
-    @classmethod
-    def replace_lines(cls, filename, lines):
-        f = cls.open_private(filename, mode="w")
-        for line in lines:
-            f.write(line + "\n")
-        f.close()
-
-    @classmethod
-    def prepend_lines(cls, filename, lines):
-        previous_lines = Facebook.get_lines(filename)
-        result = lines
-        if len(previous_lines) > 0:
-            for line in previous_lines:
-                result.append(line)
-        Facebook.replace_lines(filename, lines)
-
-    @classmethod
     def get_fullname_nickname_message(cls, line):
         fullname_nickname_message = line.split(",")
         fullname = fullname_nickname_message[0].strip()
@@ -615,7 +295,7 @@ class Facebook:
 
     def get_deadpool(self):
         deadpool = {}
-        lines = self.get_lines(DEADPOOL_FILENAME)
+        lines = Persistence.get_lines(DEADPOOL_FILENAME)
         for deceased in lines:
             if deceased:
                 deadpool[deceased] = "deceased"
@@ -667,7 +347,6 @@ class Facebook:
         sleep(2)
         create_a_public_post_elements = self.driver.find_elements(By.XPATH,
                                                                   '//div[@aria-label="Create a public post…"]')
-        write_something_element = None
         if len(create_a_public_post_elements) > 0:
             write_something_element = create_a_public_post_elements[0]
         else:
@@ -736,16 +415,15 @@ class Facebook:
     def send_direct_message(self, content, to_addr, signature=None, attachment_file_path=None):
         to_addr = to_addr[4:]
         self.driver.get(MESSAGES_URL)
-        sleep(5)
+        sleep(2)
         search_element = self.driver.find_element(By.XPATH, '//input[@aria-label="Search Messenger"]')
         self.clipboard_copy(to_addr)
         PrintHelper.printInBox(to_addr)
         self.click(search_element)
         search_element.send_keys(Keys.CONTROL, "v")
-        sleep(5)
-        found_element = search_element.find_element(By.XPATH,
-                                                    "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div/div[2]/div/div/div[1]/div[1]/div/div[1]/ul/li[1]/ul/div[2]/li/div/a/div/div[2]/div/div/div/span/span/span")
-        # found_element = search_element.find_element(By.XPATH, f'//img[@alt="{to_addr}"]')
+        sleep(2)
+        found_root_element = self.driver.find_element(By.XPATH, f'//li[@id="{to_addr}"]')
+        found_element = found_root_element.find_element(By.XPATH, f'//span[text()="{to_addr}"]/span')
         self.click(found_element)
         sleep(2)
         message_element = self.driver.find_element(By.XPATH, '//div[@aria-label="Message"]')
@@ -763,7 +441,7 @@ class Facebook:
             return
         try:
             add_file_attachment_element = self.driver.find_element(By.XPATH, '//input[@type="file"]')
-            file_path = self.get_full_file_path(attachment_file_path)
+            file_path = Persistence.get_full_file_path(attachment_file_path)
             add_file_attachment_element.send_keys(file_path)
         except Exception as e:
             PrintHelper.printInBoxException(e)
@@ -781,31 +459,12 @@ class Facebook:
         url = f"https://www.facebook.com/photo/?fbid=10223568103941762&set=a.1791772645162"
         self.driver.get(url)
 
-    def login_friends_who_posted(self, num):
-        self.login(URL)
-        url = f"https://www.facebook.com/search/posts?q=wordle%20{num}&filters=eyJycF9hdXRob3I6MCI6IntcIm5hbWVcIjpcImF1dGhvcl9mcmllbmRzX2ZlZWRcIixcImFyZ3NcIjpcIlwifSJ9"
-        self.driver.get(url)
-        sleep(1)
-
-    def has_friend_been_posted_today(self, friend_names_posted_today, friend_name):
-        try:
-            found = friend_names_posted_today[friend_name]
-            return True
-        except KeyError:
-            return False
 
     def assertIsFriendName(self, friend_element, friend_name):
         friend_name_element = friend_element.find_element(By.XPATH, f'.//h3')
         text = friend_name_element.text
         assert text == friend_name, f'{text} != {friend_name}'
 
-    def num_comments_string(self, num_comments):
-        if num_comments == 0:
-            return "no Comments Posted"
-        elif num_comments == 1:
-            return "1 Comment Posted to a friend"
-        else:
-            return f'{num_comments} Comments Posted to friends'
 
     def emoji_friend_all(self, emoji_element, friend_name):
         dy = -30
@@ -820,6 +479,26 @@ class Facebook:
             a.move_to_element_with_offset(emoji_element, dx, dy).perform()
             sleep(5)
         pass
+
+    def get_emoji_elements(self, comment_buttons):
+        emoji_elements = []
+        for comment_button in comment_buttons:
+            emoji_element = comment_button.find_element(By.XPATH, f'preceding-sibling::div[1]')
+            emoji_elements.append(emoji_element)
+        return emoji_elements
+
+    def emoji_friend(self, emoji_element, emoji_type, comment):
+        a = ActionChains(self.driver)
+        a.move_to_element(emoji_element).perform()
+        sleep(1)
+        size = emoji_element.size
+        width = size["width"]
+        dx = self.get_emoji_x_offset(emoji_type, width)
+        dy = -30
+        a.move_to_element_with_offset(emoji_element, dx, dy).perform()
+        a.click().perform()
+        emoji = self.get_emoji(emoji_type)
+        PrintHelper.printInBox(f'{comment} {emoji}')
 
     def post_to_fb(self, content, to_addr, signature=None, attachment_file_path=None):
         self.driver.get(HOME_URL)
@@ -852,14 +531,24 @@ class Facebook:
         self.click(post_button)
         sleep(1)
 
-    def get_full_file_path(self, attachment_file_path):
-        exists = os.path.exists(attachment_file_path)
-        if exists:
-            full_file_path = os.path.abspath(attachment_file_path)
-            return full_file_path
+    def get_emoji_x_offset(self, emoji_type, width):
+        for i in range(len(EMOJI_NAMES)):
+            if emoji_type == EMOJI_NAMES[i]:
+                return EMOJI_OFFSETS[i] - width / 2 + EMOJI_BORDER
+
+        raise Exception("Not a valid emoji_type", emoji_type)
+
+    def get_emoji(self, emoji_type):
+        for i in range(len(EMOJI_NAMES)):
+            if emoji_type == EMOJI_NAMES[i]:
+                return EMOJIS[i]
+
+        raise Exception("Not a valid emoji_type", emoji_type)
 
 
 if __name__ == '__main__':
+    PrintHelper.printInBox()
+    PrintHelper.printInBoxWithTime("Facebook.py")
     fb = Facebook()
     # fb.login_experiment()
     # offset_x = -30
@@ -884,8 +573,8 @@ if __name__ == '__main__':
     # text = "Wordle 850 4/6"
     # fb.post_comments_to_friends_who_posted(text)
 
-    # fb.login()
-    # fb.send_message("FBM:Peter Carmichael", "I 💘 you")
+    fb.login(MESSAGES_URL)
+    fb.send_message("FBM:Peter Carmichael", "I 💘 you")
 
     # fb.send_message("FBM:Yona Carmichael", "I 💘 you")
     # fb.test()

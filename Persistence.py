@@ -72,7 +72,7 @@ def readlines(file_path, strip=True):
     return lines
 
 
-def get_file_path(filename, path):
+def get_file_path(filename, path=PRIVATE_PATH):
     if path == FILE_PATH:
         return filename
     elif path == PRIVATE_PATH:
@@ -83,6 +83,13 @@ def get_file_path(filename, path):
         return remote_file_path(filename)
     else:
         raise Exception("Invalid path")
+
+
+def get_full_file_path(file_path):
+    if os.path.exists(file_path):
+        full_file_path = os.path.abspath(file_path)
+        return full_file_path
+    return None
 
 
 def get_lines(filename, path=PRIVATE_PATH, strip=True):
@@ -120,7 +127,7 @@ def prepend_lines(filename, lines, path=PRIVATE_PATH):
     replace_lines(filename, lines, path)
 
 
-def getCredentials(credential_filename):
+def get_credentials(credential_filename):
     file_path = get_file_path(credential_filename, PRIVATE_PATH)
     f = open(file_path)
     username = f.readline()
@@ -175,6 +182,7 @@ def write_string(file_path, string):
 class PersistentSet:
 
     def __init__(self, file_path):
+        self.set = []
         self.file_path = file_path
         self.load_data()
 
@@ -199,7 +207,6 @@ class PersistentSet:
         self.set.remove(line)
 
     def readlines(self, file_path):
-        lines = []
         if os.path.exists(file_path):
             with open(file_path, encoding='utf-8') as file:
                 while True:
@@ -227,41 +234,40 @@ class PersistentSet:
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
-    PrintHelper.printInBoxWithTime("PersistantSet.py")
+    PrintHelper.printInBoxWithTime("Persistence.py")
 
-    set = PersistentSet(private_file_path("NotificationList.txt"))
-    set.print()
+    s = PersistentSet(private_file_path("NotificationList.txt"))
+    s.print()
 
-    set.add("FBM:Peter Carmichael")
-    set.add("Notified <peter.carmichael@comcast.net>")
-    set.print()
-    set.save()
+    s.add("FBM:Peter Carmichael")
+    s.add("Notified <peter.carmichael@comcast.net>")
+    s.print()
+    s.save()
 
-    set = PersistentSet(private_file_path("NotificationList.txt"))
-    set.print()
+    s = PersistentSet(private_file_path("NotificationList.txt"))
+    s.print()
 
-    set.remove("FBM:Peter Carmichael")
-    set.print()
+    s.remove("FBM:Peter Carmichael")
+    s.print()
 
     for i in range(10):
-        set.add(f'{i}')
+        s.add(f'{i}')
     for i in range(10):
-        set.add(f'{i}')
+        s.add(f'{i}')
 
-    set.save()
-    set.print()
+    s.save()
+    s.print()
 
     PrintHelper.printInBox()
     count = 30
     PrintHelper.printInBox(f'Random {count}')
     for i in range(count):
-        PrintHelper.printInBox(set.random())
+        PrintHelper.printInBox(s.random())
 
     for i in range(10):
-        set.remove(f'{i}')
+        s.remove(f'{i}')
 
-    set.save()
-    set.print()
+    s.save()
+    s.print()
 
     PrintHelper.printInBox()
-
