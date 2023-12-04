@@ -15,7 +15,6 @@ import PrintHelper
 import Substitutions
 from WordListAnalyzer import WordListAnalyzer
 from WordleEngine import WordleEngine
-from WordleHelper import WordleHelper
 
 URL = "https://www.facebook.com/?sk=h_chr"
 HOME_URL = "https://www.facebook.com/"

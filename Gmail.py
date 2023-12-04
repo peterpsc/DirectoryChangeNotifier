@@ -1,4 +1,3 @@
-import os
 import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
@@ -6,65 +5,38 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from time import sleep
 
+import Persistence
 import PrintHelper
-import WordleHelper
 from Facebook import Facebook
 from WordListAnalyzer import WordListAnalyzer
 
 DATE_LAST_SENT = "Gmail_Friends_updated.txt"
-CREDENTIAL_FILENAME_PETER_PSC = "PeterPSC.txt"
+CREDENTIALS_NOTIFIER = "CredentialsNotifier.txt"
 GMAIL_FRIENDS = "GmailFriends.txt"
 
 
 class Gmail:
-    def __init__(self, credential_filename=WordleHelper.CREDENTIAL_FILENAME_WORDLEBOT_THE_RED):
+    def __init__(self, credential_filename=CREDENTIALS_NOTIFIER):
         self.credential_filename = credential_filename
 
-    @classmethod
-    def find_private(cls):
-        possible_paths = ['../Private', 'Private']
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path + "/"
-        return ""
-
-    @classmethod
-    def open_private(cls, filename, mode="r", encoding="utf-8"):
-        resource_filename = cls.find_private() + filename
-        f = open(resource_filename, mode, encoding=encoding)
-        return f
 
     def getCredentials(self):
         """ instructions for App Password can be found at https://www.getmailbird.com/gmail-app-password/"""
-        f = self.open_private(self.credential_filename)
-        username = f.readline().replace("\n", "")
-        password = f.readline().replace("\n", "")
-        signature = f.readlines()
-        signature = "".join(signature)
-        f.close()
+        file_path = Persistence.remote_private_file_path(self.credential_filename)
+        list = Persistence.readlines(file_path)
+        username = list[0]
+        password = list[1]
+        signature = list[2]
         return username, password, signature
-
-    @classmethod
-    def get_list(cls, filename=GMAIL_FRIENDS):
-        f = cls.open_private(filename)
-        friends = f.readlines()
-        f.close()
-        result = []
-
-        for friend in friends:
-            friend = friend.replace("\n", "")
-            if friend:
-                result.append(friend)
-            else:
-                break
-        return result
 
     def send_to_friends(self, wordle):
         message = wordle.get_message()
+        to_email_file_path = Persistence.private_file_path(GMAIL_FRIENDS)
+        to_email_list = Persistence.readlines(to_email_file_path)
+        last_sent_file_path = Persistence.private_file_path(DATE_LAST_SENT)
+        remote_last_sent_file_path = Persistence.remote_private_file_path(DATE_LAST_SENT)
 
-        to_email_list = self.get_list()
-        remote_last_sent_file_path = WordListAnalyzer.get_remote_private_path() + DATE_LAST_SENT
-        if self.not_sent_today(DATE_LAST_SENT, remote_last_sent_file_path) and to_email_list:
+        if not Persistence.has_updated_today(last_sent_file_path, remote_last_sent_file_path) and to_email_list:
             lines = wordle.result_boxes.split("\n")
             subject = lines[0]
             if subject.startswith("Wordle "):
@@ -75,8 +47,8 @@ class Gmail:
                 content += "\r\n\r\n" + message
 
             self.send_emails_or_fb(to_email_list, subject, content)
-        WordListAnalyzer.updated(DATE_LAST_SENT)
-        WordListAnalyzer.updated(remote_last_sent_file_path)
+        Persistence.updated_today(last_sent_file_path)
+        Persistence.updated_today(remote_last_sent_file_path)
 
     def send_emails_or_fb(self, email_or_fb_list, subject, content, cc_emails="", bcc_emails="", signature=None,
                           attachment_file_path=None):
@@ -91,7 +63,7 @@ class Gmail:
 
     def send_email(self, to_emails, subject, content, cc_emails="", signature=None, bcc_emails="",
                    attachment_file_path=None):
-        from_email, password, signature_default = self.getCredentials()
+        from_email, password, signature_default = Persistence.get_credentials_signature(self.credential_filename)
         if signature == None:
             signature = signature_default
         message = MIMEMultipart()
@@ -165,24 +137,6 @@ class Gmail:
         # attach the instance 'p' to instance 'msg'
         message.attach(p)
 
-    @classmethod
-    def load_list(cls, list_name):
-        try:
-            f = cls.open_private(list_name)
-            entries = f.readlines()
-            f.close()
-            result = []
-
-            for entry in entries:
-                entry = entry.replace("\n", "")
-                if entry:
-                    result.append(entry)
-                else:
-                    break
-            return result
-        except FileNotFoundError:
-            PrintHelper.printInBox(f'{list_name} not found')
-            return None
 
     def split_emails_fb(self, email_or_fb_list):
         if type(email_or_fb_list) == str:
@@ -199,7 +153,8 @@ class Gmail:
                 elif to_addr.startswith("FBG:"):
                     fb_list.append(to_addr)
                 else:
-                    loaded_list = self.load_list(to_addr)
+                    to_addr_file_path = Persistence.private_file_path(to_addr)
+                    loaded_list = Persistence.readlines(to_addr_file_path)
                     if loaded_list:
                         for entry in loaded_list:
                             email_or_fb_list.append(entry)
@@ -207,16 +162,9 @@ class Gmail:
                 to_email_list.append(to_addr)
         return to_email_list, fb_list
 
-    def not_sent_today(self, last_sent_filename, remote_last_sent_filepath):
-        sent = WordListAnalyzer.has_updated_today(last_sent_filename, remote_last_sent_filepath)
-        return not sent
-
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
-    # Gmail().sent()
-    # if Gmail().sent_today():
-    #     exit(0)
     to_email_list = ["FBM:Peter Carmichael", "peter.carmichael@comcast.net"]
     cc_email_list = []
     bcc_email_list = []
@@ -224,7 +172,7 @@ if __name__ == '__main__':
     content = 'I hope it works 💘'
     content = content.replace("\\n", "\n")
 
-    Gmail(CREDENTIAL_FILENAME_PETER_PSC).send_emails_or_fb(to_email_list, subject, content)
-    # Gmail().send_email(to_email_list, subject, content, cc_email_list, bcc_email_list)
-    # Gmail().send_to_friends()
+    Gmail().send_emails_or_fb(to_email_list, subject, content)
+    # Gmail(CREDENTIAL_NOTIFIER).send_email(to_email_list, subject, content, cc_email_list, bcc_email_list)
+    # Gmail(CREDENTIAL_NOTIFIER).send_to_friends()
     PrintHelper.printInBox()

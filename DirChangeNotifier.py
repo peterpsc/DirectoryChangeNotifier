@@ -8,152 +8,164 @@ from Gmail import Gmail
 PATHS = [".", ".\\Resources", ".\\Private", "g:\\ /S"]
 # PATHS = ["g: /S"]
 DIR_TREE_FILENAME = "DirTreeToday.txt"
-NOTIFIED = "Notifier <peter.carmichael@comcast.net>"
 SIGNATURE = "Change Notifier"
 
-
-def find_private():
-    possible_paths = ['Private', '../Private']
-    for path in possible_paths:
-        if os.path.exists(path):
-            return path + "/"
-    return ""
+NOTIFICATION_LIST_FILENAME = "NotificationList.txt"
 
 
-def open_private(filename, mode="r", encoding="utf-8"):
-    private_filename = find_private() + filename
-    f = open(private_filename, mode, encoding=encoding)
-    return f
+class DirChangeNotifier:
 
+    @classmethod
+    def find_private(cls):
+        possible_paths = ['Private', '../Private']
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path + "/"
+        return ""
 
-def get_today_string():
-    date_today = datetime.date.today()
-    return date_today.strftime('%m/%d/%Y')
+    @classmethod
+    def open_private(cls, filename, mode="r", encoding="utf-8"):
+        private_filename = cls.find_private() + filename
+        f = open(private_filename, mode, encoding=encoding)
+        return f
 
+    @classmethod
+    def get_today_string(cls):
+        date_today = datetime.date.today()
+        return date_today.strftime('%m/%d/%Y')
 
-def save_date_previous_file_paths(save_file_name, paths):
-    file_paths = get_file_paths(paths)
+    @classmethod
+    def save_date_previous_file_paths(cls, save_file_name, paths):
+        file_paths = cls.get_file_paths(paths)
 
-    f = open_private(save_file_name, mode="w")
-    f.write(get_today_string() + "\n")
-    for file_path in file_paths:
-        f.write(file_path + "\n")
-    f.close()
-
-
-def private_exists(filename):
-    resource_filename = find_private() + filename
-    return os.path.exists(resource_filename)
-
-
-def get_date_previous_file_paths(save_file_name):
-    previous_file_paths = []
-    previous_date_string = ""
-    if private_exists(save_file_name):
-        f = open_private(save_file_name)
-        previous_date_string = f.readline().replace("\n", "")
-        lines = f.readlines()
+        f = cls.open_private(save_file_name, mode="w")
+        f.write(cls.get_today_string() + "\n")
+        for file_path in file_paths:
+            f.write(file_path + "\n")
         f.close()
-        for file_path in lines:
-            previous_file_paths.append(file_path.replace("\n", ""))
 
-    return previous_date_string, previous_file_paths
+    @classmethod
+    def private_exists(cls, filename):
+        resource_filename = cls.find_private() + filename
+        return os.path.exists(resource_filename)
 
+    @classmethod
+    def get_date_previous_file_paths(cls, save_file_name):
+        previous_file_paths = []
+        previous_date_string = ""
+        if cls.private_exists(save_file_name):
+            f = cls.open_private(save_file_name)
+            previous_date_string = f.readline().replace("\n", "")
+            lines = f.readlines()
+            f.close()
+            for file_path in lines:
+                previous_file_paths.append(file_path.replace("\n", ""))
 
-def split_path_options(path_options, default_options=[]):
-    options = []
-    if "/" in path_options:
-        split = path_options.split("/")
-        path = split[0].strip()
-        options = split[1:]
-    else:
-        path = path_options.strip()
+        return previous_date_string, previous_file_paths
 
-    if not options:
-        options = default_options
-    return path, options
-
-
-def append_file_paths(file_paths, path):
-    paths = list(pathlib.Path(path).iterdir())
-    for item in paths:
-        if item.is_file():
-            file_paths.append(f'{path}\\{item.name}')
-
-
-def get_file_paths(path_options):
-    file_paths = []
-    for path_options in path_options:
-        path, options = split_path_options(path_options)
-        if "S" in options:
-            append_file_paths_include_subdirs(file_paths, path)
+    @classmethod
+    def split_path_options(cls, path_options, default_options=[]):
+        options = []
+        if "/" in path_options:
+            split = path_options.split("/")
+            path = split[0].strip()
+            options = split[1:]
         else:
-            append_file_paths(file_paths, path)
-    return file_paths
+            path = path_options.strip()
 
+        if not options:
+            options = default_options
+        return path, options
 
-def append_file_paths_include_subdirs(file_paths, path):
-    for root, d_names, f_names in os.walk(path):
-        for f in f_names:
-            file_path = os.path.join(root, f)
-            file_paths.append(file_path)
+    @classmethod
+    def append_file_paths(cls, file_paths, path):
+        paths = list(pathlib.Path(path).iterdir())
+        for item in paths:
+            if item.is_file():
+                file_paths.append_row(f'{path}\\{item.name}')
 
+    @classmethod
+    def get_file_paths(cls, path_options):
+        file_paths = []
+        for path_options in path_options:
+            path, options = cls.split_path_options(path_options)
+            if "S" in options:
+                cls.append_file_paths_include_subdirs(file_paths, path)
+            else:
+                cls.append_file_paths(file_paths, path)
+        return file_paths
 
-def get_added_removed(previous_file_paths, current_file_paths):
-    file_paths_added = current_file_paths.copy()
-    file_paths_removed = []
+    @classmethod
+    def append_file_paths_include_subdirs(cls, file_paths, path):
+        for root, d_names, f_names in os.walk(path):
+            for f in f_names:
+                file_path = os.path.join(root, f)
+                file_paths.append_row(file_path)
 
-    for previous_file_path in previous_file_paths:
-        if previous_file_path in file_paths_added:
-            file_paths_added.remove(previous_file_path)
-        else:
-            file_paths_removed.append(previous_file_path)
-    return file_paths_added, file_paths_removed
+    @classmethod
+    def get_added_removed(cls, previous_file_paths, current_file_paths):
+        file_paths_added = current_file_paths.copy()
+        file_paths_removed = []
 
+        for previous_file_path in previous_file_paths:
+            if previous_file_path in file_paths_added:
+                file_paths_added.remove(previous_file_path)
+            else:
+                file_paths_removed.append(previous_file_path)
+        return file_paths_added, file_paths_removed
 
-def notify(notifier, paths, previous_date, previous_file_paths, current_file_paths):
-    file_paths_added, file_paths_removed = get_added_removed(previous_file_paths, current_file_paths)
+    @classmethod
+    def notify(cls, notify_list_filename, paths, previous_date, previous_file_paths, current_file_paths):
+        notification_list = cls.load_list(notify_list_filename)
+        file_paths_added, file_paths_removed = cls.get_added_removed(previous_file_paths, current_file_paths)
 
-    if not previous_file_paths:
-        PrintHelper.printInBox(f'First time for {paths}')
-        return False
-    if not file_paths_added and not file_paths_removed:
-        PrintHelper.printInBox(f'No changes since {previous_date}')
-        return False
+        if not previous_file_paths:
+            PrintHelper.printInBox(f'First time for {paths}')
+            return False
+        if not file_paths_added and not file_paths_removed:
+            PrintHelper.printInBox(f'No changes since {previous_date}')
+            return False
 
-    content = ""
-    if file_paths_added:
-        content += "Added:\n"
-        for added in file_paths_added:
-            content += "   " + added + "\n"
+        content = ""
+        if file_paths_added:
+            content += "Added:\n"
+            for added in file_paths_added:
+                content += "   " + added + "\n"
 
-    if file_paths_removed:
-        if not content:
-            content += "\n"
+        if file_paths_removed:
+            if not content:
+                content += "\n"
 
-        content += "Removed:\n"
-        for removed in file_paths_removed:
-            content += "   " + removed + "\n"
+            content += "Removed:\n"
+            for removed in file_paths_removed:
+                content += "   " + removed + "\n"
 
-    subject = f'Changes to {paths}'
-    PrintHelper.printInBox(notifier)
-    PrintHelper.printInBox(subject)
-    print(content)
-    gmail = Gmail()
-    gmail.send_emails_or_fb(notifier, subject, content, signature=SIGNATURE)
-    return True
+        subject = f'Changes to {paths}'
+        PrintHelper.printInBox(notification_list)
+        PrintHelper.printInBox(subject)
+        print(content)
+        gmail = Gmail()
+        gmail.send_emails_or_fb(notification_list, subject, content, signature=SIGNATURE)
+        return True
+
+    @classmethod
+    def load_list(cls, notify_list_filename):
+        notification_list = Gmail.get_list(notify_list_filename)
+        return notification_list
 
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Dir Change Notifier")
 
-    previous_date_string, previous_file_paths = get_date_previous_file_paths(DIR_TREE_FILENAME)
-    current_file_paths = get_file_paths(PATHS)
+    dcn = DirChangeNotifier()
+    previous_date_string, previous_file_paths = dcn.get_date_previous_file_paths(DIR_TREE_FILENAME)
+    current_file_paths = dcn.get_file_paths(PATHS)
 
-    changed = notify(NOTIFIED, PATHS, previous_date_string, previous_file_paths, current_file_paths)
+    changed = dcn.notify(NOTIFICATION_LIST_FILENAME, PATHS, previous_date_string, previous_file_paths,
+                         current_file_paths)
 
     if changed or not previous_date_string:
-        save_date_previous_file_paths(DIR_TREE_FILENAME, PATHS)
+        dcn.save_date_previous_file_paths(DIR_TREE_FILENAME, PATHS)
 
     PrintHelper.printInBox()
