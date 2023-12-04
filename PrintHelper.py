@@ -25,8 +25,13 @@ def printInBoxException(e):
 
 
 def printInBoxWithTime(text, style=LEFT):
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = get_now_string()
     printInBox(f"{text}: {now_str}", force_style=style)
+
+
+def get_now_string():
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return now_str
 
 
 def printInBox(txt=None, length=80, force_style=None, color=""):

@@ -1,4 +1,3 @@
-import datetime
 import os
 import pathlib
 
@@ -31,16 +30,11 @@ class DirChangeNotifier:
         return f
 
     @classmethod
-    def get_today_string(cls):
-        date_today = datetime.date.today()
-        return date_today.strftime('%m/%d/%Y')
-
-    @classmethod
     def save_date_previous_file_paths(cls, save_file_name, paths):
         file_paths = cls.get_file_paths(paths)
 
         f = cls.open_private(save_file_name, mode="w")
-        f.write(cls.get_today_string() + "\n")
+        f.write(PrintHelper.get_now_string() + "\n")
         for file_path in file_paths:
             f.write(file_path + "\n")
         f.close()
@@ -53,6 +47,7 @@ class DirChangeNotifier:
     @classmethod
     def get_date_previous_file_paths(cls, save_file_name):
         previous_file_paths = []
+
         previous_date_string = ""
         if cls.private_exists(save_file_name):
             f = cls.open_private(save_file_name)
@@ -116,9 +111,21 @@ class DirChangeNotifier:
         return file_paths_added, file_paths_removed
 
     @classmethod
-    def notify(cls, notify_list_filename, paths, previous_date, previous_file_paths, current_file_paths):
+    def notify(cls, title_filename, notify_list_filename, paths, previous_date, previous_file_paths,
+               current_file_paths):
+        title_file_path = Persistence.get_file_path(title_filename)
+        title = Persistence.get_string(title_file_path)
         notification_list = cls.load_list(notify_list_filename)
         file_paths_added, file_paths_removed = cls.get_added_removed(previous_file_paths, current_file_paths)
+
+        now_string = PrintHelper.get_now_string()
+        subject = f'{title}: {now_string}'
+        previous = "Previous"
+        previous = f'{" " * (len(title) - len(previous))}{previous}: {previous_date}'
+        title = f'Changes to {paths}'
+        PrintHelper.printInBox(subject, force_style=PrintHelper.RIGHT)
+        PrintHelper.printInBox(previous, force_style=PrintHelper.RIGHT)
+        PrintHelper.printInBox(title, force_style=PrintHelper.LEFT)
 
         if not previous_file_paths:
             PrintHelper.printInBox(f'First time for {paths}')
@@ -127,7 +134,7 @@ class DirChangeNotifier:
             PrintHelper.printInBox(f'No changes since {previous_date}')
             return False
 
-        content = ""
+        content = f'{subject}\n{previous}\n{title}\n\n'
         if file_paths_added:
             content += "Added:\n"
             for added in file_paths_added:
@@ -141,10 +148,9 @@ class DirChangeNotifier:
             for removed in file_paths_removed:
                 content += "   " + removed + "\n"
 
-        subject = f'Changes to {paths}'
-        PrintHelper.printInBox(notification_list)
-        PrintHelper.printInBox(subject)
         PrintHelper.printInBox(content)
+        PrintHelper.printInBox()
+        PrintHelper.printInBox(notification_list)
         gmail = Gmail()
         gmail.send_emails_or_fb(notification_list, subject, content, signature=SIGNATURE)
         return True
@@ -163,7 +169,7 @@ if __name__ == '__main__':
     previous_date_string, previous_file_paths = dcn.get_date_previous_file_paths(DIR_TREE_FILENAME)
     current_file_paths = dcn.get_file_paths(PATHS)
 
-    changed = dcn.notify(NOTIFICATION_LIST_FILENAME, PATHS, previous_date_string, previous_file_paths,
+    changed = dcn.notify("Title.txt", NOTIFICATION_LIST_FILENAME, PATHS, previous_date_string, previous_file_paths,
                          current_file_paths)
 
     if changed or not previous_date_string:
