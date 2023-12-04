@@ -12,4 +12,9 @@ Private files needed:
    list of emails one/line
 ./Private/Title.txt
    The Subject of each notification email
+
+TODO:
+* Add Description of Installation Instructions
+  * How to Install Python and Private Files 
+    * How to add Credentials
  
