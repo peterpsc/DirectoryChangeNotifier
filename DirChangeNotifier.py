@@ -75,11 +75,12 @@ class DirChangeNotifier:
             file_path = str(item.absolute())
             file_path = Persistence.single_back_slash(file_path)
             if file_path not in ignore_paths:
-                PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
                 if item.is_file():
                     file_paths.append(file_path)
-                if item.is_dir() and recursive:
-                    cls.append_file_paths(file_paths, file_path, ignore_paths, recursive)
+                if item.is_dir():
+                    PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
+                    if recursive:
+                        cls.append_file_paths(file_paths, file_path, ignore_paths, recursive)
 
     @classmethod
     def get_added_removed(cls, previous_file_paths, current_file_paths):
