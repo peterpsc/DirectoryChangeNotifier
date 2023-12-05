@@ -120,7 +120,7 @@ class DirChangeNotifier:
             PrintHelper.printInBox(f' No changes since {previous_date}')
             return False
 
-        content = f'{subject}\n{previous}\n{title}\n{ignoring}\n\n'
+        content = f'{subject}\n{previous}\n{title}\n\n'
         if file_paths_added:
             content += "Added:\n"
             for added in file_paths_added:
