@@ -80,7 +80,8 @@ class Gmail:
             message['Cc'] = ', '.join(cc_email_list)
         message['Subject'] = subject
         # The body and the attachments for the mail
-        content += "\r\n\r\n-- " + signature
+        if signature:
+            content += "\n\n" + signature
         message.attach(MIMEText(content, 'plain'))
         if attachment_file_path:
             self.attach(message, attachment_file_path)

@@ -164,8 +164,10 @@ class Facebook:
         PrintHelper.printInBox()
         PrintHelper.printInBoxWithTime("FB Happy Birthday")
         self.login_birthdays()
+        birthdays_title = "Today's birthdays"
+
         try:
-            birthdays_today_element = self.wait_for_element(f'//span[text()="Today\'s Birthdays"]', 30)
+            birthdays_today_element = self.wait_for_element(f'//span[text()="{birthdays_title}"]', 30)
             sleep(5)
             todays_birthdays = birthdays_today_element.find_elements(By.XPATH, f'../../..')
             if len(todays_birthdays) == 0:
@@ -179,7 +181,7 @@ class Facebook:
         for write_on_timeline in write_on_timelines:
             name_element = write_on_timeline.find_element(By.XPATH, f'../../../../../../..')
             section_element = name_element.find_element(By.XPATH, "../../../..")
-            if section_element.text.startswith("Today's Birthdays"):
+            if section_element.text.startswith(birthdays_title):
                 name_age_write = name_element.text.split("\n")
                 name = name_age_write[0]
                 nickname, message = self.get_nick_name_message(name)
@@ -398,6 +400,8 @@ class Facebook:
         create_a_public_post_element = self.wait_for_element('//div[@aria-label="Create a public post…"]')
         sleep(2)
         self.click(create_a_public_post_element)
+        if signature:
+            content += "\n\n" + signature
         self.clipboard_copy(content)
         PrintHelper.printInBox(f'{to_addr}:{content}')
         create_a_public_post_element.send_keys(Keys.CONTROL, "v")
@@ -429,6 +433,8 @@ class Facebook:
         message_element = self.driver.find_element(By.XPATH, '//div[@aria-label="Message"]')
         self.click(message_element)
         self.add_attachment_to_message(attachment_file_path)
+        if signature:
+            content += "\n\n" + signature
         self.clipboard_copy(content)
         message_element.send_keys(Keys.CONTROL, "v")
         sleep(1)

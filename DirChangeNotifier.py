@@ -1,3 +1,4 @@
+import os
 import pathlib
 from os.path import exists
 
@@ -11,9 +12,8 @@ class DirChangeNotifier:
     def __init__(self, notification_names):
         self.notification_names = notification_names
 
-    @classmethod
-    def save_date_previous_and_file_paths(cls, notification_name, file_paths):
-        save_file_path = cls.get_save_file_path(notification_name)
+    def save_date_previous_and_file_paths(self, notification_name, file_paths):
+        save_file_path = self.get_save_file_path(notification_name)
         f = open(save_file_path, mode="w", encoding=Persistence.UTF_8)
         f.write(PrintHelper.get_now_string() + "\n")
 
@@ -21,17 +21,17 @@ class DirChangeNotifier:
             f.write(file_path + "\n")
         f.close()
 
-    @classmethod
-    def get_save_file_path(cls, notification_name):
-        save_file_name = f'{notification_name}_DirTreeToday.txt'
-        return Persistence.get_file_path(save_file_name)
+    def get_save_file_path(self, notification_name):
+        end_of_name = "_DirTreeToday.txt"
+        save_file_name = f'{notification_name}{end_of_name}'
+        file_path = Persistence.get_file_path(save_file_name)
+        return file_path
 
-    @classmethod
-    def get_date_previous_file_paths(cls, notification_name):
+    def get_date_previous_file_paths(self, notification_name):
         previous_file_paths = []
 
         previous_date_string = ""
-        save_file_path = cls.get_save_file_path(notification_name)
+        save_file_path = self.get_save_file_path(notification_name)
         if exists(save_file_path):
             f = open(save_file_path, mode="r", encoding=Persistence.UTF_8)
             previous_date_string = f.readline().strip()
@@ -169,24 +169,41 @@ class DirChangeNotifier:
             PrintHelper.printInBoxException(e)
 
     def get_dir_change_path_options(self, notification_name):
-        filename = f'{notification_name}_Path_Options.txt'
-        return Persistence.get_lines(filename)
+        file_path = self.copy_first_if_missing(notification_name, "_Path_Options.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def get_ignore_paths(self, notification_name):
-        filename = f'{notification_name}_Ignore_Paths.txt'
-        return Persistence.get_lines(filename)
+        file_path = self.copy_first_if_missing(notification_name, "_Ignore_Paths.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
+
+    def copy_first_if_missing(self, notification_name, end_of_name):
+        filename = f'{notification_name}{end_of_name}'
+        file_path = Persistence.private_file_path(filename)
+        if not exists(file_path):
+            self.copy_first(notification_name, end_of_name)
+        return file_path
 
     def get_title(self, notification_name):
-        filename = f'{notification_name}_Title.txt'
-        return Persistence.get_lines(filename)[0]
+        file_path = self.copy_first_if_missing(notification_name, "_Title.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)[0]
 
     def get_notification_list(self, notification_name):
-        filename = f'{notification_name}_Notification_List.txt'
-        return Persistence.get_lines(filename)
+        file_path = self.copy_first_if_missing(notification_name, "_Notification_List.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def get_signature(self, notification_name):
-        filename = f'{notification_name}_Signature.txt'
-        return Persistence.get_lines(filename)[0]
+        file_path = self.copy_first_if_missing(notification_name, "_Signature.txt")
+        return "\n".join(Persistence.get_lines(file_path, Persistence.FILE_PATH))
+
+    def copy_first(self, notification_name, end_of_name):
+        first_file_path = Persistence.private_file_path(self.notification_names[0] + end_of_name)
+        file_path = Persistence.private_file_path(notification_name + end_of_name)
+        self.copy_and_edit(first_file_path, file_path)
+
+    def copy_and_edit(self, first_file_path, file_path):
+        lines = Persistence.get_lines(first_file_path, Persistence.FILE_PATH)
+        Persistence.write_lines(file_path, lines, Persistence.FILE_PATH)
+        os.system(f'notepad {file_path}')
 
 
 if __name__ == '__main__':

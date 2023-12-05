@@ -74,28 +74,28 @@ def readlines(file_path, strip=True):
     return lines
 
 
-def get_file_path(filename, path=PRIVATE_PATH):
-    if path == FILE_PATH:
+def get_file_path(filename, path_type=PRIVATE_PATH):
+    if path_type == FILE_PATH:
         return filename
-    elif path == PRIVATE_PATH:
+    elif path_type == PRIVATE_PATH:
         return private_file_path(filename)
-    elif path == RESOURCE_PATH:
+    elif path_type == RESOURCE_PATH:
         return resource_file_path(filename)
-    elif path == REMOTE_PATH:
+    elif path_type == REMOTE_PATH:
         return remote_file_path(filename)
     else:
         raise Exception("Invalid path")
 
 
 def full_file_path(file_path):
-    if os.path.exists(file_path):
+    if exists(file_path):
         full_file_path = os.path.abspath(file_path)
         return single_back_slash(full_file_path)
     return None
 
 
-def get_lines(filename, path=PRIVATE_PATH, strip=True, only_single_back_slash=True):
-    file_path = get_file_path(filename, path=path)
+def get_lines(filename, path_type=PRIVATE_PATH, strip=True, only_single_back_slash=True):
+    file_path = get_file_path(filename, path_type=path_type)
     lines = readlines(file_path, strip=strip)
     if not strip:
         for i in range(len(lines)):
@@ -109,9 +109,18 @@ def get_lines(filename, path=PRIVATE_PATH, strip=True, only_single_back_slash=Tr
 def single_back_slash(line):
     return line.replace("\\\\", "\\")
 
+
+def write_lines(filename, lines, path_type=PRIVATE_PATH):
+    file_path = get_file_path(filename, path_type)
+    f = open(file_path, mode="w", encoding=UTF_8)
+    for line in lines:
+        f.write(line + "\n")
+    f.close()
+
+
 def append_lines(filename, lines, path=PRIVATE_PATH):
     file_path = get_file_path(filename, path)
-    f = open(file_path, mode="a")
+    f = open(file_path, mode="a", encoding=UTF_8)
     for line in lines:
         f.write(line + "\n")
     f.close()

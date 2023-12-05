@@ -130,7 +130,7 @@ def bright(message: str) -> str:
 if __name__ == '__main__':
     printInBox()
     printInBoxWithTime("PrintHelper.py ")
-    lines = Persistence.get_lines("TestPrintHelper.txt", strip=False, path=Persistence.RESOURCE_PATH)
+    lines = Persistence.get_lines("TestPrintHelper.txt", strip=False, path_type=Persistence.RESOURCE_PATH)
     text = "\n".join(lines)
     printInBox(text)
     printInBox()
