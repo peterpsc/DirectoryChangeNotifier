@@ -5,18 +5,15 @@ import Persistence
 import PrintHelper
 from Gmail import Gmail
 
-DIR_TREE_FILENAME = "DirTreeToday.txt"
-SIGNATURE = "Change Notifier"
-
-NOTIFICATION_LIST_FILENAME = "NotificationList.txt"
-
 
 class DirChangeNotifier:
 
-    @classmethod
-    def save_date_previous_and_file_paths(cls, save_file_name, file_paths):
+    def __init__(self, notification_names):
+        self.notification_names = notification_names
 
-        save_file_path = Persistence.private_file_path(save_file_name)
+    @classmethod
+    def save_date_previous_and_file_paths(cls, notification_name, file_paths):
+        save_file_path = cls.get_save_file_path(notification_name)
         f = open(save_file_path, mode="w", encoding=Persistence.UTF_8)
         f.write(PrintHelper.get_now_string() + "\n")
 
@@ -25,11 +22,16 @@ class DirChangeNotifier:
         f.close()
 
     @classmethod
-    def get_date_previous_file_paths(cls, save_file_name):
+    def get_save_file_path(cls, notification_name):
+        save_file_name = f'{notification_name}_DirTreeToday.txt'
+        return Persistence.get_file_path(save_file_name)
+
+    @classmethod
+    def get_date_previous_file_paths(cls, notification_name):
         previous_file_paths = []
 
         previous_date_string = ""
-        save_file_path = Persistence.private_file_path(save_file_name)
+        save_file_path = cls.get_save_file_path(notification_name)
         if exists(save_file_path):
             f = open(save_file_path, mode="r", encoding=Persistence.UTF_8)
             previous_date_string = f.readline().strip()
@@ -95,11 +97,8 @@ class DirChangeNotifier:
         return file_paths_added, file_paths_removed
 
     @classmethod
-    def notify(cls, title_filename, notify_list_filename, paths, previous_date, previous_file_paths,
-               current_file_paths):
-        title_file_path = Persistence.get_file_path(title_filename)
-        title = Persistence.get_string(title_file_path)
-        notification_list = cls.load_list(notify_list_filename)
+    def notify(cls, title, notification_list, paths, ignore_paths, previous_date, previous_file_paths,
+               current_file_paths, signature):
         file_paths_added, file_paths_removed = cls.get_added_removed(previous_file_paths, current_file_paths)
 
         now_string = PrintHelper.get_now_string()
@@ -139,7 +138,7 @@ class DirChangeNotifier:
         PrintHelper.printInBox()
         PrintHelper.printInBox(notification_list)
         gmail = Gmail()
-        gmail.send_emails_or_fb(notification_list, subject, content, signature=SIGNATURE)
+        gmail.send_emails_or_fb(notification_list, subject, content, signature=signature)
         return True
 
     @classmethod
@@ -147,24 +146,55 @@ class DirChangeNotifier:
         notification_list = Persistence.get_lines(notify_list_filename)
         return notification_list
 
+    def notify_all_names(self):
+        for notification_name in self.notification_names:
+            self.notify_name(notification_name)
+
+    def notify_name(self, notification_name):
+        previous_date_string, previous_file_paths = self.get_date_previous_file_paths(notification_name)
+        path_options = self.get_dir_change_path_options(notification_name)
+        ignore_paths = self.get_ignore_paths(notification_name)
+        title = self.get_title(notification_name)
+        notification_list = self.get_notification_list(notification_name)
+        signature = self.get_signature(notification_name)
+        try:
+            current_file_paths = self.get_file_paths(path_options, ignore_paths)
+            changed = self.notify(title, notification_list, path_options, ignore_paths, previous_date_string,
+                                  previous_file_paths, current_file_paths, signature)
+
+            if changed or not previous_date_string:
+                self.save_date_previous_and_file_paths(notification_name, current_file_paths)
+
+        except Exception as e:
+            PrintHelper.printInBoxException(e)
+
+    def get_dir_change_path_options(self, notification_name):
+        filename = f'{notification_name}_Path_Options.txt'
+        return Persistence.get_lines(filename)
+
+    def get_ignore_paths(self, notification_name):
+        filename = f'{notification_name}_Ignore_Paths.txt'
+        return Persistence.get_lines(filename)
+
+    def get_title(self, notification_name):
+        filename = f'{notification_name}_Title.txt'
+        return Persistence.get_lines(filename)[0]
+
+    def get_notification_list(self, notification_name):
+        filename = f'{notification_name}_Notification_List.txt'
+        return Persistence.get_lines(filename)
+
+    def get_signature(self, notification_name):
+        filename = f'{notification_name}_Signature.txt'
+        return Persistence.get_lines(filename)[0]
+
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Dir Change Notifier")
 
-    dcn = DirChangeNotifier()
-    previous_date_string, previous_file_paths = dcn.get_date_previous_file_paths(DIR_TREE_FILENAME)
-    paths = Persistence.get_lines("DirChangePaths.txt")
-    ignore_paths = Persistence.get_lines("DirChangeIgnorePaths.txt")
-    try:
-        current_file_paths = dcn.get_file_paths(paths, ignore_paths)
-        changed = dcn.notify("Title.txt", NOTIFICATION_LIST_FILENAME, paths, previous_date_string, previous_file_paths,
-                             current_file_paths)
-
-        if changed or not previous_date_string:
-            dcn.save_date_previous_and_file_paths(DIR_TREE_FILENAME, current_file_paths)
-
-    except Exception as e:
-        PrintHelper.printInBoxException(e)
+    notification_names = Persistence.get_lines("NotificationNames.txt")
+    dcn = DirChangeNotifier(notification_names)
+    dcn.notify_all_names()
 
     PrintHelper.printInBox()

@@ -60,6 +60,8 @@ def remote_found():
 
 
 def readlines(file_path, strip=True):
+    assert exists(file_path), f'Missing File: {file_path}'
+
     f = open(file_path, mode="r", encoding=UTF_8)
     lines = f.readlines()
     f.close()
@@ -102,6 +104,7 @@ def get_lines(filename, path=PRIVATE_PATH, strip=True, only_single_back_slash=Tr
             if only_single_back_slash:
                 lines[i] = single_back_slash(lines[i])
     return lines
+
 
 def single_back_slash(line):
     return line.replace("\\\\", "\\")
