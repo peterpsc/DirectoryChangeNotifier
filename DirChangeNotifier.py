@@ -1,4 +1,3 @@
-import os
 import pathlib
 from os.path import exists
 
@@ -55,7 +54,6 @@ class DirChangeNotifier:
             options = default_options
         return path, options
 
-
     @classmethod
     def get_file_paths(cls, path_options, ignore_paths):
         file_paths = []
@@ -84,7 +82,7 @@ class DirChangeNotifier:
     def append_file_paths_include_subdirs(cls, file_paths, path, ignore_paths):
         paths = list(pathlib.Path(path).iterdir())
         for item in paths:
-            file_path = str(item.absolute())
+            file_path = Persistence.single_back_slash(str(item.absolute()))
             if file_path not in ignore_paths:
                 if item.is_file():
                     file_paths.append(file_path)
@@ -122,7 +120,6 @@ class DirChangeNotifier:
         PrintHelper.printInBox(previous, force_style=PrintHelper.RIGHT)
         PrintHelper.printInBox(title, force_style=PrintHelper.LEFT)
         PrintHelper.printInBox(ignoring, force_style=PrintHelper.LEFT)
-
 
         if not previous_file_paths:
             PrintHelper.printInBox(f' First time')
