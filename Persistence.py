@@ -94,15 +94,23 @@ def full_file_path(file_path):
     return None
 
 
-def get_lines(filename, path_type=PRIVATE_PATH, strip=True, only_single_back_slash=True):
+def get_lines(filename, path_type=PRIVATE_PATH, strip=True, only_single_back_slash=True, remove_blank_lines=True):
     file_path = get_file_path(filename, path_type=path_type)
     lines = readlines(file_path, strip=strip)
-    if not strip:
-        for i in range(len(lines)):
-            if lines[i][-1] == "\n":
-                lines[i] = lines[i][:-1]
-            if only_single_back_slash:
-                lines[i] = single_back_slash(lines[i])
+    i = 0
+    for line in lines:
+        if line == "\n":
+            lines[i] = line[:-1]
+        if only_single_back_slash:
+            lines[i] = single_back_slash(lines[i])
+        i += 1
+
+    if remove_blank_lines:
+        while True:
+            if "" in lines:
+                lines.remove("")
+            else:
+                break
     return lines
 
 

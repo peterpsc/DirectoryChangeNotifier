@@ -70,10 +70,13 @@ class DirChangeNotifier:
 
     @classmethod
     def append_file_paths(cls, file_paths, root_path, ignore_paths, recursive=False):
-        if root_path in ignore_paths:
+        if root_path in ignore_paths or root_path[0] == ".":
             return
         paths = list(pathlib.Path(root_path).iterdir())
         for item in paths:
+            name = item.name
+            if name[0] == ".":
+                continue
             file_path = str(item.absolute())
             file_path = Persistence.single_back_slash(file_path)
             if file_path not in ignore_paths:
