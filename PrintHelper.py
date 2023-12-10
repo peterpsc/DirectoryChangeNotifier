@@ -34,7 +34,7 @@ def get_now_string():
     return now_str
 
 
-def printInBox(txt=None, length=80, force_style=None, color=""):
+def printInBox(txt=None, force_style=None, length=80, color=""):
     if type(length) != int:
         length = 80
     color_end = ""

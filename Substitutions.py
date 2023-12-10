@@ -1,28 +1,32 @@
-def substitute(text, full_name, nick_name):
-    result = text
-    if nick_name == "":
-        nick_name = full_name.split(" ")[0]
-    if "hbd" in text:
-        substitution = "♫♪ Happy Birthday, {Nickname} ♫♪"
-        result = result.replace("hbd", substitution)
-    if "{Nickname}" in result:
-        substitution = f"{nick_name}"
-        result = result.replace("{Nickname}", substitution)
-    if "{FullName}" in result:
-        substitution = f"{full_name}"
-        result = result.replace("{FullName}", substitution)
-    if "<3" in result:
-        result = result.replace("<3", "💘")
-    if "aheart" in result:
-        result = result.replace("aheart", "💘")
-    if "<br>" in result:
-        result = result.replace("<br>", "\n")
-    if "\\n" in result:
-        result = result.replace("\\n", "\n")
-    if "m4bwy" in result:
-        result = result.replace("m4bwy", "May the 4th Be With You")
-    return result
+import Persistence
+from DataFrame import DataFrame
+
+LEFT_CURLY_BRACE = '{'
+RIGHT_CURLY_BRACE = '}'
+
+
+class Substitutions:
+    def __init__(self):
+        file_path = Persistence.private_file_path("Substitutions.csv")
+        self.substitutions = DataFrame(["SHORT", "LONG"], file_path)
+
+    def substitute(self, text, substitutions=None):
+        result = text
+        for key in self.substitutions.df["SHORT"]:
+            while key in result:
+                replacement = self.substitutions.get_value("SHORT", key, "LONG")
+                result = result.replace(f"{key}", replacement)
+
+        while True:
+            if "{" in result and "}" in result:
+                key = result[result.find("{") + 1:result.find("}")]
+                substitution = substitutions[key]
+                result = result.replace(f"{LEFT_CURLY_BRACE}{key}{RIGHT_CURLY_BRACE}", substitution)
+            else:
+                break
+
+        return result
 
 
 if __name__ == '__main__':
-    print(substitute("hbd\n\nLet's get together and celebrate <3", "Dale Miller", "Dale"))
+    s = Substitutions()

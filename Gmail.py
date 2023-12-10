@@ -4,21 +4,30 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from os.path import exists
 from time import sleep
 
+import DataFrame
 import Persistence
 import PrintHelper
 from Facebook import Facebook
 
+DEFAULT_SIGNATURE = 'default'
+
 DATE_LAST_SENT = "Gmail_Friends_updated.txt"
 CREDENTIALS_NOTIFIER = "CredentialsNotifier.txt"
 GMAIL_FRIENDS = "GmailFriends.txt"
+SIGNATURES = "Signatures.csv"
+LONG = "LONG"
+SHORT = "SHORT"
+SIGNATURES_COL_NAMES = [SHORT, LONG]
 
 
 class Gmail:
     def __init__(self, credential_filename=CREDENTIALS_NOTIFIER):
         self.credential_filename = credential_filename
-
+        file_path = Persistence.private_file_path(SIGNATURES)
+        self.signatures = DataFrame.DataFrame(SIGNATURES_COL_NAMES, file_path)
 
     def getCredentials(self):
         """ instructions for App Password can be found at https://www.getmailbird.com/gmail-app-password/"""
@@ -26,8 +35,14 @@ class Gmail:
         list = Persistence.readlines(file_path)
         username = list[0]
         password = list[1]
-        signature = list[2]
-        return username, password, signature
+        return username, password
+
+    def get_signature(self, key):
+        signature = self.signatures.get_value(SHORT, key, LONG, DEFAULT_SIGNATURE)
+
+        if not signature:
+            signature = key
+        return signature
 
     def send_to_friends(self, wordle):
         message = wordle.get_message()
@@ -48,7 +63,8 @@ class Gmail:
 
             self.send_emails_or_fb(to_email_list, subject, content)
         Persistence.updated_today(last_sent_file_path)
-        Persistence.updated_today(remote_last_sent_file_path)
+        if exists(remote_last_sent_file_path):
+            Persistence.updated_today(remote_last_sent_file_path)
 
     @staticmethod
     def get_day_of_week():
@@ -67,9 +83,8 @@ class Gmail:
 
     def send_email(self, to_emails, subject, content, cc_emails="", signature=None, bcc_emails="",
                    attachment_file_path=None):
-        from_email, password, signature_default = Persistence.get_credentials_signature(self.credential_filename)
-        if signature == None:
-            signature = signature_default
+        from_email, password = Persistence.get_credentials(self.credential_filename)
+        signature = self.get_signature(signature)
         message = MIMEMultipart()
         message['From'] = from_email
         to_email_list = self.convert_to_list(to_emails)
@@ -92,10 +107,11 @@ class Gmail:
         text = message.as_string()
         session.sendmail(from_email, (to_email_list + cc_email_list + bcc_email_list), text)
         session.quit()
+        PrintHelper.printInBox()
         PrintHelper.printInBox(f'Mail Sent to {to_email_list}')
         PrintHelper.printInBox(f'  CC:{cc_email_list}')
         PrintHelper.printInBox(f'  BCC:{bcc_email_list}')
-        PrintHelper.printInBox()
+        PrintHelper.printInBox(f'  Subject:{subject} ')
 
     def convert_to_list(self, string_or_list):
         if not string_or_list:
@@ -170,16 +186,33 @@ class Gmail:
         return to_email_list, fb_list
 
 
+
 if __name__ == '__main__':
     PrintHelper.printInBox()
-    to_email_list = ["FBM:Peter Carmichael", "peter.carmichael@comcast.net"]
+    to_email_list = ["peter.carmichael@comcast.net"]
+    # to_email_list = ["FBM:Peter Carmichael", "peter.carmichael@comcast.net"]
     cc_email_list = []
     bcc_email_list = []
     subject = "test"
     content = 'I hope it works 💘'
     content = content.replace("\\n", "\n")
 
-    Gmail().send_emails_or_fb(to_email_list, subject, content)
+    gmail = Gmail()
+
+    gmail.signatures.print_all_data()
+
+    PrintHelper.printInBox()
+    for key in gmail.signatures.df[SHORT]:
+        signature = gmail.get_signature(key)
+        DataFrame.print_result(key, signature)
+
+    PrintHelper.printInBox()
+    for key in ["", "not found", "default", "pc", None]:
+        signature = gmail.get_signature(key)
+        DataFrame.print_result(key, signature)
+
+    gmail.send_emails_or_fb(to_email_list, subject, content)
     # Gmail(CREDENTIAL_NOTIFIER).send_email(to_email_list, subject, content, cc_email_list, bcc_email_list)
     # Gmail(CREDENTIAL_NOTIFIER).send_to_friends()
+
     PrintHelper.printInBox()

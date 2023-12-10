@@ -13,6 +13,8 @@ FILE_PATH = 0
 PRIVATE_PATH = 1
 RESOURCE_PATH = 2
 REMOTE_PATH = 3
+REMOTE_PRIVATE_PATH = 4
+REMOTE_RESOURCES_PATH = 5
 
 global the_remote_file_path
 
@@ -54,6 +56,10 @@ def remote_private_file_path(filename):
     return remote_file_path("Private\\" + filename)
 
 
+def remote_resources_file_path(filename):
+    return remote_file_path("Resources\\" + filename)
+
+
 def remote_found():
     file_path = remote_private_file_path(REMOTE_FILE_PATH_TXT)
     return exists(file_path)
@@ -83,6 +89,10 @@ def get_file_path(filename, path_type=PRIVATE_PATH):
         return resource_file_path(filename)
     elif path_type == REMOTE_PATH:
         return remote_file_path(filename)
+    elif path_type == REMOTE_PRIVATE_PATH:
+        return remote_private_file_path(filename)
+    elif path_type == REMOTE_RESOURCES_PATH:
+        return remote_resources_file_path(filename)
     else:
         raise Exception("Invalid path")
 
@@ -160,29 +170,21 @@ def get_credentials(credential_filename):
     f.close()
     return username, password
 
-
-def get_credentials_signature(credential_filename):
-    file_path = get_file_path(credential_filename, PRIVATE_PATH)
-    f = open(file_path)
-    username = f.readline()
-    password = f.readline()
-    signature = f.readline()
-    f.close()
-    return username, password, signature
-
-
 def has_updated_today(file_path, remote_file_path):
     date_last_updated = get_string(file_path)
-
-    remote_date_last_updated = get_string(remote_file_path)
     today = datetime.date.today().strftime('%Y:%m:%d')
 
+    if not exists(remote_file_path):
+        PrintHelper.printInBoxException(Exception("remote not found"))
+    else:
+        remote_date_last_updated = get_string(remote_file_path)
+        if len(remote_date_last_updated) > 0 and today == remote_date_last_updated[:10]:
+            PrintHelper.printInBox(f" already done today {remote_date_last_updated} ")
+            return True
     if len(date_last_updated) > 0 and today == date_last_updated[:10]:
         PrintHelper.printInBox(f" already done today {date_last_updated} ")
         return True
-    if len(remote_date_last_updated) > 0 and today == remote_date_last_updated[:10]:
-        PrintHelper.printInBox(f" already done today {remote_date_last_updated} ")
-        return True
+
     return False
 
 
@@ -202,6 +204,12 @@ def write_string(file_path, string):
     f.write(string)
     f.close()
 
+
+def find_in_dict(substitutions, key):
+    try:
+        return substitutions[key]
+    except Exception as e:
+        return None
 
 class PersistentSet:
 

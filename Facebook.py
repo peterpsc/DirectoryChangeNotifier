@@ -13,7 +13,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 import Persistence
 import PrintHelper
-import Substitutions
+from Substitutions import Substitutions
 
 NOT_READY = True
 
@@ -31,7 +31,6 @@ NICKNAMES_COLUMNS = ["FullName", "Nickname", "Message"]
 DEADPOOL_FILENAME = "Deadpool.txt"  # for you Clock
 BIRTHDAYS_POSTED_TODAY_FILENAME = "BirthdaysPostedToday.csv"
 BIRTHDAYS_POSTED_TODAY_COLUMNS = ["FullName", "Nickname", "Message", "Date"]
-
 
 EMOJI_NAMES = ["Like", "Love", "Care", "Haha", "Wow", "Sad", "Angry"]
 EMOJIS_WIDTH = 580
@@ -53,7 +52,6 @@ EMOJI_OFFSETS = create_emoji_offsets()
 EMOJIS = ["👍", "❤️", "🤝", "😄", "😲", "😢", "😡"]
 
 
-# TODO post a comment to Friends who have already posted today's Wordle
 class Facebook:
     def post_text_message(self, text, message=""):
         """Post the clipboard to my FB page"""
@@ -103,7 +101,6 @@ class Facebook:
             if os.path.exists(path):
                 return path + "/"
         return ""
-
 
     def login(self, url):
         self.driver = webdriver.Firefox()
@@ -189,7 +186,8 @@ class Facebook:
                     if self.birthdays_already_posted_today(birthdays_posted_today, name):
                         continue
 
-                    message = Substitutions.substitute("hbd\n\n" + message, name, nickname)
+                    substitutions = {"FullName": name, "Nickname": nickname}
+                    message = Substitutions.substitute("hbd\n\n" + message, substitutions)
                     self.clipboard_copy(message)
                     PrintHelper.printInBox(message)
                     write_on_timeline.send_keys(Keys.CONTROL, "v")
@@ -222,7 +220,7 @@ class Facebook:
     def get_nickname_messages(cls):
         private_filename = cls.find_private() + NICKNAMES_FILENAME
         dictionary = {}
-        with open(private_filename, newline='', encoding=Persistence.UTF_8) as csvfile:
+        with open(private_filename, newline='', encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=NICKNAMES_COLUMNS)
             next(reader)  # This skips the first row of the CSV file.
 
@@ -250,7 +248,7 @@ class Facebook:
         today = datetime.date.today().strftime('%Y:%m:%d')
         resource_filename = cls.find_private() + BIRTHDAYS_POSTED_TODAY_FILENAME
         dictionary = {}
-        with open(resource_filename, newline='', encoding=Persistence.UTF_8) as csvfile:
+        with open(resource_filename, newline='', encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=BIRTHDAYS_POSTED_TODAY_COLUMNS)
             next(reader)  # This skips the first row of the CSV file.
 
@@ -465,12 +463,10 @@ class Facebook:
         url = f"https://www.facebook.com/photo/?fbid=10223568103941762&set=a.1791772645162"
         self.driver.get(url)
 
-
     def assertIsFriendName(self, friend_element, friend_name):
         friend_name_element = friend_element.find_element(By.XPATH, f'.//h3')
         text = friend_name_element.text
         assert text == friend_name, f'{text} != {friend_name}'
-
 
     def emoji_friend_all(self, emoji_element, friend_name):
         dy = -30

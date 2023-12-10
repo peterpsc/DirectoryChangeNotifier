@@ -77,6 +77,8 @@ class DirChangeNotifier:
             name = item.name
             if name[0] == ".":
                 continue
+            if name in ignore_paths:
+                continue
             file_path = str(item.absolute())
             file_path = Persistence.single_back_slash(file_path)
             if file_path not in ignore_paths:
