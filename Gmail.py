@@ -1,4 +1,5 @@
 import datetime
+import shutil
 import smtplib
 from email import encoders
 from email.mime.base import MIMEBase
@@ -11,23 +12,18 @@ import DataFrame
 import Persistence
 import PrintHelper
 from Facebook import Facebook
+from Substitutions import Substitutions
 
 DEFAULT_SIGNATURE = 'default'
 
-DATE_LAST_SENT = "Gmail_Friends_updated.txt"
+DATE_LAST_SENT = "Wordle_Contacts_updated.txt"
 CREDENTIALS_NOTIFIER = "CredentialsNotifier.txt"
-GMAIL_FRIENDS = "GmailFriends.txt"
-SIGNATURES = "Signatures.csv"
-LONG = "LONG"
-SHORT = "SHORT"
-SIGNATURES_COL_NAMES = [SHORT, LONG]
 
 
 class Gmail:
     def __init__(self, credential_filename=CREDENTIALS_NOTIFIER):
         self.credential_filename = credential_filename
-        file_path = Persistence.private_file_path(SIGNATURES)
-        self.signatures = DataFrame.DataFrame(SIGNATURES_COL_NAMES, file_path)
+        self.substitutions = Substitutions()
 
     def getCredentials(self):
         """ instructions for App Password can be found at https://www.getmailbird.com/gmail-app-password/"""
@@ -37,16 +33,9 @@ class Gmail:
         password = list[1]
         return username, password
 
-    def get_signature(self, key):
-        signature = self.signatures.get_value(SHORT, key, LONG, DEFAULT_SIGNATURE)
-
-        if not signature:
-            signature = key
-        return signature
-
-    def send_to_friends(self, wordle):
+    def send_to_friends(self, wordle, friends_list):
         message = wordle.get_message()
-        to_email_file_path = Persistence.private_file_path(GMAIL_FRIENDS)
+        to_email_file_path = Persistence.private_file_path(friends_list)
         to_email_list = Persistence.readlines(to_email_file_path)
         last_sent_file_path = Persistence.private_file_path(DATE_LAST_SENT)
         remote_last_sent_file_path = Persistence.remote_private_file_path(DATE_LAST_SENT)
@@ -61,30 +50,31 @@ class Gmail:
             if message:
                 content += "\r\n\r\n" + message
 
-            self.send_emails_or_fb(to_email_list, subject, content)
+            self.send_emails_or_fb(to_email_list, subject, content, fb_signature="wbtr", signature="wbtru")
         Persistence.updated_today(last_sent_file_path)
         if exists(remote_last_sent_file_path):
-            Persistence.updated_today(remote_last_sent_file_path)
+            shutil.copyfile(last_sent_file_path, remote_last_sent_file_path)
 
     @staticmethod
     def get_day_of_week():
         return datetime.date.today().strftime('%A')
 
-    def send_emails_or_fb(self, email_or_fb_list, subject, content, cc_emails="", bcc_emails="", signature=None,
-                          attachment_file_path=None):
-        to_email_list, fb_list = self.split_emails_fb(email_or_fb_list)
-        if fb_list != []:
-            Facebook().send_messages(fb_list, subject + "\n" + content, signature, attachment_file_path)
-            PrintHelper.printInBox('FB Sent')
+    def send_emails_or_fb(self, email_or_fb_list, subject, content, cc_emails="", bcc_emails="", fb_signature=None,
+                          signature=None, attachment_file_path=None):
+        if subject:
+            to_email_list, fb_list = self.split_emails_fb(email_or_fb_list)
+            if fb_list != []:
+                Facebook().send_messages(fb_list, subject + "\n" + content, fb_signature, attachment_file_path)
+                PrintHelper.printInBox('FB Sent')
 
-        if to_email_list != []:
-            self.send_email(to_email_list, subject, content, cc_emails=cc_emails, signature=signature,
-                            bcc_emails=bcc_emails, attachment_file_path=attachment_file_path)
+            if to_email_list != []:
+                self.send_email(to_email_list, subject, content, cc_emails=cc_emails, signature=signature,
+                                bcc_emails=bcc_emails, attachment_file_path=attachment_file_path)
 
     def send_email(self, to_emails, subject, content, cc_emails="", signature=None, bcc_emails="",
                    attachment_file_path=None):
         from_email, password = Persistence.get_credentials(self.credential_filename)
-        signature = self.get_signature(signature)
+        signature = self.substitutions.get_signature(signature)
         message = MIMEMultipart()
         message['From'] = from_email
         to_email_list = self.convert_to_list(to_emails)
@@ -112,6 +102,7 @@ class Gmail:
         PrintHelper.printInBox(f'  CC:{cc_email_list}')
         PrintHelper.printInBox(f'  BCC:{bcc_email_list}')
         PrintHelper.printInBox(f'  Subject:{subject} ')
+        PrintHelper.printInBox(f'  {content}')
 
     def convert_to_list(self, string_or_list):
         if not string_or_list:
@@ -186,11 +177,10 @@ class Gmail:
         return to_email_list, fb_list
 
 
-
 if __name__ == '__main__':
     PrintHelper.printInBox()
-    to_email_list = ["peter.carmichael@comcast.net"]
-    # to_email_list = ["FBM:Peter Carmichael", "peter.carmichael@comcast.net"]
+    # to_email_list = ["peter.carmichael@comcast.net"]
+    to_email_list = ["FBM:Peter Carmichael", "peter.carmichael@comcast.net"]
     cc_email_list = []
     bcc_email_list = []
     subject = "test"
@@ -199,19 +189,16 @@ if __name__ == '__main__':
 
     gmail = Gmail()
 
-    gmail.signatures.print_all_data()
+    # gmail.substitutions.print_all_substitutions()
+    # gmail.substitutions.print_all_signatures()
+    # PrintHelper.printInBox()
 
-    PrintHelper.printInBox()
-    for key in gmail.signatures.df[SHORT]:
-        signature = gmail.get_signature(key)
-        DataFrame.print_result(key, signature)
-
-    PrintHelper.printInBox()
     for key in ["", "not found", "default", "pc", None]:
-        signature = gmail.get_signature(key)
+        signature = Substitutions.get_signature(key)
         DataFrame.print_result(key, signature)
 
-    gmail.send_emails_or_fb(to_email_list, subject, content)
+    PrintHelper.printInBox()
+    gmail.send_emails_or_fb(to_email_list, subject, content, fb_signature="fbtest", signature="test")
     # Gmail(CREDENTIAL_NOTIFIER).send_email(to_email_list, subject, content, cc_email_list, bcc_email_list)
     # Gmail(CREDENTIAL_NOTIFIER).send_to_friends()
 

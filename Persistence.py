@@ -1,7 +1,12 @@
+import csv
 import datetime
 import os
 import random
 from os.path import exists
+from time import sleep
+
+import clipboard
+from selenium.webdriver import Keys
 
 import PrintHelper
 
@@ -16,7 +21,7 @@ REMOTE_PATH = 3
 REMOTE_PRIVATE_PATH = 4
 REMOTE_RESOURCES_PATH = 5
 
-global the_remote_file_path
+the_remote_file_path = ""  # get it from a file
 
 
 def find_private():
@@ -45,11 +50,21 @@ def resource_file_path(filename):
 
 def remote_file_path(filename):
     global the_remote_file_path
-    try:
-        return the_remote_file_path + filename
-    except NameError as e:
-        the_remote_file_path = get_string(private_file_path(REMOTE_FILE_PATH_TXT))
-        return the_remote_file_path + filename
+    if the_remote_file_path == "":
+        file_path = private_file_path(REMOTE_FILE_PATH_TXT)
+        remote_file_path = get_string(file_path)
+        # if remote_file_path[0] == "A":
+        #     remote_file_path = 'G:\My Drive\SourceCode\PycharmProjects\webdriver\\'
+        #     write_string(file_path, remote_file_path)
+        use_remote = exists(remote_file_path)
+
+        if use_remote:
+            the_remote_file_path = remote_file_path
+            return remote_file_path + filename
+
+        the_remote_file_path = None
+        return None
+    return the_remote_file_path + filename
 
 
 def remote_private_file_path(filename):
@@ -61,8 +76,15 @@ def remote_resources_file_path(filename):
 
 
 def remote_found():
-    file_path = remote_private_file_path(REMOTE_FILE_PATH_TXT)
-    return exists(file_path)
+    global the_remote_file_path
+    if the_remote_file_path is None:
+        return False
+    if the_remote_file_path != "":
+        return True
+    the_remote_file_path = remote_file_path("")
+    if the_remote_file_path:
+        return True
+    return False
 
 
 def readlines(file_path, strip=True):
@@ -124,16 +146,71 @@ def get_lines(filename, path_type=PRIVATE_PATH, strip=True, only_single_back_sla
     return lines
 
 
+def get_line(filename, path_type=PRIVATE_PATH, strip=True, only_single_back_slash=True, remove_blank_lines=True):
+    return get_lines(filename, path_type=path_type, strip=strip, only_single_back_slash=only_single_back_slash,
+                     remove_blank_lines=remove_blank_lines)[0]
+
+
+def get_list(filename, path_type=PRIVATE_PATH, header=True):
+    results = []
+    file_path = get_file_path(filename, path_type)
+    if exists(file_path):
+        with open(file_path, newline='', encoding="utf-8") as csvfile:
+            reader = csv.reader(csvfile)
+            if header:
+                next(reader)  # This skips the first row of the CSV file.
+
+            for row in reader:
+                results.append(row)
+
+    return results
+
+
+def get_dict(filename, path_type=PRIVATE_PATH, header=True):
+    file_path = get_file_path(filename, path_type)
+
+    dict = {}
+    if file_path:
+        with open(file_path, newline='', encoding="utf-8") as csvfile:
+            reader = csv.reader(csvfile)
+            if header:
+                next(reader)  # This skips the first row of the CSV file.
+
+            for row in reader:
+                if len(row) == 2:
+                    key = row[0]
+                    value = row[1]
+                    dict[key] = value
+
+    return dict
+
+
+def get_dict_rows(filename, path_type=PRIVATE_PATH, col_names=None, header=True):
+    file_path = get_file_path(filename, path_type)
+    rows = []
+    with open(file_path, newline='', encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile, fieldnames=col_names)
+        if header:
+            next(reader)  # This skips the first row of the CSV file.
+
+        for row_dict in reader:
+            rows.append(row_dict)
+
+    return rows
+
+
 def single_back_slash(line):
     return line.replace("\\\\", "\\")
 
 
 def write_lines(filename, lines, path_type=PRIVATE_PATH):
     file_path = get_file_path(filename, path_type)
-    f = open(file_path, mode="w", encoding=UTF_8)
-    for line in lines:
-        f.write(line + "\n")
-    f.close()
+    if file_path[0].upper() == "G":
+        raise Exception("Can't write to a Google Drive this way")
+    else:
+        with open(file_path, mode="w", encoding=UTF_8) as f:
+            for line in lines:
+                f.write(line + "\n")
 
 
 def append_lines(filename, lines, path=PRIVATE_PATH):
@@ -170,11 +247,12 @@ def get_credentials(credential_filename):
     f.close()
     return username, password
 
+
 def has_updated_today(file_path, remote_file_path):
     date_last_updated = get_string(file_path)
     today = datetime.date.today().strftime('%Y:%m:%d')
 
-    if not exists(remote_file_path):
+    if remote_file_path is None:
         PrintHelper.printInBoxException(Exception("remote not found"))
     else:
         remote_date_last_updated = get_string(remote_file_path)
@@ -188,6 +266,32 @@ def has_updated_today(file_path, remote_file_path):
     return False
 
 
+def copy_to_clipboard(text):
+    prior_text = None
+    while True:
+        try:
+            prior_text = clipboard.paste()
+            clipboard.copy(text)
+            return prior_text
+        except Exception as e:
+            print(".", end="")
+            sleep(5)
+
+
+def get_clipboard_text():
+    return clipboard.paste()
+
+
+def paste_text(element, text, enter=False):
+    previous_text = copy_to_clipboard(text)
+    element.send_keys(Keys.CONTROL, 'v')
+    if enter:
+        element.send_keys(Keys.ENTER)
+        sleep(1)
+
+    copy_to_clipboard(previous_text)
+
+
 def updated_today(file_path):
     today = datetime.date.today().strftime('%Y:%m:%d')
     location_file_path = private_file_path(LOCATION_FILENAME)
@@ -196,13 +300,18 @@ def updated_today(file_path):
 
 
 def get_string(file_path):
-    return readlines(file_path)[0]
+    lines = readlines(file_path)
+    if len(lines) == 0:
+        return ""
+    return lines[0]
 
 
 def write_string(file_path, string):
-    f = open(file_path, mode="w", encoding=UTF_8)
-    f.write(string)
-    f.close()
+    if file_path[0].upper() == "G":
+        raise Exception("Can't write to a Google Drive this way")
+    else:
+        with open(file_path, mode="w", encoding="utf-8") as f:
+            f.write(string)
 
 
 def find_in_dict(substitutions, key):
@@ -211,99 +320,113 @@ def find_in_dict(substitutions, key):
     except Exception as e:
         return None
 
-class PersistentSet:
 
-    def __init__(self, file_path):
-        self.set = []
-        self.file_path = file_path
-        self.load_data()
+def get_random(cls, list):
+    i = random.randrange(len(list))
+    return list[i]
 
-    def load_data(self):
-        self.set = []
-        if not exists(self.file_path):
-            PrintHelper.printInBox("NO DATA YET")
+
+def get_stardate():
+    return datetime.datetime.now().strftime("%Y%m%d.%H%M")
+
+
+def print_all_dict(lookup):
+    t = type(lookup)
+    assert t == dict, "lookup must be a dict"
+    for key in lookup:
+        PrintHelper.printInBox(f'{key}: {lookup[key]}')
+
+
+def random_value(from_list):
+    assert type(from_list) == list, "from_list must be a list"
+    i = random.randrange(len(from_list))
+    return from_list[i]
+
+
+def eliminate_duplicates(list_of_lists):
+    hash_list = []
+    result = []
+    for list in list_of_lists:
+        h = 0
+        for val in list:
+            h += hash(val)
+        if h not in hash_list:
+            hash_list.append(h)
+            result.append(list)
+    return result
+
+
+def dict_to_list(dict_row, col_names):
+    result = []
+    for col_name in col_names:
+        result.append(dict_row[col_name])
+    return result
+
+
+def split(text, sep=","):
+    results = []
+    while True:
+        start = 0
+        if len(text) > 0:
+            if text[0] == "'":
+                end = text.find("'", 1)
+                result = text[1:end]
+                results.append(result)
+                text = text[end + 2:]
+                continue
+            elif text[0] == '"':
+                end = text.find('"', 1)
+                result = text[1:end]
+                results.append(result)
+                text = text[end + 2:]
+                continue
+            pos = text.find(sep, start)
+            if pos < 0:
+                results.append(text)
+                return results
+            else:
+                results.append(text[0:pos])
+                text = text[pos + 1:]
         else:
-            self.readlines(self.file_path)
-
-    def save(self):
-        with open(self.file_path, mode="w", encoding=UTF_8) as file:
-            for line in self.set:
-                file.write(line + "\n")
-
-    def add(self, line):
-        line = line.strip()
-        if line not in self.set:
-            self.set.append(line)
-
-    def remove(self, line):
-        self.set.remove(line)
-
-    def readlines(self, file_path):
-        if os.path.exists(file_path):
-            with open(file_path, encoding=UTF_8) as file:
-                while True:
-                    line = file.readline()
-                    if not line:
-                        break
-                    self.add(line)
-
-    def print(self):
-        PrintHelper.printInBox()
-        for line in self.set:
-            PrintHelper.printInBox(f'{line}')
-
-    def random(self):
-        length = self.len()
-        value = ""
-        if length > 0:
-            rnd = random.randrange(0, length)
-            value = self.set[rnd]
-        return value
-
-    def len(self):
-        return len(self.set)
+            return results
 
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Persistence.py")
 
-    s = PersistentSet(private_file_path("NotificationList.txt"))
-    s.print()
+    parameters = split("123")
+    assert parameters[0] == "123"
 
-    s.add("FBM:Peter Carmichael")
-    s.add("Notified <peter.carmichael@comcast.net>")
-    s.print()
-    s.save()
+    parameters = split("0,1")
+    assert parameters[0] == "0", parameters[0]
+    assert parameters[1] == "1", parameters[1]
 
-    s = PersistentSet(private_file_path("NotificationList.txt"))
-    s.print()
+    parameters = split("0,'1,2',3")
+    assert parameters[0] == "0", parameters[0]
+    assert parameters[1] == "1,2", parameters[1]
+    assert parameters[2] == "3", parameters[2]
 
-    s.remove("FBM:Peter Carmichael")
-    s.print()
+    parameters = split('0,"1,2",3')
+    assert parameters[0] == "0", parameters[0]
+    assert parameters[1] == "1,2", parameters[1]
+    assert parameters[2] == "3", parameters[2]
 
-    for i in range(10):
-        s.add(f'{i}')
-    for i in range(10):
-        s.add(f'{i}')
-
-    s.save()
-    s.print()
-
-    PrintHelper.printInBox()
-    count = 30
-    PrintHelper.printInBox(f'Random {count}')
-    for i in range(count):
-        PrintHelper.printInBox(s.random())
-
-    for i in range(10):
-        s.remove(f'{i}')
-
-    s.save()
-    s.print()
+    parameters = split('"0,1","2,3",4')
+    assert parameters[0] == "0,1", parameters[0]
+    assert parameters[1] == "2,3", parameters[1]
+    assert parameters[2] == "4", parameters[2]
 
     file_path = 'C:\\\\Users\\peter\\PycharmProjects\\webdriver\\AudioCreate.py'
     PrintHelper.printInBox(file_path)
     PrintHelper.printInBox(single_back_slash(file_path))
+
+    PrintHelper.printInBox()
+    lookup = get_dict("Signatures.csv")
+    print_all_dict(lookup)
+
+    PrintHelper.printInBox()
+    winning_list = get_lines("Winning.txt", RESOURCE_PATH)
+    PrintHelper.printInBox(random_value(winning_list))
 
     PrintHelper.printInBox()

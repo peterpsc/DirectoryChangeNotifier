@@ -1,10 +1,12 @@
 import os
 import pathlib
+from datetime import datetime
 from os.path import exists
 
 import Persistence
 import PrintHelper
 from Gmail import Gmail
+from Substitutions import Substitutions
 
 
 class DirChangeNotifier:
@@ -90,6 +92,37 @@ class DirChangeNotifier:
                         cls.append_file_paths(file_paths, file_path, ignore_paths, recursive)
 
     @classmethod
+    def get_dir_paths(cls, path_options, ignore_paths):
+        dir_paths = []
+        for path_option in path_options:
+            if path_option:
+                path, option = cls.split_path_options(path_option)
+                recursive = False
+                if "S" in option:
+                    recursive = True
+                cls.append_dir_paths(dir_paths, path, ignore_paths, recursive=recursive)
+        return dir_paths
+
+    @classmethod
+    def append_dir_paths(cls, file_paths, root_path, ignore_paths, recursive=False):
+        if root_path in ignore_paths:
+            return
+        paths = list(pathlib.Path(root_path).iterdir())
+        for item in paths:
+            name = item.name
+            if name[0] == ".":
+                continue
+            if name in ignore_paths:
+                continue
+            file_path = str(item.absolute())
+            file_path = Persistence.single_back_slash(file_path)
+            if file_path not in ignore_paths:
+                if item.is_dir():
+                    file_paths.append(file_path)
+                    if recursive:
+                        cls.append_dir_paths(file_paths, file_path, ignore_paths, recursive)
+
+    @classmethod
     def get_added_removed(cls, previous_file_paths, current_file_paths):
         file_paths_added = current_file_paths.copy()
         file_paths_removed = []
@@ -161,7 +194,7 @@ class DirChangeNotifier:
         ignore_paths = self.get_ignore_paths(notification_name)
         title = self.get_title(notification_name)
         notification_list = self.get_notification_list(notification_name)
-        signature = self.get_signature(notification_name)
+        signature = Substitutions().get_signature("")
         try:
             current_file_paths = self.get_file_paths(path_options, ignore_paths)
             changed = self.notify(title, notification_list, path_options, ignore_paths, previous_date_string,
@@ -196,10 +229,6 @@ class DirChangeNotifier:
         file_path = self.copy_first_if_missing(notification_name, "_Notification_List.txt")
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
-    def get_signature(self, notification_name):
-        file_path = self.copy_first_if_missing(notification_name, "_Signature.txt")
-        return "\n".join(Persistence.get_lines(file_path, Persistence.FILE_PATH))
-
     def copy_first(self, notification_name, end_of_name):
         first_file_path = Persistence.private_file_path(self.notification_names[0] + end_of_name)
         file_path = Persistence.private_file_path(notification_name + end_of_name)
@@ -210,6 +239,32 @@ class DirChangeNotifier:
         Persistence.write_lines(file_path, lines, Persistence.FILE_PATH)
         os.system(f'notepad {file_path}')
 
+    def check_for_this_year_directories(self):
+        for notification_name in self.notification_names:
+            year_directories_filename = "NewYearDirectories.txt"
+            year_directories_file_path = Persistence.get_file_path(year_directories_filename)
+            if exists(year_directories_file_path):
+                year_directory_names = Persistence.get_lines(year_directories_filename)
+                path_options = self.get_dir_change_path_options(notification_name)
+                ignore_paths = self.get_ignore_paths(notification_name)
+                all_directories = self.get_dir_paths(path_options, ignore_paths)
+                self.make_this_year_directories(year_directory_names, all_directories)
+
+    def make_this_year_directories(self, year_directory_names, all_directories):
+        current_year = datetime.now().strftime("%Y")
+        previous_year = str(int(current_year) - 1)
+        dir_previous_year = "\\" + previous_year
+        for directory in all_directories:
+            if directory.endswith(dir_previous_year):
+                self.ensure_current_year(year_directory_names, directory, current_year)
+
+    def ensure_current_year(self, year_directory_names, previous_year_directory, current_year):
+        current_year_directory = previous_year_directory[0:-4] + current_year
+        if not exists(current_year_directory):
+            os.mkdir(current_year_directory)
+            for directory_name in year_directory_names:
+                subdir = f'{current_year_directory}\\{directory_name}'
+                os.mkdir(subdir)
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
@@ -217,6 +272,7 @@ if __name__ == '__main__':
 
     notification_names = Persistence.get_lines("NotificationNames.txt")
     dcn = DirChangeNotifier(notification_names)
+    dcn.check_for_this_year_directories()
     dcn.notify_all_names()
 
     PrintHelper.printInBox()
