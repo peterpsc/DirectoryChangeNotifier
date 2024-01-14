@@ -168,6 +168,9 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
 
 def get_dict(filename, path_type=PRIVATE_PATH, header=True):
     file_path = get_file_path(filename, path_type)
+    if not exists(file_path):
+        line = "KEY,VALUE"
+        write_string(file_path, line)
 
     dict = {}
     if file_path:

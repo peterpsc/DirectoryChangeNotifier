@@ -1,4 +1,5 @@
 import datetime
+from os.path import exists
 
 import Persistence
 import PrintHelper
@@ -82,7 +83,11 @@ class Substitutions:
         return self.substitute(signature)
 
     def init_signatures(self):
-        self.signatures = Persistence.get_dict("Signatures.csv")
+        file_path = Persistence.get_file_path("Signatures.csv")
+        if not exists(file_path):
+            lines = ["KEY,VALUE", "default,Notifier"]
+            Persistence.write_lines(file_path, lines, path_type=Persistence.FILE_PATH)
+        self.signatures = Persistence.get_dict(file_path, path_type=Persistence.FILE_PATH)
 
     def print_all_substitutions(self):
         PrintHelper.printInBox()
