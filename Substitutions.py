@@ -66,7 +66,7 @@ class Substitutions:
         return result
 
     def init_substitutions(self):
-        self.substitutions = Persistence.get_dict("Substitutions.csv")
+        self.substitutions = Persistence.get_dict("Substitutions.csv", Persistence.RESOURCE_PATH)
 
     def get_signature(self, signature, default_key=DEFAULT_KEY):
         if signature is None:
