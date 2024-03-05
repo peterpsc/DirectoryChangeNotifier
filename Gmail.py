@@ -5,7 +5,6 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from os.path import exists
 from time import sleep
 
 import DataFrame
@@ -34,13 +33,20 @@ class Gmail:
         return username, password
 
     def send_to_friends(self, wordle, friends_list):
-        message = wordle.get_message()
-        to_email_file_path = Persistence.private_file_path(friends_list)
+        to_email_file_path = Persistence.private_file_path("me.txt")
         to_email_list = Persistence.readlines(to_email_file_path)
+        bcc_email_file_path = Persistence.private_file_path(friends_list)
+        bcc_email_list = Persistence.readlines(bcc_email_file_path)
         last_sent_file_path = Persistence.private_file_path(DATE_LAST_SENT)
         remote_last_sent_file_path = Persistence.remote_private_file_path(DATE_LAST_SENT)
 
-        if not Persistence.has_updated_today(last_sent_file_path, remote_last_sent_file_path) and to_email_list:
+        has_updated_today = Persistence.has_updated_today(last_sent_file_path, remote_last_sent_file_path)
+        if not has_updated_today and bcc_email_list:
+            # Prevent the automation from sending twice
+            Persistence.updated_today(last_sent_file_path)
+            shutil.copyfile(last_sent_file_path, remote_last_sent_file_path)
+
+            message = wordle.get_message()
             lines = wordle.result_boxes.split("\n")
             subject = lines[0]
             if subject.startswith("Wordle "):
@@ -50,10 +56,8 @@ class Gmail:
             if message:
                 content += "\r\n\r\n" + message
 
-            self.send_emails_or_fb(to_email_list, subject, content, fb_signature="wbtr", signature="wbtru")
-        Persistence.updated_today(last_sent_file_path)
-        if exists(remote_last_sent_file_path):
-            shutil.copyfile(last_sent_file_path, remote_last_sent_file_path)
+            self.send_emails_or_fb(to_email_list, subject, content, bcc_emails=bcc_email_list, fb_signature="wbtr",
+                                   signature="wbtru")
 
     @staticmethod
     def get_day_of_week():
@@ -77,12 +81,15 @@ class Gmail:
         signature = self.substitutions.get_signature(signature)
         message = MIMEMultipart()
         message['From'] = from_email
-        to_email_list = self.convert_to_list(to_emails)
-        cc_email_list = self.convert_to_list(cc_emails)
-        bcc_email_list = self.convert_to_list(bcc_emails)
+        to_email_list, fb_list = self.split_emails_fb(to_emails)
+        cc_email_list, fb_list = self.split_emails_fb(cc_emails)
+        bcc_email_list, fb_list = self.split_emails_fb(bcc_emails)
         message['To'] = ', '.join(to_email_list)
         if cc_emails:
             message['Cc'] = ', '.join(cc_email_list)
+        if bcc_emails:
+            message['Bcc'] = ', '.join(bcc_email_list)
+
         message['Subject'] = subject
         # The body and the attachments for the mail
         if signature:
@@ -159,21 +166,22 @@ class Gmail:
         fb_list = []
         for to_addr in email_or_fb_list:
             to_addr = to_addr.strip()
-            if "@" not in to_addr:
-                if to_addr.startswith("FB:"):
-                    fb_list.append(to_addr)
-                elif to_addr.startswith("FBM:"):
-                    fb_list.append(to_addr)
-                elif to_addr.startswith("FBG:"):
-                    fb_list.append(to_addr)
+            if to_addr:
+                if "@" not in to_addr:
+                    if to_addr.startswith("FB:"):
+                        fb_list.append(to_addr)
+                    elif to_addr.startswith("FBM:"):
+                        fb_list.append(to_addr)
+                    elif to_addr.startswith("FBG:"):
+                        fb_list.append(to_addr)
+                    else:
+                        to_addr_file_path = Persistence.private_file_path(to_addr)
+                        loaded_list = Persistence.readlines(to_addr_file_path)
+                        if loaded_list:
+                            for entry in loaded_list:
+                                email_or_fb_list.append(entry)
                 else:
-                    to_addr_file_path = Persistence.private_file_path(to_addr)
-                    loaded_list = Persistence.readlines(to_addr_file_path)
-                    if loaded_list:
-                        for entry in loaded_list:
-                            email_or_fb_list.append(entry)
-            else:
-                to_email_list.append(to_addr)
+                    to_email_list.append(to_addr)
         return to_email_list, fb_list
 
 
@@ -188,10 +196,6 @@ if __name__ == '__main__':
     content = content.replace("\\n", "\n")
 
     gmail = Gmail()
-
-    # gmail.substitutions.print_all_substitutions()
-    # gmail.substitutions.print_all_signatures()
-    # PrintHelper.printInBox()
 
     for key in ["", "not found", "default", "pc", None]:
         signature = Substitutions.get_signature(key)

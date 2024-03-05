@@ -1,5 +1,6 @@
 import os
 import pathlib
+import time
 from datetime import datetime
 from os.path import exists
 
@@ -8,6 +9,7 @@ import PrintHelper
 from Gmail import Gmail
 from Substitutions import Substitutions
 
+REPORT_MODIFIED = False
 
 class DirChangeNotifier:
 
@@ -123,26 +125,32 @@ class DirChangeNotifier:
                         cls.append_dir_paths(file_paths, file_path, ignore_paths, recursive)
 
     @classmethod
-    def get_added_removed(cls, previous_file_paths, current_file_paths):
+    def get_added_removed_modified(cls, previous_file_paths, current_file_paths, previous_date_string):
         file_paths_added = current_file_paths.copy()
         file_paths_removed = []
+        file_paths_modified = []
 
         for previous_file_path in previous_file_paths:
+            if cls.is_modified_since(previous_file_path, previous_date_string):
+                file_paths_modified.append(previous_file_path)
             if previous_file_path in file_paths_added:
                 file_paths_added.remove(previous_file_path)
             else:
                 file_paths_removed.append(previous_file_path)
-        return file_paths_added, file_paths_removed
+
+        return file_paths_added, file_paths_removed, file_paths_modified
 
     @classmethod
-    def notify(cls, title, notification_list, paths, ignore_paths, previous_date, previous_file_paths,
+    def notify(cls, title, notification_list, paths, ignore_paths, previous_date_string, previous_file_paths,
                current_file_paths, signature):
-        file_paths_added, file_paths_removed = cls.get_added_removed(previous_file_paths, current_file_paths)
+        file_paths_added, file_paths_removed, file_paths_modified = cls.get_added_removed_modified(previous_file_paths,
+                                                                                                   current_file_paths,
+                                                                                                   previous_date_string)
 
         now_string = PrintHelper.get_now_string()
         subject = f'{title}: {now_string}'
         previous = "Previous"
-        previous = f'{" " * (len(title) - len(previous))}{previous}: {previous_date}'
+        previous = f'{" " * (len(title) - len(previous))}{previous}: {previous_date_string}'
         title = f'Changes to {paths}'
         ignoring = f'Ignoring: {ignore_paths}'
 
@@ -155,8 +163,9 @@ class DirChangeNotifier:
             PrintHelper.printInBox(f' First time')
             return True
         if not file_paths_added and not file_paths_removed:
-            PrintHelper.printInBox(f' No changes since {previous_date}')
-            return False
+            if not REPORT_MODIFIED or not file_paths_modified:
+                PrintHelper.printInBox(f' No changes since {previous_date_string}')
+                return False
 
         content = f'{subject}\n{previous}\n{title}\n\n'
         if file_paths_added:
@@ -171,6 +180,14 @@ class DirChangeNotifier:
             content += "Removed:\n"
             for removed in file_paths_removed:
                 content += "   " + removed + "\n"
+
+        if REPORT_MODIFIED and file_paths_modified:
+            if not content:
+                content += "\n"
+
+            content += "Modified:\n"
+            for modified in file_paths_modified:
+                content += "   " + modified + "\n"
 
         PrintHelper.printInBox(content)
         PrintHelper.printInBox()
@@ -265,6 +282,27 @@ class DirChangeNotifier:
             for directory_name in year_directory_names:
                 subdir = f'{current_year_directory}\\{directory_name}'
                 os.mkdir(subdir)
+
+    @classmethod
+    def is_modified_since(cls, file_path, previous_date_string):
+        last_modified_timestamp = get_last_modified_timestamp(file_path)
+        if last_modified_timestamp > previous_date_string:
+            return True
+        return False
+
+
+def get_last_modified_timestamp(file_path):
+    m_t_obj = get_last_modified_time_obj(file_path)
+    m_t_stamp = time.strftime("%Y/%m/%d %H:%M:%S", m_t_obj)
+    return m_t_stamp
+
+
+def get_last_modified_time_obj(file_path):
+    ti_m = os.path.getmtime(file_path)
+    m_ti = time.ctime(ti_m)
+    m_t_obj = time.strptime(m_ti)
+    return m_t_obj
+
 
 if __name__ == '__main__':
     PrintHelper.printInBox()

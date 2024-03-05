@@ -2,12 +2,14 @@ import csv
 import datetime
 import os
 import random
+import shutil
 from os.path import exists
 from time import sleep
 
 import clipboard
 from selenium.webdriver import Keys
 
+import Persistence
 import PrintHelper
 
 REMOTE_FILE_PATH_TXT = "RemoteFilepath.txt"
@@ -253,7 +255,7 @@ def get_credentials(credential_filename):
 
 def has_updated_today(file_path, remote_file_path):
     date_last_updated = get_string(file_path)
-    today = datetime.date.today().strftime('%Y:%m:%d')
+    today = get_today_string()
 
     if remote_file_path is None:
         PrintHelper.printInBoxException(Exception("remote not found"))
@@ -296,11 +298,19 @@ def paste_text(element, text, enter=False):
 
 
 def updated_today(file_path):
-    today = datetime.date.today().strftime('%Y:%m:%d')
+    today = get_today_string()
     location_file_path = private_file_path(LOCATION_FILENAME)
     location = get_string(location_file_path)
     write_string(file_path, f'{today} {location}')
 
+
+def get_today_string():
+    today = datetime.date.today().strftime('%m/%d/%Y')
+    return today
+
+def get_this_year_string():
+    year = datetime.date.today().strftime('%Y')
+    return year
 
 def get_string(file_path):
     lines = readlines(file_path)
@@ -346,14 +356,14 @@ def random_value(from_list):
     return from_list[i]
 
 
-def eliminate_duplicates(list_of_lists):
+def eliminate_blanks_and_duplicates(list_of_lists):
     hash_list = []
     result = []
     for list in list_of_lists:
         h = 0
         for val in list:
             h += hash(val)
-        if h not in hash_list:
+        if h and h not in hash_list:
             hash_list.append(h)
             result.append(list)
     return result
@@ -394,9 +404,87 @@ def split(text, sep=","):
             return results
 
 
+def get_last_modified_datetime(filename, path_type=PRIVATE_PATH):
+    file_path = get_file_path(filename, path_type=path_type)
+    if exists(file_path):
+        timestamp = os.path.getmtime(file_path)
+        datestamp = datetime.datetime.fromtimestamp(timestamp)
+        return datestamp
+    return None
+
+
+def remove_dups_of_previous_lines(lines):
+    results = []
+    prev = None
+    for line in lines:
+        if line == prev:
+            continue
+        results.append(line)
+    return results
+
+
+def is_more_without_dups(r_file_path, l_file_path):
+    result = False
+    temp_file_path = get_file_path("temp.txt")
+    try:
+        shutil.copy(r_file_path, temp_file_path)
+
+        r_lines = get_lines(temp_file_path, path_type=FILE_PATH)
+        r_lines = remove_dups_of_previous_lines(r_lines)
+        l_lines = Persistence.get_lines(l_file_path, path_type=FILE_PATH)
+        l_lines = remove_dups_of_previous_lines(l_lines)
+
+        r_len = len(r_lines)
+        l_len = len(l_lines)
+        length = min(r_len, l_len)
+
+        prev = None
+        for i in range(length):
+            r_line = r_lines[i]
+            l_line = l_lines[i]
+            if r_line != l_line:
+                PrintHelper.printInBoxException(Exception(f'{r_line} != {l_line}'))
+                break
+        if r_len > l_len:
+            result = True
+    finally:
+        os.remove(temp_file_path)
+    return result
+
+
+def copy_remote_file_if_newer(filename, local_path_type=PRIVATE_PATH, remote_path_type=REMOTE_PRIVATE_PATH,
+                              must_be_more=False):
+    l_file_path = get_file_path(filename, local_path_type)
+    r_file_path = get_file_path(filename, remote_path_type)
+    l_datestamp = get_last_modified_datetime(l_file_path, FILE_PATH)
+    r_datestamp = get_last_modified_datetime(r_file_path, FILE_PATH)
+    if must_be_more:
+        if is_more_without_dups(r_file_path, l_file_path):
+            shutil.copyfile(r_file_path, l_file_path)
+            return r_datestamp
+    if l_datestamp and r_datestamp:
+        if l_datestamp < r_datestamp:
+            shutil.copyfile(r_file_path, l_file_path)
+            return r_datestamp
+        return l_datestamp
+    elif l_datestamp:
+        return l_datestamp
+    return r_datestamp
+
+
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Persistence.py")
+
+    PrintHelper.printInBox()
+
+    filename = "BirthdaysPostedToday.csv"
+    dt = get_last_modified_datetime(filename)
+    PrintHelper.printInBoxWithTime(f'{filename} modified:', dt=dt)
+    PrintHelper.printInBox()
+
+    result = copy_remote_file_if_newer(filename)
+    PrintHelper.printInBox(f'copy_remote_file_if_newer({filename}) = {result}')
 
     parameters = split("123")
     assert parameters[0] == "123"

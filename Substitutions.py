@@ -40,33 +40,43 @@ class Substitutions:
         self.year_string = self.date_today.strftime('%Y')
         self.month_string = self.date_today.strftime('%m')
 
-    def substitute(self, text, substitutions: dict[str, str] = {}):
+    def substitute(self, text, substitutions: dict[str, str] = None):
         if not text:
             return ""
         if not self.substitutions:
             self.init_substitutions()
 
         result = text
-        for key in self.substitutions:
-            while key in result:
-                replacement = self.substitutions[key]
-                result = result.replace(f"{key}", replacement)
+        result = self.do_substitutions(result)
 
-        if substitutions is not None:
+        if substitutions:
             while "{" in result:
                 key = result[result.find("{") + 1:result.find("}")]
                 substitution = ""
                 if key in substitutions:
                     substitution = substitutions[key]
-                if key == "date(Scheduled)":
+                elif key == "date(Scheduled)":
                     substitution, days = self.get_date_scheduled(substitutions)
-
+                else:
+                    substition_filename = key + ".txt"
+                    if exists(Persistence.get_file_path(substition_filename)):
+                        lines = Persistence.get_lines(substition_filename, remove_blank_lines=False)
+                        substitution = "\n".join(lines)
+                        result = self.do_substitutions(result)
                 result = result.replace(f"{LEFT_CURLY_BRACE}{key}{RIGHT_CURLY_BRACE}", substitution)
 
         return result
 
+    def do_substitutions(self, result):
+        for key in self.substitutions:
+            while key in result:
+                replacement = self.substitutions[key]
+                result = result.replace(f"{key}", replacement)
+        return result
+
     def init_substitutions(self):
         self.substitutions = Persistence.get_dict("Substitutions.csv", Persistence.RESOURCE_PATH)
+        self.substitutions["\\n"] = "\n"
 
     def get_signature(self, signature, default_key=DEFAULT_KEY):
         if signature is None:
@@ -153,7 +163,7 @@ if __name__ == '__main__':
     s.print_all_substitutions()
 
     PrintHelper.printInBox()
-    text = "I <3 you"
+    text = "I <3 you\r\nThis is a test<3"
     substituted = s.substitute(text)
     PrintHelper.printInBox(text)
     PrintHelper.printInBox(substituted)

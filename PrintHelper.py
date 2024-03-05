@@ -3,6 +3,7 @@ from datetime import datetime
 from colorama import Fore
 
 import Persistence
+from Substitutions import Substitutions
 
 EMOJIS = ["⬛", "⬜", "🟨", "🟩", "👍", "❤️", "🤝", "😄", "😲", "😢", "😡"]
 
@@ -17,21 +18,22 @@ INDENT_4 = 7
 
 IGNORE_COLOR = False
 
+substitutions = Substitutions()
 
 def printInBoxException(e):
     printInBox("Exception:", color=Fore.RED)
     for arg in e.args:
-        printInBox(arg, force_style=RIGHT, color=Fore.RED)
+        printInBox(str(arg), force_style=RIGHT, color=Fore.RED)
 
 
-def printInBoxWithTime(text, style=LEFT):
-    now_str = get_now_string()
-    printInBox(f"{text}: {now_str}", force_style=style)
+def printInBoxWithTime(text, dt=datetime.now(), style=LEFT):
+    dt_str = get_datetime_string(dt)
+    printInBox(f"{text}: {dt_str}", force_style=style)
 
 
-def get_now_string():
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return now_str
+def get_datetime_string(dt=datetime.now()):
+    dt_string = dt.strftime("%A %Y-%m-%d %H:%M:%S")
+    return dt_string
 
 
 def printInBox(txt=None, force_style=None, length=80, color=""):
@@ -45,7 +47,14 @@ def printInBox(txt=None, force_style=None, length=80, color=""):
     if txt == None:
         print(f"{color}+{'-' * (length - 2)}+{color_end}")
     else:
+        if type(txt) == list:
+            txt = "\n".join(txt)
         lines = [txt]
+        txt = substitutions.substitute(txt)
+        if "\r" in txt:
+            txt = txt.replace("\r", "")
+        if "\\n" in txt:
+            txt = txt.replace("\\n", "\n")
         if "\n" in txt:
             lines = txt.split("\n")
         for line in lines:
@@ -54,7 +63,10 @@ def printInBox(txt=None, force_style=None, length=80, color=""):
                 derived_style = force_style
             before = get_indent(text, derived_style, length)
             after = get_remaining_spaces(before, text, length)
-            print(f"{color}|{before}{text}{after}|{color_end}")
+            text = f"|{before}{text}{after}|"
+            if color:
+                text = f"{color}|{before}{text}{after}|{color_end}"
+            print(text)
 
 
 def indent_style(line, length):
@@ -125,6 +137,11 @@ def colored(color: str, message: str) -> str:
 
 def bright(message: str) -> str:
     return colored(Fore.LIGHTWHITE_EX, message)
+
+
+def get_now_string():
+    date = datetime.now()
+    return date.strftime("%Y/%m/%d %H:%M:%S")
 
 
 if __name__ == '__main__':
