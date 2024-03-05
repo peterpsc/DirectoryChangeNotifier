@@ -9,7 +9,10 @@ import PrintHelper
 from Gmail import Gmail
 from Substitutions import Substitutions
 
-REPORT_MODIFIED = False
+REPORT_MODIFIED = True
+ONLY_TO_ME = True
+ME = "me.lst"
+
 
 class DirChangeNotifier:
 
@@ -243,7 +246,10 @@ class DirChangeNotifier:
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)[0]
 
     def get_notification_list(self, notification_name):
-        file_path = self.copy_first_if_missing(notification_name, "_Notification_List.txt")
+        if ONLY_TO_ME:
+            file_path = Persistence.private_file_path(ME)
+        else:
+            file_path = self.copy_first_if_missing(notification_name, "_Notification_List.txt")
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def copy_first(self, notification_name, end_of_name):
