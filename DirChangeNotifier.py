@@ -242,7 +242,11 @@ class DirChangeNotifier:
 
     def get_filter_paths(self, notification_name):
         file_path = self.copy_first_if_missing(notification_name, "_Filter_Paths.txt")
-        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
+        filter_paths = []
+        if exists( file_path):
+            filter_paths = Persistence.get_lines(file_path, Persistence.FILE_PATH)
+        return filter_paths
+
 
     def copy_first_if_missing(self, notification_name, end_of_name):
         filename = f'{notification_name}{end_of_name}'
@@ -268,8 +272,9 @@ class DirChangeNotifier:
         self.copy_and_edit(first_file_path, file_path)
 
     def copy_and_edit(self, first_file_path, file_path):
-        lines = Persistence.get_lines(first_file_path, Persistence.FILE_PATH)
-        Persistence.write_lines(file_path, lines, Persistence.FILE_PATH)
+        if exists(first_file_path):
+            lines = Persistence.get_lines(first_file_path, Persistence.FILE_PATH)
+            Persistence.write_lines(file_path, lines, Persistence.FILE_PATH)
         os.system(f'notepad {file_path}')
 
     def check_for_this_year_directories(self):
