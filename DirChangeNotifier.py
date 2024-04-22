@@ -64,7 +64,7 @@ class DirChangeNotifier:
         return path, options
 
     @classmethod
-    def get_file_paths(cls, path_options, ignore_paths):
+    def get_file_paths(cls, path_options, ignore_paths, filter_paths=[]):
         file_paths = []
         for path_option in path_options:
             if path_option:
@@ -72,13 +72,14 @@ class DirChangeNotifier:
                 recursive = False
                 if "S" in option:
                     recursive = True
-                cls.append_file_paths(file_paths, path, ignore_paths, recursive=recursive)
+                cls.append_file_paths(file_paths, path, ignore_paths, filter_paths, recursive=recursive)
         return file_paths
 
     @classmethod
-    def append_file_paths(cls, file_paths, root_path, ignore_paths, recursive=False):
+    def append_file_paths(cls, file_paths, root_path, ignore_paths, filter_paths=[], recursive=False):
         if root_path in ignore_paths:
             return
+
         paths = list(pathlib.Path(root_path).iterdir())
         for item in paths:
             name = item.name
@@ -86,15 +87,17 @@ class DirChangeNotifier:
                 continue
             if name in ignore_paths:
                 continue
+
             file_path = str(item.absolute())
             file_path = Persistence.single_back_slash(file_path)
             if file_path not in ignore_paths:
                 if item.is_file():
-                    file_paths.append(file_path)
+                    if cls.is_in_filter_path(filter_paths, file_path):
+                        file_paths.append(file_path)
                 if item.is_dir():
                     PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
                     if recursive:
-                        cls.append_file_paths(file_paths, file_path, ignore_paths, recursive)
+                        cls.append_file_paths(file_paths, file_path, ignore_paths, filter_paths, recursive)
 
     @classmethod
     def get_dir_paths(cls, path_options, ignore_paths):
@@ -128,27 +131,29 @@ class DirChangeNotifier:
                         cls.append_dir_paths(file_paths, file_path, ignore_paths, recursive)
 
     @classmethod
-    def get_added_removed_modified(cls, previous_file_paths, current_file_paths, previous_date_string):
+    def get_added_removed_modified(cls, previous_file_paths, current_file_paths, previous_date_string, filter_paths):
         file_paths_added = current_file_paths.copy()
         file_paths_removed = []
         file_paths_modified = []
 
         for previous_file_path in previous_file_paths:
-            if cls.is_modified_since(previous_file_path, previous_date_string):
-                file_paths_modified.append(previous_file_path)
-            if previous_file_path in file_paths_added:
-                file_paths_added.remove(previous_file_path)
-            else:
+            if not exists(previous_file_path):
                 file_paths_removed.append(previous_file_path)
+            elif cls.is_modified_since(previous_file_path, previous_date_string):
+                file_paths_modified.append(previous_file_path)
+            elif previous_file_path in file_paths_added:
+                file_paths_added.remove(previous_file_path)
 
         return file_paths_added, file_paths_removed, file_paths_modified
 
     @classmethod
-    def notify(cls, title, notification_list, paths, ignore_paths, previous_date_string, previous_file_paths,
+    def notify(cls, title, notification_list, paths, ignore_paths, filter_paths, previous_date_string,
+               previous_file_paths,
                current_file_paths, signature):
         file_paths_added, file_paths_removed, file_paths_modified = cls.get_added_removed_modified(previous_file_paths,
                                                                                                    current_file_paths,
-                                                                                                   previous_date_string)
+                                                                                                   previous_date_string,
+                                                                                                   filter_paths)
 
         now_string = PrintHelper.get_now_string()
         subject = f'{title}: {now_string}'
@@ -212,13 +217,14 @@ class DirChangeNotifier:
         previous_date_string, previous_file_paths = self.get_date_previous_file_paths(notification_name)
         path_options = self.get_dir_change_path_options(notification_name)
         ignore_paths = self.get_ignore_paths(notification_name)
+        filter_paths = self.get_filter_paths(notification_name)
         title = self.get_title(notification_name)
         notification_list = self.get_notification_list(notification_name)
         signature = Substitutions().get_signature("")
         try:
-            current_file_paths = self.get_file_paths(path_options, ignore_paths)
-            changed = self.notify(title, notification_list, path_options, ignore_paths, previous_date_string,
-                                  previous_file_paths, current_file_paths, signature)
+            current_file_paths = self.get_file_paths(path_options, ignore_paths, filter_paths)
+            changed = self.notify(title, notification_list, path_options, ignore_paths, filter_paths,
+                                  previous_date_string, previous_file_paths, current_file_paths, signature)
 
             if changed or not previous_date_string:
                 self.save_date_previous_and_file_paths(notification_name, current_file_paths)
@@ -232,6 +238,10 @@ class DirChangeNotifier:
 
     def get_ignore_paths(self, notification_name):
         file_path = self.copy_first_if_missing(notification_name, "_Ignore_Paths.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
+
+    def get_filter_paths(self, notification_name):
+        file_path = self.copy_first_if_missing(notification_name, "_Filter_Paths.txt")
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def copy_first_if_missing(self, notification_name, end_of_name):
@@ -294,6 +304,15 @@ class DirChangeNotifier:
         last_modified_timestamp = get_last_modified_timestamp(file_path)
         if last_modified_timestamp > previous_date_string:
             return True
+        return False
+
+    @classmethod
+    def is_in_filter_path(cls, filter_paths, file_path):
+        if len(filter_paths) == 0:
+            return True
+        for filter_path in filter_paths:
+            if filter_path in file_path:
+                return True
         return False
 
 
