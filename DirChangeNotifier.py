@@ -340,7 +340,7 @@ if __name__ == '__main__':
 
     notification_names = Persistence.get_lines("NotificationNames.txt")
     dcn = DirChangeNotifier(notification_names)
-    dcn.check_for_this_year_directories()
-    dcn.notify_all_names()
+    dcn.check_for_this_year_directories() # Every year, create a new directory structure for the new year
+    dcn.notify_all_names() # email relevant people any changes that have happened since the last update
 
     PrintHelper.printInBox()
