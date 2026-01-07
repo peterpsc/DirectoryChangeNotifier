@@ -10,7 +10,7 @@ from Gmail import Gmail
 from Substitutions import Substitutions
 
 REPORT_MODIFIED = True
-ONLY_TO_ME = True
+ONLY_TO_ME = False
 ME = "me.lst"
 
 
