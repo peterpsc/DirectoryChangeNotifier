@@ -55,7 +55,7 @@ class DriveLookup:
         return q4s, missing
 
     def save_missing(self, missing):
-        filename = "Missing.csv"
+        filename = "Missing.lst"
         if not missing:
             Persistence.remove(filename)
             return
@@ -64,7 +64,7 @@ class DriveLookup:
 
 
     def save_Q4s(self, q4s):
-        filename = "Q4s.csv"
+        filename = "Q4s.lst"
         if not q4s:
             Persistence.remove(filename)
             return
@@ -86,7 +86,8 @@ class DriveLookup:
         for file_path in q4s:
             new_file_path = self.this_year_file_path(file_path)
             if not os.path.exists(new_file_path):
-                todos.append(new_file_path)
+                todo = f'"{file_path}": "{new_file_path}"'
+                todos.append(todo)
         return todos
 
     def this_year_file_path(self, file_path) -> Any:
