@@ -85,7 +85,8 @@ class DriveLookup:
         todos = []
         for file_path in q4s:
             new_file_path = self.this_year_file_path(file_path)
-            todos.append(new_file_path)
+            if not os.path.exists(new_file_path):
+                todos.append(new_file_path)
         return todos
 
     def this_year_file_path(self, file_path) -> Any:
