@@ -471,6 +471,10 @@ def copy_remote_file_if_newer(filename, local_path_type=PRIVATE_PATH, remote_pat
         return l_datestamp
     return r_datestamp
 
+def remove(filename, path_type=PRIVATE_PATH):
+    file_path = get_file_path(filename, path_type=path_type)
+    if exists(file_path):
+        os.remove(file_path)
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
@@ -521,3 +525,5 @@ if __name__ == '__main__':
     PrintHelper.printInBox(random_value(winning_list))
 
     PrintHelper.printInBox()
+
+
