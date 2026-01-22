@@ -151,6 +151,8 @@ class OldWorkbookToNew:
         ws_new_accounts["B10"] = bank_contact
         bank_account_type = ws_old_primary_account["E15"].value
         self.set_bank_account_type(ws_new_accounts, "B12", bank_account_type)
+        signature_requirement = ws_old_primary_account["H15"].value
+        self.set_signature_requirement(ws_new_accounts, "B13", signature_requirement)
         bank_account_number = ws_old_primary_account["E16"].value
         ws_new_accounts["B11"] = bank_account_number
         balance = ws_old_primary_account["H19"].value
@@ -213,6 +215,12 @@ class OldWorkbookToNew:
 
         # TODO add up to 4 secondary accounts
 
+    def set_signature_requirement(self, worksheet, cell, signature_requirement):
+        choices = ["Single","Dual"]
+        self.set_possible_choices(worksheet, cell, choices)
+        choice = self.get_choice(choices, signature_requirement)
+        worksheet[cell] = choice
+
     def set_interest_bearing(self, worksheet, cell, interest_bearing):
         choices = ["Yes","No"]
         self.set_possible_choices(worksheet, cell, choices)
@@ -263,6 +271,8 @@ class OldWorkbookToNew:
             if choice.lower() == value.lower():
                 return choice
             if value.lower() == choice.lower()[0:len(value)]: # permit "Saving" to match "Savings"
+                return choice
+            if choice.lower() == value.lower()[0:len(choice)]: # permit "Dual Signature" to match "Dual"
                 return choice
         print(f"Invalid choice: {value}")
         return value
