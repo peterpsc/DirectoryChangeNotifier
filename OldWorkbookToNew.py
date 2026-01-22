@@ -1,6 +1,9 @@
 from typing import Any
 
 import openpyxl
+from openpyxl.styles import Protection
+from openpyxl.worksheet.datavalidation import DataValidation
+
 
 
 class OldWorkbookToNew:
@@ -197,7 +200,15 @@ class OldWorkbookToNew:
         ws_new_accounts["C31"] = balance
         ledger_balance = ws_old_secondary_account["D25"].value
         ws_new_accounts["C32"] = ledger_balance
-        # TODO add interest bearing
+
+        # TODO interest bearing validation "Yes","No"
+        dv_i = DataValidation(type="list", formula1='"Yes,No"', allow_blank=False)
+        ws_new_accounts.add_data_validation(dv_i)
+        interest_bearing_cell = ws_new_accounts["B14"]
+        dv_i.add(interest_bearing_cell)
+        interest_bearing_cell.protection = Protection(locked=False) # TODO DOESN'T WORK
+        ws_new_accounts.protection.sheet = True
+        ws_new_accounts.protection.disable() # TODO DOESN'T WORK
 
         # signatories
         for i in range(0, 5):
