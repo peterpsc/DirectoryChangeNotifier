@@ -241,8 +241,9 @@ class OldWorkbookToNew:
         worksheet.add_data_validation(dv_i)
         dv_i.add(cell_str)
         cell.protection = Protection(locked=False)  # TODO DOESN'T WORK
-        # ws_new_accounts.protection.sheet = True
-        # ws_new_accounts.protection.disable() # TODO DOESN'T WORK
+        worksheet.protection.sheet = True
+        worksheet.protection.enable()
+
 
     def save_funds(self):
         ws_old_funds = self.old_workbook["FUNDS_14"]
