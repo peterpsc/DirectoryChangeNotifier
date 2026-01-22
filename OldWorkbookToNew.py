@@ -3,6 +3,7 @@ from typing import Any
 import openpyxl
 from openpyxl.styles import Protection
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
 
 
@@ -149,13 +150,16 @@ class OldWorkbookToNew:
         bank_contact = ws_old_primary_account["F17"].value
         ws_new_accounts["B10"] = bank_contact
         bank_account_type = ws_old_primary_account["E15"].value
-        ws_new_accounts["B12"] = bank_account_type
+        self.set_bank_account_type(ws_new_accounts, "B12", bank_account_type)
         bank_account_number = ws_old_primary_account["E16"].value
         ws_new_accounts["B11"] = bank_account_number
         balance = ws_old_primary_account["H19"].value
         ws_new_accounts["C16"] = balance
         ledger_balance = ws_old_primary_account["H37"].value
         ws_new_accounts["C17"] = ledger_balance
+        interest_bearing = ws_old_primary_account["F38"].value
+        self.set_interest_bearing(ws_new_accounts, "B14", interest_bearing)
+
         # TODO add bank name, type
         # signatories
         for i in range(0,5):
@@ -191,7 +195,7 @@ class OldWorkbookToNew:
         # bank_contact = ws_old_secondary_account["F17"].value
         # ws_new_accounts["B10"] = bank_contact
         bank_account_type = ws_old_secondary_account["D16"].value
-        ws_new_accounts["B27"] = bank_account_type
+        self.set_bank_account_type(ws_new_accounts, "B27", bank_account_type)
         ws_new_summary = self.new_workbook["Summary"]
         ws_new_summary["B20"] = bank_account_type
         bank_account_number = ws_old_secondary_account["D14"].value
@@ -200,21 +204,37 @@ class OldWorkbookToNew:
         ws_new_accounts["C31"] = balance
         ledger_balance = ws_old_secondary_account["D25"].value
         ws_new_accounts["C32"] = ledger_balance
-
-        # TODO interest bearing validation "Yes","No"
-        dv_i = DataValidation(type="list", formula1='"Yes,No"', allow_blank=False)
-        ws_new_accounts.add_data_validation(dv_i)
-        interest_bearing_cell = ws_new_accounts["B14"]
-        dv_i.add(interest_bearing_cell)
-        interest_bearing_cell.protection = Protection(locked=False) # TODO DOESN'T WORK
-        ws_new_accounts.protection.sheet = True
-        ws_new_accounts.protection.disable() # TODO DOESN'T WORK
+        interest_bearing = ws_old_secondary_account["D17"].value
+        self.set_interest_bearing(ws_new_accounts,"B29", interest_bearing)
 
         # signatories
         for i in range(0, 5):
             self.save_secondary_signatories(ws_old_secondary_account, ws_new_accounts, 27 + i * 3, 31 + i)
 
         # TODO add up to 4 secondary accounts
+
+    def set_interest_bearing(self, worksheet, cell, interest_bearing):
+        choices = ["Yes","No"]
+        self.set_possible_choices(worksheet, cell, choices)
+        choice = self.get_choice(choices, interest_bearing)
+        worksheet[cell] = choice
+
+    def set_bank_account_type(self, worksheet, cell, bank_account_type):
+        choices = ["Checking","Savings","CD/GIC","Money Market"]
+        self.set_possible_choices(worksheet, cell, choices)
+        choice = self.get_choice(choices, bank_account_type)
+        worksheet[cell] = choice
+
+    def set_possible_choices(self, worksheet, cell_str, choices):
+        choices_string = self.get_choices_string(choices)
+        dv_i = DataValidation(type="list", formula1=choices_string, allow_blank=False)
+        row, col = get_row_col(cell_str)
+        cell = worksheet.cell(row,col)
+        worksheet.add_data_validation(dv_i)
+        dv_i.add(cell_str)
+        cell.protection = Protection(locked=False)  # TODO DOESN'T WORK
+        # ws_new_accounts.protection.sheet = True
+        # ws_new_accounts.protection.disable() # TODO DOESN'T WORK
 
     def save_funds(self):
         ws_old_funds = self.old_workbook["FUNDS_14"]
@@ -237,6 +257,46 @@ class OldWorkbookToNew:
     def set_active_sheet(self, sheet):
         target_sheet = self.new_workbook[sheet]
         self.new_workbook.active = target_sheet
+
+    def get_choice(self, choices, value):
+        for choice in choices:
+            if choice.lower() == value.lower():
+                return choice
+            if value.lower() == choice.lower()[0:len(value)]: # permit "Saving" to match "Savings"
+                return choice
+        print(f"Invalid choice: {value}")
+        return value
+
+    def get_choices_string(self, choices):
+        choices_string = ''
+        for choice in choices:
+            if choices_string == '':
+                choices_string += choice
+            else:
+                choices_string += f',{choice}'
+        choices_string = f'"{choices_string}"'
+        return choices_string
+
+
+def get_row_col(coord):
+    col_letter, row = coordinate_from_string(coord)
+    col = column_index_from_string(col_letter)
+    return row, col
+
+
+def test():
+    row, col = get_row_col("A1")
+    assert row == 1
+    assert col == 1
+
+    row, col = get_row_col("b5")
+    assert row == 5
+    assert col == 2
+
+    row, col = get_row_col("AA51")
+    assert row == 51
+    assert col == 27
+
 
 def main():
     wbs = OldWorkbookToNew("Resources\\EK-Towers 2025-Q4.xlsm", "Resources\\SCA Exchequer Report - 2026-02.xlsx")
@@ -264,4 +324,5 @@ def main():
 
 class OldWorkbookToNew:
     if __name__ == '__main__':
+        test()
         main()
