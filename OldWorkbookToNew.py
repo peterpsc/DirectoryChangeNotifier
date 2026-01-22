@@ -198,6 +198,8 @@ class OldWorkbookToNew:
         # ws_new_accounts["B10"] = bank_contact
         bank_account_type = ws_old_secondary_account["D16"].value
         self.set_bank_account_type(ws_new_accounts, "B27", bank_account_type)
+        signature_requirement = ws_old_secondary_account["D15"].value
+        self.set_signature_requirement(ws_new_accounts, "B28", signature_requirement)
         ws_new_summary = self.new_workbook["Summary"]
         ws_new_summary["B20"] = bank_account_type
         bank_account_number = ws_old_secondary_account["D14"].value
