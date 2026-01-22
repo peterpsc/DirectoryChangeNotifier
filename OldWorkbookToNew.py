@@ -252,7 +252,7 @@ def main():
     wbs.save_outstanding()
     wbs.save_assets()
     wbs.set_active_sheet("Accounts")
-    wbs.new_workbook.save("Resources\\EK-Towers 2026-Q1 modified.xlsm")
+    wbs.new_workbook.save("Resources\\EK-Towers 2026-Q1 modified.xlsx")
 
     # TODO fix data validation https://openpyxl.readthedocs.io/en/3.1/validation.html
     # FinancialCommittee B7 validation
