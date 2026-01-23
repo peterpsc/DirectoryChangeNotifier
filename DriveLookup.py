@@ -52,7 +52,7 @@ class DriveLookup:
             entries = os.listdir(folder)
             found = False
             for entry in entries:
-                if "Q4" in entry or "4Q" in entry or "EOY" in entry:
+                if "Q4" in entry or "4Q" in entry or "EOY" in entry or "4th" in entry:
                     q4s.append(f"{folder}\\{entry}")
                     found = True
                     break
@@ -101,6 +101,7 @@ class DriveLookup:
         this_year_file_path = this_year_file_path.replace("Q4", "Q1")
         this_year_file_path = this_year_file_path.replace("4Q", "Q1")
         this_year_file_path = this_year_file_path.replace("EOY", "Q1")
+        this_year_file_path = this_year_file_path.replace("4th", "Q1")
 
         return this_year_file_path
 
