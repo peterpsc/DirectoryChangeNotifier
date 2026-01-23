@@ -8,10 +8,6 @@ we will need to write a macro to load the data and save the file, then delete th
 This reading of the data file and saving may have to be executed for each file manually
 '''
 import openpyxl
-from openpyxl.styles import Protection
-from openpyxl.worksheet.datavalidation import DataValidation
-from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
-
 import Persistence
 
 
