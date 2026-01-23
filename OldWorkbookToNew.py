@@ -216,6 +216,9 @@ class OldWorkbookToNew:
             self.save_secondary_signatories(ws_old_secondary_account, ws_new_accounts, 27 + i * 3, 31 + i)
 
         # TODO add up to 4 secondary accounts
+        ws_new_accounts.protection.sheet = True
+        ws_new_accounts.protection.enable()
+
 
     def set_signature_requirement(self, worksheet, cell, signature_requirement):
         choices = ["Single","Dual"]
@@ -243,8 +246,6 @@ class OldWorkbookToNew:
         worksheet.add_data_validation(dv_i)
         dv_i.add(cell_str)
         cell.protection = Protection(locked=False)  # TODO DOESN'T WORK
-        worksheet.protection.sheet = True
-        worksheet.protection.enable()
 
 
     def save_funds(self):
