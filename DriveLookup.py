@@ -6,6 +6,7 @@ import Persistence
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 
+
 # TODO ask to send email
 
 class DriveLookup:
@@ -16,8 +17,6 @@ class DriveLookup:
         self.previous_year = f"{int(self.this_year) - 1}"
         self.previous_year_dir = f"\\{int(self.this_year) - 1}\\"
         self.this_year_dir = f"\\{self.this_year}\\"
-
-
 
     def get_last_year_folders(self):
         notification_name = "GoogleDrive"
@@ -67,16 +66,15 @@ class DriveLookup:
             Persistence.remove(filename)
             return
 
-        Persistence.write_lines(filename, path_type=Persistence.PRIVATE_PATH, lines=missing)
+        Persistence.write_lines(filename, path_type=Persistence.RESOURCE_PATH, lines=missing)
 
-
-    def save_Q4s(self, q4s):
+    def save_Q4_folders(self, q4s):
         filename = "Q4s.lst"
         if not q4s:
             Persistence.remove(filename)
             return
 
-        Persistence.write_lines(filename, path_type=Persistence.PRIVATE_PATH, lines=q4s)
+        Persistence.write_lines(filename, path_type=Persistence.RESOURCE_PATH, lines=q4s)
 
     def save_Todos(self, q4s):
         todos = self.find_todos(q4s)
@@ -86,7 +84,7 @@ class DriveLookup:
             Persistence.remove(filename)
             return
 
-        Persistence.write_lines(filename, path_type=Persistence.PRIVATE_PATH, lines=todos)
+        Persistence.write_lines(filename, path_type=Persistence.RESOURCE_PATH, lines=todos)
 
     def find_todos(self, q4s):
         todos = []
@@ -106,6 +104,7 @@ class DriveLookup:
 
         return this_year_file_path
 
+
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
@@ -117,6 +116,5 @@ if __name__ == '__main__':
     print(f"missing = {missing}")
 
     driveLU.save_missing(missing)
-    driveLU.save_Q4s(q4s)
+    driveLU.save_Q4_folders(folders)
     driveLU.save_Todos(q4s)
-
