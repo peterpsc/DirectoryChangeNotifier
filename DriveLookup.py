@@ -1,5 +1,4 @@
 import os
-import pathlib
 from datetime import datetime
 from typing import Any
 
@@ -7,6 +6,7 @@ import Persistence
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 
+# TODO ask to send email
 
 class DriveLookup:
     def __init__(self):
