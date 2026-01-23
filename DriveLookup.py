@@ -35,7 +35,14 @@ class DriveLookup:
             if "\\Quarterly Reports\\" in directory:
                 right_index = directory.index("\\Quarterly Reports")
                 lower_directory = directory[:right_index + len("\\Quarterly Reports")]
-                filtered_directories.remove(lower_directory)
+                if lower_directory in filtered_directories:
+                    filtered_directories.remove(lower_directory)
+
+                # remove any subdirectories that don't have 4 and Q
+                subdirectories = os.listdir(lower_directory)
+                for subdirectory in subdirectories:
+                    if "4" not in subdirectory or "Q" not in subdirectory:
+                        filtered_directories.remove(lower_directory + "\\" + subdirectory)
         return filtered_directories
 
     def find_Q4s_missing(self, folders):
