@@ -18,6 +18,8 @@ class OldWorkbookToDataForNew:
     GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
                    "Project/Newsletter", "Province", "Shire", "Sub Account"]
     KINGDOM = "East Kingdom"
+    BANK_ACCOUNT_TYPE_CHOICES = ["Checking", "Savings", "CD/GIC", "Money Market"]
+    SIGNATORY_CHOICES = ["Single", "Dual"]
 
     def __init__(self, old_workbook_file_path,
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx", state=None
@@ -181,9 +183,13 @@ class OldWorkbookToDataForNew:
         bank_contact = ws_old_primary_account["F17"].value
         self.append_data("Accounts", "B10", bank_contact)
         bank_account_type = ws_old_primary_account["E15"].value
-        self.set_bank_account_type("B12", bank_account_type)
+        choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type)
+        self.append_data("Accounts", "B12", choice)
+
         signature_requirement = ws_old_primary_account["H15"].value
-        self.set_signature_requirement("B13", signature_requirement)
+        choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
+        self.append_data("Accounts", "B13", choice)
+
         bank_account_number = ws_old_primary_account["E16"].value
         self.append_data("Accounts", "B11", bank_account_number)
         balance = ws_old_primary_account["H19"].value
@@ -218,38 +224,53 @@ class OldWorkbookToDataForNew:
         # TODO add interest bearing
 
     def save_secondary_accounts(self):
-        ws_old_contents = self.old_workbook["Contents"]
         ws_old_secondary_account = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
-        bank_name = ws_old_secondary_account["D13"].value
-        self.append_data("Accounts", "B24", bank_name)
-        bank_account_title = ws_old_contents["C8"].value
-        self.append_data("Accounts", "B23", bank_account_title)
-        # bank_contact = ws_old_secondary_account["F17"].value
-        # ws_new_accounts["B10"] = bank_contact
-        bank_account_type = ws_old_secondary_account["D16"].value
-        self.set_bank_account_type("B27", bank_account_type)
-        signature_requirement = ws_old_secondary_account["D15"].value
-        self.set_signature_requirement("B28", signature_requirement)
-        self.append_data("Summary", "B20", bank_account_type)
-        bank_account_number = ws_old_secondary_account["D14"].value
-        self.append_data("Accounts", "B26", bank_account_number)
-        balance = ws_old_secondary_account["D19"].value
-        self.append_data("Accounts", "C31", balance)
-        ledger_balance = ws_old_secondary_account["D25"].value
-        self.append_data("Accounts", "C32", ledger_balance)
-        interest_bearing = ws_old_secondary_account["D17"].value
-        self.set_interest_bearing("B29", interest_bearing)
+        cols = "DEFG"
+        for account in range(4):
+            col = cols[account]
+            new_row_start = account*15+22
+            bank_name = ws_old_secondary_account[f"{col}13"].value
+            if bank_name is None:
+                return
 
-        # signatories
-        for i in range(0, 5):
-            self.save_secondary_signatories(ws_old_secondary_account, 27 + i * 3, 31 + i)
+            self.append_data("Accounts", f"B{new_row_start}", bank_name)
+            bank_account_type = ws_old_secondary_account[f"{col}16"].value
+            choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type)
+            bank_account_title = f"{bank_name}, {choice}"
+            self.append_data("Accounts", f"B{new_row_start+1}", bank_account_title)
+            self.append_data("Accounts", f"B{new_row_start+5}", choice)
 
-        # TODO add up to 4 secondary accounts
+            signature_requirement = ws_old_secondary_account[f"{col}15"].value
+            choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
+            self.append_data("Accounts", f"{col}28", choice)
 
-    def set_signature_requirement(self, cell, signature_requirement):
-        choices = ["Single", "Dual"]
-        choice = self.get_choice(choices, signature_requirement)
-        self.append_data("Accounts", cell, choice)
+            self.append_data("Summary", "B20", bank_account_type)
+            bank_account_number = ws_old_secondary_account[f"{col}14"].value
+            self.append_data("Accounts", "B26", bank_account_number)
+            balance = ws_old_secondary_account[f"{col}19"].value
+            self.append_data("Accounts", "C31", balance)
+            ledger_balance = ws_old_secondary_account["D25"].value
+            self.append_data("Accounts", "C32", ledger_balance)
+            interest_bearing = ws_old_secondary_account[f"{col}17"].value
+            self.set_interest_bearing("B29", interest_bearing)
+
+            # signatories
+            old_row_start = 27
+            for i in range(0, 7):
+                legal_name = ws_old_secondary_account[f"{col}{old_row_start+i*3}"].value
+                if legal_name is None:
+                    break
+                member_no = ws_old_secondary_account[f"{col}{old_row_start+i*3+1}"].value
+                expiration_date = self.dmy(ws_old_secondary_account[f"{col}{old_row_start+i*3+2}"].value)
+                if i < 4:
+                    self.append_data("Accounts", f"E{new_row_start+9+i}", legal_name)
+                    self.append_data("Accounts", f"I{new_row_start+9+i}", member_no)
+                    self.append_data("Accounts", f"J{new_row_start+9+i}", expiration_date)
+                else:
+                    self.append_data("Accounts", f"L{new_row_start + 5 + i}", legal_name)
+                    self.append_data("Accounts", f"I{new_row_start + 5 + i}", member_no)
+                    self.append_data("Accounts", f"J{new_row_start + 5 + i}", expiration_date)
+
 
     def set_interest_bearing(self, cell, interest_bearing):
         choices = ["Yes", "No"]
