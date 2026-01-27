@@ -20,6 +20,7 @@ class OldWorkbookToDataForNew:
     KINGDOM = "East Kingdom"
     BANK_ACCOUNT_TYPE_CHOICES = ["Checking", "Savings", "CD/GIC", "Money Market"]
     SIGNATORY_CHOICES = ["Single", "Dual"]
+    INTEREST_BEARING_CHOICES = ["Yes", "No"]
 
     def __init__(self, old_workbook_file_path,
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx", state=None
@@ -48,7 +49,7 @@ class OldWorkbookToDataForNew:
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         if state:
-            state = self.state
+            self.state = state
         self.append_data("Summary", "D8", state)
         self.append_data("Summary", "D9", self.name_of_branch)
         currency = ws_old_contents["C14"].value
@@ -158,21 +159,21 @@ class OldWorkbookToDataForNew:
         self.append_data("FinancialCommittee", "E11", seneshal_expiry_date)
 
         if choice == 3:
-            for i in range(15):
-                row = 21+i*2
-                modern_name = ws_old_financial_committee[f"D{row}"].value
+            for i in range(17):
+                old_row = 21+i*2
+                modern_name = ws_old_financial_committee[f"D{old_row}"].value
                 if not modern_name:
                     break
-                title = ws_old_financial_committee[f"C{row}"].value
-                sca_name = ws_old_financial_committee[f"D{row+1}"].value
-                membership_no = ws_old_financial_committee[f"E{row}"].value
-                expiration_date = self.dmy(ws_old_financial_committee[f"F{row}"].value)
+                title = ws_old_financial_committee[f"C{old_row}"].value
+                sca_name = ws_old_financial_committee[f"D{old_row+1}"].value
+                membership_no = ws_old_financial_committee[f"E{old_row}"].value
+                expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
 
-                self.append_data("FinancialCommittee", f"B{i*2+13}", title)
-                self.append_data("FinancialCommittee", f"C{i*2+13}", modern_name)
-                self.append_data("FinancialCommittee", f"B{i*2+14}", sca_name)
-                self.append_data("FinancialCommittee", f"D{i*2+13}", membership_no)
-                self.append_data("FinancialCommittee", f"E{i*2+13}", expiration_date)
+                self.append_data("FinancialCommittee", f"B{i*2+15}", title)
+                self.append_data("FinancialCommittee", f"C{i*2+15}", modern_name)
+                self.append_data("FinancialCommittee", f"C{i*2+16}", sca_name)
+                self.append_data("FinancialCommittee", f"D{i*2+15}", membership_no)
+                self.append_data("FinancialCommittee", f"E{i*2+15}", expiration_date)
 
     def save_primary_account(self):
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
@@ -197,47 +198,45 @@ class OldWorkbookToDataForNew:
         ledger_balance = ws_old_primary_account["H37"].value
         self.append_data("Accounts", "C17", ledger_balance)
         interest_bearing = ws_old_primary_account["F38"].value
-        self.set_interest_bearing("B14", interest_bearing)
+        choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
+        self.append_data("Accounts", "B14", choice)
+
 
         # TODO add bank name, type
         # signatories
-        for i in range(0, 5):
-            self.save_primary_signatories(ws_old_primary_account, 42 + i * 2, 16 + i)
+        for i in range(6):
+            old_row = 42 + i * 2
+            signatory_name = ws_old_primary_account[f"E{old_row}"].value
+            if not signatory_name:
+                break
+            signatory_member_number = ws_old_primary_account[f"H{old_row}"].value
+            signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{old_row + 1}"].value)
 
-    def save_primary_signatories(self, ws_old_primary_account, old_row, new_row):
-        signatory_name = ws_old_primary_account[f"E{old_row}"].value
-        self.append_data("Accounts", f"E{new_row}", signatory_name)
-        signatory_member_number = ws_old_primary_account[f"H{old_row}"].value
-        self.append_data("Accounts", f"I{new_row}", signatory_member_number)
-        signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{old_row + 1}"].value)
-        self.append_data("Accounts", f"J{new_row}", signatory_expiry_date)
-        # TODO add up to 6
-
-    def save_secondary_signatories(self, ws_old_secondary_account, old_row, new_row):
-        signatory_name = ws_old_secondary_account[f"D{old_row}"].value
-        self.append_data("Accounts", f"E{new_row}", signatory_name)
-        signatory_member_number = ws_old_secondary_account[f"D{old_row + 1}"].value
-        self.append_data("Accounts", f"I{new_row}", signatory_member_number)
-        signatory_expiry_date = self.dmy(ws_old_secondary_account[f"D{old_row + 2}"].value)
-        self.append_data("Accounts", f"J{new_row}", signatory_expiry_date)
-        # TODO add up to 6
-        # TODO add interest bearing
+            new_row = 16 + i
+            new_cols = "EIJ"
+            if i>=4:
+                new_row -= 4
+                new_cols = "LPQ"
+            self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
+            self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
+            self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
     def save_secondary_accounts(self):
         ws_old_secondary_account = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
-        cols = "DEFG"
+        old_cols = "DEFG"
         for account in range(4):
-            col = cols[account]
+            col = old_cols[account]
+            new_summary_row = 20
             new_row_start = account*15+22
             bank_name = ws_old_secondary_account[f"{col}13"].value
             if bank_name is None:
                 return
 
-            self.append_data("Accounts", f"B{new_row_start}", bank_name)
+            self.append_data("Accounts", f"B{new_row_start+2}", bank_name)
             bank_account_type = ws_old_secondary_account[f"{col}16"].value
             choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type)
             bank_account_title = f"{bank_name}, {choice}"
-            self.append_data("Accounts", f"B{new_row_start+1}", bank_account_title)
+            self.append_data("Summary", f"B{new_summary_row+account}", bank_account_title)
             self.append_data("Accounts", f"B{new_row_start+5}", choice)
 
             signature_requirement = ws_old_secondary_account[f"{col}15"].value
@@ -251,31 +250,28 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", "C31", balance)
             ledger_balance = ws_old_secondary_account["D25"].value
             self.append_data("Accounts", "C32", ledger_balance)
+
             interest_bearing = ws_old_secondary_account[f"{col}17"].value
-            self.set_interest_bearing("B29", interest_bearing)
+            choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
+            self.append_data("Accounts", "B29", choice)
 
             # signatories
-            old_row_start = 27
-            for i in range(0, 7):
-                legal_name = ws_old_secondary_account[f"{col}{old_row_start+i*3}"].value
-                if legal_name is None:
+            for i in range(6):
+                old_row = 42 + i * 2
+                signatory_name = ws_old_secondary_account[f"E{old_row}"].value
+                if not signatory_name:
                     break
-                member_no = ws_old_secondary_account[f"{col}{old_row_start+i*3+1}"].value
-                expiration_date = self.dmy(ws_old_secondary_account[f"{col}{old_row_start+i*3+2}"].value)
-                if i < 4:
-                    self.append_data("Accounts", f"E{new_row_start+9+i}", legal_name)
-                    self.append_data("Accounts", f"I{new_row_start+9+i}", member_no)
-                    self.append_data("Accounts", f"J{new_row_start+9+i}", expiration_date)
-                else:
-                    self.append_data("Accounts", f"L{new_row_start + 5 + i}", legal_name)
-                    self.append_data("Accounts", f"I{new_row_start + 5 + i}", member_no)
-                    self.append_data("Accounts", f"J{new_row_start + 5 + i}", expiration_date)
+                signatory_member_number = ws_old_secondary_account[f"H{old_row}"].value
+                signatory_expiry_date = self.dmy(ws_old_secondary_account[f"H{old_row + 1}"].value)
 
-
-    def set_interest_bearing(self, cell, interest_bearing):
-        choices = ["Yes", "No"]
-        choice = self.get_choice(choices, interest_bearing)
-        self.append_data("Accounts", cell, choice)
+                new_row = 16 + i
+                new_cols = "EIJ"
+                if i >= 4:
+                    new_row -= 4
+                    new_cols = "LPQ"
+                self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
+                self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
+                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
     def set_bank_account_type(self, cell, bank_account_type):
         choices = ["Checking", "Savings", "CD/GIC", "Money Market"]
@@ -320,11 +316,40 @@ class OldWorkbookToDataForNew:
         for data in self.new_data:
             lines.append(f'"{data[0]}","{data[1]}","{data[2]}"')
 
-        current_year = datetime.now().year
-        new_data_file_path = f"Resources\\{current_year} Q1 {self.name_of_branch}.csv"
+        new_data_file_name = self.get_new_data_file_name()
+        new_data_file_path = f"Resources\\{new_data_file_name}.csv"
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
-    def dmy(self, dt):
+    def get_new_data_file_name(self) -> str:
+        current_year = datetime.now().year
+        new_data_file_name = f"{current_year} Q1 {self.name_of_branch}"
+        return new_data_file_name
+
+    def save_new_data(self):
+        self.save_summary()
+        self.save_exchequer()
+        self.save_deputy_exchequer_1()
+        self.save_deputy_exchequer_2()
+        self.save_financial_committee()
+        self.save_primary_account()
+        self.save_secondary_accounts()
+        self.save_funds()
+        self.save_liabilities()
+        self.save_outstanding()
+        self.save_assets()
+        self.save_data()
+
+    def save_new_workbook(self):
+        self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
+        for new_data in self.new_data:
+            self.set_new_data(new_data)
+
+        new_data_file_name = self.get_new_data_file_name()
+        new_data_file_path = f"Resources\\{new_data_file_name}.xlsx"
+        self.new_workbook.save(new_data_file_path)
+
+    @staticmethod
+    def dmy(dt):
         if not dt:
             return None
         if type(dt) == str:
@@ -332,14 +357,22 @@ class OldWorkbookToDataForNew:
         dmy = dt.strftime("%m/%d/%Y")
         return dmy
 
+    def set_new_data(self, new_data):
+        print(new_data)
+        ws = self.new_workbook[new_data[0]]
+        cell_obj = ws[new_data[1]]
+        cell_obj.value = new_data[2]
+
 
 def main():
     # TODO state from google drive if missing
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm")
-    save_new(wbs)
+    wbs.save_new_data()
+    wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm")
-    save_new(wbs)
+    wbs.save_new_data()
+    wbs.save_new_workbook()
 
     # TODO fix data validation https://openpyxl.readthedocs.io/en/3.1/validation.html
     # FinancialCommittee B7 validation
@@ -347,20 +380,6 @@ def main():
     # Accounts Account type
     # Accounts Signature Requirement
 
-
-def save_new(wbs: OldWorkbookToDataForNew):
-    wbs.save_summary()
-    wbs.save_exchequer()
-    wbs.save_deputy_exchequer_1()
-    wbs.save_deputy_exchequer_2()
-    wbs.save_financial_committee()
-    wbs.save_primary_account()
-    wbs.save_secondary_accounts()
-    wbs.save_funds()
-    wbs.save_liabilities()
-    wbs.save_outstanding()
-    wbs.save_assets()
-    wbs.save_data()
 
 
 class OldWorkbookToNew:
