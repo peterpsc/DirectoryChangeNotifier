@@ -13,6 +13,7 @@ import openpyxl
 
 import Persistence
 
+VERIFY_DATA_ONLY = False
 
 class OldWorkbookToDataForNew:
     GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
@@ -382,13 +383,15 @@ def main():
                                   "Resources\\2026 Q1 Barony of Carolingia.xlsm",
                                   "Massachusetts")
     wbs.save_new_data()
-    wbs.save_new_workbook()
+    if VERIFY_DATA_ONLY:
+        wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
                                   "Resources\\EK-Towers 2025-Q4.xlsm",
                                     "Massachusetts")
     wbs.save_new_data()
-    wbs.save_new_workbook()
+    if VERIFY_DATA_ONLY:
+        wbs.save_new_workbook()
 
     # TODO fix data validation https://openpyxl.readthedocs.io/en/3.1/validation.html
     # FinancialCommittee B7 validation
