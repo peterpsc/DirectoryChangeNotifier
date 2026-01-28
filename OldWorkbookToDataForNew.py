@@ -321,7 +321,7 @@ class OldWorkbookToDataForNew:
     def save_data(self):
         lines = []
         for data in self.new_data:
-            lines.append(f'"{data[0]}","{data[1]}","{data[2]}"')
+            lines.append(f'"{data[0]}","{data[1]}","{data[2]}","{data[3]}"')
 
         new_data_file_name = self.get_new_data_file_name()
         new_data_file_path = f"Resources\\{new_data_file_name}.csv"
