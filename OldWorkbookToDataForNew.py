@@ -32,6 +32,7 @@ class OldWorkbookToDataForNew:
         self.output_file_path = output_file_path
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         self.new_data = []
+        self.append_data("Sheet", "Coord", "Value", "Locked")
         self.state = state
 
     def append_data(self, worksheet_name, cell_name, value, locked=False):
@@ -349,7 +350,11 @@ class OldWorkbookToDataForNew:
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
+        first = True
         for new_data in self.new_data:
+            if first:
+                first = False
+                continue
             self.set_new_data(new_data)
 
         new_data_file_name = self.get_new_data_file_name()
