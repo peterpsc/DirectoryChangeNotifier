@@ -1,4 +1,4 @@
-Group Type,Group Name,Region,Location,Status
+Group Type,Group Name,Region,Location,Note
 The Crown Principality of Tir Mara,,,Canada
 Shire,Ar n-Eilean-ne ,Newfoundland and Labrador, Canada,(DORMANT)
 Shire,Avonmore, New Brunswick, Canada
@@ -16,8 +16,8 @@ Canton, Basingestoches , Endewearde ,ME
 Shire, Glenn Linn, Warren-Washington County, NY
 Shire, Hadchester, Mid-coast Maine ,ME
 Province, Malagentia, Southern, ME
-Riding, Giggleswick, Southern York County - Maine, ME
-Riding, Ravensbridge, Augusta - Lewiston - Auburn, ME
+Riding, Giggleswick, Southern York County - Maine, ME, Canton
+Riding, Ravensbridge, Augusta - Lewiston - Auburn, ME, Canton
 Shire, Mountain Freehold, Northwestern Vermont, VT
 Shire, Northern Outpost, Potsdam, NY
 Shire, Panther Vale,Northeastern Vermont, VT
@@ -40,7 +40,7 @@ Barony , An Dubhaigeainn, Suffolk County, NY
 Canton , Hawke's Reache, Western Suffolk County, NY
 Shire , Barren Sands, Atlantic - Cape May - Cumberland - Salem County, NJ
 Barony , Bhakail, Philadelphia - Delaware and South Chester County, PA
-Bailiwick , Ivyeinrust, University of PA, PA
+Bailiwick , Ivyeinrust, University of PA, PA, College
 Shire , Blak Rose, Camp Hill and Harrisburg, PA
 Barony , Buckland Cross, Southern Bucks County, PA
 Shire , Caer Adamant, State of Delaware, DE
