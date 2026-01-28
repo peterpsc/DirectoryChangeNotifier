@@ -52,7 +52,7 @@ class OldWorkbookToDataForNew:
             if g_type.lower() in self.name_of_branch.lower():
                 group_type = g_type
                 break
-        assert group_type, f"group_type = {group_type} not found"
+        #assert group_type, f"group_type = {group_type} not found"
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value

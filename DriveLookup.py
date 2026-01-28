@@ -10,7 +10,7 @@ from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
 
-# TODO Yona wants email of Q4s.lst, Missing.lst, Todos.csv
+# Groups.lst, Q4s.lst, Missing.lst, Todos.csv are in G:/My Drive/
 
 class DriveLookup:
     def __init__(self):
