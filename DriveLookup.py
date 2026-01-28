@@ -62,7 +62,10 @@ class DriveLookup:
                         break
             if not found:
                 missing.append(folder)
-        return q4s, missing
+
+        todos = self.find_todos(q4s)
+
+        return q4s, missing, todos
 
     def save_missing(self, missing):
         filename = "Missing.lst"
@@ -80,9 +83,7 @@ class DriveLookup:
 
         Persistence.write_lines(filename, path_type=Persistence.RESOURCE_PATH, lines=q4s)
 
-    def save_Todos(self, q4s):
-        todos = self.find_todos(q4s)
-
+    def save_Todos(self, todos):
         filename = "Todos.csv"
         if not todos:
             Persistence.remove(filename)
@@ -113,10 +114,11 @@ if __name__ == '__main__':
 
     driveLU = DriveLookup()
     folders = driveLU.get_last_year_folders()
-    q4s, missing = driveLU.find_Q4s_missing(folders)
+    q4s, missing, todos = driveLU.find_Q4s_missing(folders)
     print(f"Q4s = {q4s}")
-    print(f"missing = {missing}")
+    print(f"Missing = {missing}")
+    print(f"Todos = {todos}")
 
     driveLU.save_missing(missing)
-    driveLU.save_Q4_folders(folders)
-    driveLU.save_Todos(q4s)
+    driveLU.save_Q4_folders(q4s)
+    driveLU.save_Todos(todos)
