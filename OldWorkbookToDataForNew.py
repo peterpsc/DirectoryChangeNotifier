@@ -23,17 +23,24 @@ class OldWorkbookToDataForNew:
     INTEREST_BEARING_CHOICES = ["Yes", "No"]
 
     def __init__(self, old_workbook_file_path,
-                 master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx", state=None
+                 output_file_path,
+                 state,
+                 master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx",
                  ):
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
+        self.output_file_path = output_file_path
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         self.new_data = []
         self.state = state
 
-    def append_data(self, worksheet_name, cell_name, value):
+    def append_data(self, worksheet_name, cell_name, value, locked=False):
         if value:
-            self.new_data.append([worksheet_name, cell_name, value])
+            self.new_data.append([worksheet_name, cell_name, value, locked])
+
+    def save_notes(self):
+        self.append_data("Notes", "A1", self.state)
+        self.append_data("Notes", "B1", self.output_file_path)
 
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
@@ -194,15 +201,14 @@ class OldWorkbookToDataForNew:
         bank_account_number = ws_old_primary_account["E16"].value
         self.append_data("Accounts", "B11", bank_account_number)
         balance = ws_old_primary_account["H19"].value
-        self.append_data("Accounts", "C16", balance)
+        self.append_data("Accounts", "C16", balance, True)
         ledger_balance = ws_old_primary_account["H37"].value
-        self.append_data("Accounts", "C17", ledger_balance)
+        self.append_data("Accounts", "C17", ledger_balance, True)
         interest_bearing = ws_old_primary_account["F38"].value
         choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
         self.append_data("Accounts", "B14", choice)
 
 
-        # TODO add bank name, type
         # signatories
         for i in range(6):
             old_row = 42 + i * 2
@@ -222,6 +228,7 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
     def save_secondary_accounts(self):
+        """Missing Contact info and SCA Name on Account"""
         ws_old_secondary_account = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
         old_cols = "DEFG"
         for account in range(4):
@@ -247,9 +254,9 @@ class OldWorkbookToDataForNew:
             bank_account_number = ws_old_secondary_account[f"{col}14"].value
             self.append_data("Accounts", "B26", bank_account_number)
             balance = ws_old_secondary_account[f"{col}19"].value
-            self.append_data("Accounts", "C31", balance)
+            self.append_data("Accounts", "C31", balance, True)
             ledger_balance = ws_old_secondary_account["D25"].value
-            self.append_data("Accounts", "C32", ledger_balance)
+            self.append_data("Accounts", "C32", ledger_balance, True)
 
             interest_bearing = ws_old_secondary_account[f"{col}17"].value
             choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
@@ -326,6 +333,7 @@ class OldWorkbookToDataForNew:
         return new_data_file_name
 
     def save_new_data(self):
+        self.save_notes()
         self.save_summary()
         self.save_exchequer()
         self.save_deputy_exchequer_1()
@@ -363,14 +371,17 @@ class OldWorkbookToDataForNew:
         cell_obj = ws[new_data[1]]
         cell_obj.value = new_data[2]
 
-
 def main():
     # TODO state from google drive if missing
-    wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm")
+    wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
+                                  "Resources\\2026 Q1 Barony of Carolingia.xlsm",
+                                  "Massachusetts")
     wbs.save_new_data()
     wbs.save_new_workbook()
 
-    wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm")
+    wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
+                                  "Resources\\EK-Towers 2025-Q4.xlsm",
+                                    "Massachusetts")
     wbs.save_new_data()
     wbs.save_new_workbook()
 

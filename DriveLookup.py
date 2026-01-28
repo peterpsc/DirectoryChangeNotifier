@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import Persistence
@@ -49,13 +50,16 @@ class DriveLookup:
         missing = []
 
         for folder in folders:
-            entries = os.listdir(folder)
+            paths = sorted(Path(folder).iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
             found = False
-            for entry in entries:
-                if "Q4" in entry or "4Q" in entry or "EOY" in entry or "4th" in entry:
-                    q4s.append(f"{folder}\\{entry}")
-                    found = True
-                    break
+            for path in paths:
+                # Optional: filter out directories if you only want files
+                if path.is_file():
+                    file_path = path.name
+                    if "Q4" in file_path or "4Q" in file_path or "EOY" in file_path or "4th" in file_path:
+                        q4s.append(f"{folder}\\{file_path}")
+                        found = True
+                        break
             if not found:
                 missing.append(folder)
         return q4s, missing
@@ -89,21 +93,18 @@ class DriveLookup:
     def find_todos(self, q4s):
         todos = []
         for file_path in q4s:
-            new_file_path = self.this_year_file_path(file_path)
+            new_file_path = self.this_year_dir_path(file_path)
             if not os.path.exists(new_file_path):
-                todo = f'"{file_path}": "{new_file_path}"'
+                todo = f'"{file_path}","{new_file_path}"'
                 todos.append(todo)
         return todos
 
-    def this_year_file_path(self, file_path) -> Any:
+    def this_year_dir_path(self, file_path) -> Any:
         this_year_file_path = file_path.replace(self.previous_year_dir, self.this_year_dir)
         this_year_file_path = this_year_file_path.replace(self.previous_year, self.this_year)
-        this_year_file_path = this_year_file_path.replace("Q4", "Q1")
-        this_year_file_path = this_year_file_path.replace("4Q", "Q1")
-        this_year_file_path = this_year_file_path.replace("EOY", "Q1")
-        this_year_file_path = this_year_file_path.replace("4th", "Q1")
+        dir_path = this_year_file_path.partition("Quarterly Reports")[0]+"Quarterly Reports"
 
-        return this_year_file_path
+        return dir_path
 
 
 if __name__ == '__main__':
