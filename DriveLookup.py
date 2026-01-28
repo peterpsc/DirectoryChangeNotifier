@@ -8,7 +8,7 @@ import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 
 
-# TODO ask to send email
+# TODO Yona wants email of Q4s.lst, Missing.lst, Todos.csv
 
 class DriveLookup:
     def __init__(self):
