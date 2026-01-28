@@ -45,27 +45,32 @@ class DriveLookup:
                         filtered_directories.remove(lower_directory + "\\" + subdirectory)
         return filtered_directories
 
-    def find_Q4s_missing(self, folders):
+    def find_Q4s_missing_todos(self, folders):
         q4s = []
         missing = []
+        todos = []
 
         for folder in folders:
             paths = sorted(Path(folder).iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
             found = False
+            file_name = None
             for path in paths:
                 # Optional: filter out directories if you only want files
                 if path.is_file():
-                    file_path = path.name
-                    if "Q4" in file_path or "4Q" in file_path or "EOY" in file_path or "4th" in file_path:
-                        q4s.append(f"{folder}\\{file_path}")
+                    file_name = path.name
+                    if "Q4" in file_name or "4Q" in file_name or "EOY" in file_name or "4th" in file_name:
+                        q4s.append(f"{folder}\\{file_name}")
                         found = True
                         break
-            if not found:
+            if found:
+                old_file_path, new_file_path = self.get_old_file_path_new_dir(folder, file_name)
+                todo = f'"{old_file_path}","{new_file_path}"'
+                todos.append(todo)
+            else:
                 missing.append(folder)
 
-        todos = self.find_todos(q4s)
-
         return q4s, missing, todos
+
 
     def save_missing(self, missing):
         filename = "Missing.lst"
@@ -91,21 +96,11 @@ class DriveLookup:
 
         Persistence.write_lines(filename, path_type=Persistence.RESOURCE_PATH, lines=todos)
 
-    def find_todos(self, q4s):
-        todos = []
-        for file_path in q4s:
-            new_file_path = self.this_year_dir_path(file_path)
-            if not os.path.exists(new_file_path):
-                todo = f'"{file_path}","{new_file_path}"'
-                todos.append(todo)
-        return todos
-
-    def this_year_dir_path(self, file_path) -> Any:
-        this_year_file_path = file_path.replace(self.previous_year_dir, self.this_year_dir)
-        this_year_file_path = this_year_file_path.replace(self.previous_year, self.this_year)
-        dir_path = this_year_file_path.partition("Quarterly Reports")[0]+"Quarterly Reports"
-
-        return dir_path
+    def get_old_file_path_new_dir(self, folder, file_name) -> Any:
+        old_file_path = Path(folder).joinpath(file_name)
+        this_year_file_path = folder.replace(self.previous_year_dir, self.this_year_dir)
+        new_dir = this_year_file_path.partition("Quarterly Reports")[0]+"Quarterly Reports"
+        return old_file_path, new_dir
 
 
 if __name__ == '__main__':
@@ -114,11 +109,11 @@ if __name__ == '__main__':
 
     driveLU = DriveLookup()
     folders = driveLU.get_last_year_folders()
-    q4s, missing, todos = driveLU.find_Q4s_missing(folders)
+    q4s, missing, todos = driveLU.find_Q4s_missing_todos(folders)
     print(f"Q4s = {q4s}")
     print(f"Missing = {missing}")
     print(f"Todos = {todos}")
 
-    driveLU.save_missing(missing)
     driveLU.save_Q4_folders(q4s)
+    driveLU.save_missing(missing)
     driveLU.save_Todos(todos)
