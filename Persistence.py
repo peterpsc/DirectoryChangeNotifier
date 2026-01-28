@@ -210,8 +210,12 @@ def single_back_slash(line):
 
 def write_lines(filename, lines, path_type=PRIVATE_PATH):
     file_path = get_file_path(filename, path_type)
-    if file_path[0].upper() == "G":
-        raise Exception("Can't write to a Google Drive this way")
+    a = file_path[0:2]
+    if a.upper() == "G:":
+        temp_file_path = f"Resources\\temp.csv"
+        write_lines(temp_file_path, lines, path_type=path_type)
+        # raise Exception("Can't write to a Google Drive this way")
+        shutil.move(temp_file_path, file_path)
     else:
         with open(file_path, mode="w", encoding=UTF_8) as f:
             for line in lines:

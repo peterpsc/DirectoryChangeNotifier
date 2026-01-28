@@ -25,16 +25,15 @@ class OldWorkbookToDataForNew:
 
     def __init__(self, old_workbook_file_path,
                  output_file_path,
-                 state,
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx",
                  ):
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
         self.output_file_path = output_file_path
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
+        self.state = None
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "Locked")
-        self.state = state
 
     def append_data(self, worksheet_name, cell_name, value, locked=False):
         if value:
@@ -57,8 +56,7 @@ class OldWorkbookToDataForNew:
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
-        if state:
-            self.state = state
+        self.state = state
         self.append_data("Summary", "D8", state)
         self.append_data("Summary", "D9", self.name_of_branch)
         currency = ws_old_contents["C14"].value
@@ -326,7 +324,7 @@ class OldWorkbookToDataForNew:
             lines.append(f'"{data[0]}","{data[1]}","{data[2]}","{data[3]}"')
 
         new_data_file_name = self.get_new_data_file_name()
-        new_data_file_path = f"Resources\\{new_data_file_name}.csv"
+        new_data_file_path = f"{self.output_file_path}\\{new_data_file_name}.csv"
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
     def get_new_data_file_name(self) -> str:
@@ -380,15 +378,13 @@ class OldWorkbookToDataForNew:
 def main():
     # TODO state from google drive if missing
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                                  "Resources\\2026 Q1 Barony of Carolingia.xlsm",
-                                  "Massachusetts")
+                                  "Resources\\2026 Q1 Barony of Carolingia.xlsm")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
-                                  "Resources\\EK-Towers 2025-Q4.xlsm",
-                                    "Massachusetts")
+                                  "Resources\\EK-Towers 2025-Q4.xlsm")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
