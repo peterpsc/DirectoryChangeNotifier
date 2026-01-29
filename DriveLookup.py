@@ -74,6 +74,11 @@ class DriveLookup:
                 todo = f'"{old_file_path}","{new_dir}","{new_file_name}"'
                 if not exists(new_dir):
                     os.makedirs(new_dir)
+                new_q1_file_path = f"{new_dir}\\{new_file_name}.xlsx"
+                if exists(new_q1_file_path):
+                    print(f"File {new_q1_file_path} already exists")
+                    continue
+
                 todos.append(todo)
             else:
                 missing.append(folder)
