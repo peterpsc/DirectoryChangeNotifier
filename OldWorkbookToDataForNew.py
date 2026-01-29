@@ -212,12 +212,12 @@ class OldWorkbookToDataForNew:
 
         # signatories
         for i in range(6):
-            old_row = 42 + i * 2
-            signatory_name = ws_old_primary_account[f"E{old_row}"].value
+            row = 42 + i * 2
+            signatory_name = ws_old_primary_account[f"E{row}"].value
             if not signatory_name:
                 break
-            signatory_member_number = ws_old_primary_account[f"H{old_row}"].value
-            signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{old_row + 1}"].value)
+            signatory_member_number = ws_old_primary_account[f"H{row}"].value
+            signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{row + 1}"].value)
 
             new_row = 16 + i
             new_cols = "EIJ"
@@ -227,7 +227,27 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
             self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
-        #TODO Checks to Outstanding
+
+        # Checks not cleared on statement to Outstanding
+        first_cols = "CDE"
+        next_cols = "FGH"
+        new_cols = "EDK"
+        for row in range(8):
+            for col in range(3):
+                val = ws_old_primary_account[f"{first_cols[col]}{row+27}"].value
+                if col == 1:
+                    val = self.dmy(val)
+                if val is None:
+                    break
+                self.append_data("Outstanding", f"{new_cols[col]}{row+14}", val)
+        for row in range(8):
+            for col in range(3):
+                val = ws_old_primary_account[f"{next_cols[col]}{row+27}"].value
+                if col == 1:
+                    val = self.dmy(val)
+                if val is None:
+                    break
+                self.append_data("Outstanding", f"{new_cols[col]}{row+22}", val)
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
