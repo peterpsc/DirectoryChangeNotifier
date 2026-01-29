@@ -283,7 +283,16 @@ class OldWorkbookToDataForNew:
 
     def save_funds(self):
         ws_old_funds = self.old_workbook["FUNDS_14"]
-        # TODO from
+        old_cols = "DEF"
+        new_cols = "BDG"
+
+        for row in range(26):
+            for col in range(3):
+                value = ws_old_funds[f"{old_cols[col]}{row+15}"].value
+                if value is None:
+                    return
+                self.append_data("Summary", f"{new_cols[col]}{row+61}", value, False)
+            # TODO G column isn't formatted in $
 
     def save_outstanding(self):
         # TODO PRIMARY_ACCOUNT_2a 1. Balance from bank statement at end of period (6 of them)
@@ -297,6 +306,10 @@ class OldWorkbookToDataForNew:
 
     def save_assets(self):
         # TODO from ASSET_DTL_5a
+        pass
+
+    def save_income(self):
+        # TODO from INCOME_DTL_11a, INCOME_DTL_11b, INCOME_DTL_11c
         pass
 
     def get_choice(self, choices, value):
@@ -341,6 +354,8 @@ class OldWorkbookToDataForNew:
         self.save_liabilities()
         self.save_outstanding()
         self.save_assets()
+        self.save_income()
+
         self.save_data()
 
     def save_new_workbook(self):
