@@ -8,6 +8,7 @@ we will need to write a macro to load the data and save the file, then delete th
 This reading of the data file and saving may have to be executed for each file manually
 '''
 from datetime import datetime
+from os.path import exists
 
 import openpyxl
 
@@ -314,6 +315,12 @@ class OldWorkbookToDataForNew:
         return value
 
     def save_data(self):
+        new_data_file_name = self.get_new_data_file_name()
+        new_q1_file_path = f"{self.output_file_path}\\{new_data_file_name}.xlsx"
+        if exists(new_q1_file_path):
+            print(f"File {new_q1_file_path} already exists")
+            return
+
         lines = []
         for data in self.new_data:
             lines.append(f'"{data[0]}","{data[1]}","{data[2]}","{data[3]}"')
