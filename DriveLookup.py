@@ -117,8 +117,7 @@ class DriveLookup:
         new_dir = this_year_file_path.partition("Quarterly Reports")[0]+"Quarterly Reports"
         this_year_dirs = new_dir.split("\\")
         group_name = this_year_dirs[len(this_year_dirs) - 3]
-        state = self.get_state(this_year_dirs)
-        new_file_name = f"{self.this_year} Q1 {state} {group_name}"
+        new_file_name = f"{self.this_year} Q1 {group_name}"
         return old_file_path, new_dir, new_file_name
 
     @staticmethod

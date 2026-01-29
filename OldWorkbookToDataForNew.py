@@ -45,20 +45,15 @@ class OldWorkbookToDataForNew:
 
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
-        self.name_of_branch = ws_old_contents["C8"].value
-        print(f"Branch name = {self.name_of_branch}")
-        group_type = None
-        for g_type in self.GROUP_TYPES:
-            if g_type.lower() in self.name_of_branch.lower():
-                group_type = g_type
-                break
-        #assert group_type, f"group_type = {group_type} not found"
+        name_of_branch = ws_old_contents["C8"].value
+        print(f"Branch name = {name_of_branch}")
+        self.name_of_branch, group_type = self.lookup_group_name_type(name_of_branch)
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         self.state = state
         self.append_data("Summary", "D8", state)
-        self.append_data("Summary", "D9", self.name_of_branch)
+        self.append_data("Summary", "D9", name_of_branch)
         currency = ws_old_contents["C14"].value
         self.append_data("Summary", "H8", currency)
 
@@ -374,6 +369,20 @@ class OldWorkbookToDataForNew:
         ws = self.new_workbook[new_data[0]]
         cell_obj = ws[new_data[1]]
         cell_obj.value = new_data[2]
+
+    def lookup_group_name_type(self, name_of_branch):
+        group_name = name_of_branch
+        group_type = None
+        lines = Persistence.get_lines("SCA Regions.csv", Persistence.RESOURCE_PATH)
+        for line in lines:
+            csv = line.split(",")
+            group_name = csv[1].strip()
+            if group_name and group_name.lower() in name_of_branch.lower():
+                group_type = csv[0].strip()
+                if group_type not in self.GROUP_TYPES:
+                    group_type = csv[4].strip()
+                break
+        return group_name, group_type
 
 def main():
     # TODO state from google drive if missing
