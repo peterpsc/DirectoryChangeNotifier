@@ -136,7 +136,7 @@ class DriveLookup:
                 return state
         return None
 
-    def process_Todos(self, todos):
+    def process_Todos(self, todos, missing):
         for todo in todos:
             parameters = todo.replace('"', '')
             data = parameters.split(",")
@@ -146,7 +146,15 @@ class DriveLookup:
 
             wbs = OldWorkbookToDataForNew(from_file_path,
                                           to_q1_path)
-            wbs.save_new_data()
+
+            balanced = wbs.is_balanced()
+            if balanced:
+                wbs.save_new_data()
+            else:
+                todos.remove(todo)
+                last_backslash_index = from_file_path.rfind('\\')
+                from_dir_path = from_file_path[:last_backslash_index]
+                missing.append(from_dir_path)
 
 
 if __name__ == '__main__':
@@ -157,15 +165,16 @@ if __name__ == '__main__':
     folders = driveLU.get_last_year_folders()
 
     all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
-    print(f"All Groups = {all}")
 
-    print(f"Q4s = {q4s}")
-    print(f"Missing = {missing}")
-    print(f"Todos = {todos}")
+    driveLU.process_Todos(todos, missing)
 
     driveLU.save_all_groups(all)
     driveLU.save_Q4_folders(q4s)
     driveLU.save_missing(missing)
     driveLU.save_Todos(todos)
 
-    driveLU.process_Todos(todos)
+    print(f"All Groups = {all}")
+    print(f"Q4s = {q4s}")
+    print(f"Missing = {missing}")
+    print(f"Todos = {todos}")
+

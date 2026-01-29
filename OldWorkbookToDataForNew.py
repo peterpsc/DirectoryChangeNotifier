@@ -36,6 +36,11 @@ class OldWorkbookToDataForNew:
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "Locked")
 
+    def is_balanced(self):
+        ws_old_contents = self.old_workbook["Contents"]
+        balanced = ws_old_contents["F11"].value
+        return not "OUT OF BALANCE" in balanced
+
     def append_data(self, worksheet_name, cell_name, value, locked=False):
         if value:
             self.new_data.append([worksheet_name, cell_name, value, locked])
@@ -222,6 +227,7 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
             self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
+        #TODO Checks to Outstanding
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
@@ -301,15 +307,25 @@ class OldWorkbookToDataForNew:
         pass
 
     def save_liabilities(self):
-        # TODO from LIABILITY_DTL_5b
+        # TODO from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
         pass
 
     def save_assets(self):
-        # TODO from ASSET_DTL_5a
+        # TODO from ASSET_DTL_5a to AssetDetails Prepaid Expenses, Other Assets, Receivables only if Current Amount != 0
+        # if prior amount != 0 then year = 2024 otherwise 2025
         pass
 
     def save_income(self):
         # TODO from INCOME_DTL_11a, INCOME_DTL_11b, INCOME_DTL_11c
+        # Don't do anything?
+        pass
+
+    def save_inventory(self):
+        # TODO from Inventory_DTL_6 to Assets&Inventory
+        pass
+
+    def save_depreciation(self):
+        # TODO from Depr_DTL_8 to ?
         pass
 
     def get_choice(self, choices, value):
@@ -357,6 +373,7 @@ class OldWorkbookToDataForNew:
         self.save_income()
 
         self.save_data()
+
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
