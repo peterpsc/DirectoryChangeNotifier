@@ -308,25 +308,26 @@ class OldWorkbookToDataForNew:
         # Checks not cleared on statement to Outstanding TODO -ve
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
 
-        first_cols = "CDE"
         next_cols = "FGH"
         new_cols = "ECK"
         for row in range(8):
-            for col in range(3):
-                val = ws_old_primary_account[f"{first_cols[col]}{row+27}"].value
-                if col == 1:
-                    val = self.dmy(val)
-                if val is None:
-                    break
-                self.append_data("Outstanding", f"{new_cols[col]}{row+14}", val)
+            check_no = ws_old_primary_account[f"C{row+27}"].value
+            if check_no is None:
+                break
+            date = self.dmy(ws_old_primary_account[f"D{row+27}"].value)
+            amount = ws_old_primary_account[f"E{row+27}"].value
+            self.append_data("Outstanding", f"E{row+14}", check_no)
+            self.append_data("Outstanding", f"C{row + 14}", date)
+            self.append_data("Outstanding", f"K{row + 14}", -amount)
         for row in range(8):
-            for col in range(3):
-                val = ws_old_primary_account[f"{next_cols[col]}{row+27}"].value
-                if col == 1:
-                    val = self.dmy(val)
-                if val is None:
-                    break
-                self.append_data("Outstanding", f"{new_cols[col]}{row+22}", val)
+            check_no = ws_old_primary_account[f"F{row + 27}"].value
+            if check_no is None:
+                break
+            date = self.dmy(ws_old_primary_account[f"G{row + 27}"].value)
+            amount = ws_old_primary_account[f"H{row + 27}"].value
+            self.append_data("Outstanding", f"E{row + 14}", check_no)
+            self.append_data("Outstanding", f"C{row + 14}", date)
+            self.append_data("Outstanding", f"K{row + 14}", -amount)
 
         # TODO ASSET_DTL_5a Undeposited +ve
         # for row in range(21,23):
