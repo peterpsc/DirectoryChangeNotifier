@@ -37,9 +37,13 @@ class OldWorkbookToDataForNew:
         self.append_data("Sheet", "Coord", "Value", "Locked")
 
     def is_balanced(self):
-        ws_old_contents = self.old_workbook["Contents"]
-        balanced = ws_old_contents["F11"].value
-        return not "OUT OF BALANCE" in balanced
+        try:
+            ws_old_contents = self.old_workbook["Contents"]
+            balanced = ws_old_contents["F11"].value
+            return not "OUT OF BALANCE" in balanced
+        except Exception as e:
+            print(f'Exception: {e.args}')
+            return False
 
     def append_data(self, worksheet_name, cell_name, value, locked=False):
         if value:
