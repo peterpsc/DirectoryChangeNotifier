@@ -102,6 +102,14 @@ class DriveLookup:
 
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=q4s)
 
+    def save_out_of_balance(self, out_of_balance):
+        file_path = Persistence.get_file_path("G:\My Drive\Out of Balance.csv", Persistence.FILE_PATH)
+        if not out_of_balance:
+            Persistence.remove(file_path, Persistence.FILE_PATH)
+            return
+
+        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=out_of_balance)
+
     def save_Todos(self, todos):
         file_path = Persistence.get_file_path("G:\My Drive\Todos.csv", Persistence.FILE_PATH)
         if not q4s:
@@ -136,7 +144,8 @@ class DriveLookup:
                 return state
         return None
 
-    def process_Todos(self, todos, missing):
+    def process_Todos(self, todos):
+        out_of_balance = []
         for todo in todos:
             parameters = todo.replace('"', '')
             data = parameters.split(",")
@@ -154,7 +163,8 @@ class DriveLookup:
                 todos.remove(todo)
                 last_backslash_index = from_file_path.rfind('\\')
                 from_dir_path = from_file_path[:last_backslash_index]
-                missing.append(from_dir_path)
+                out_of_balance.append(from_dir_path)
+        return out_of_balance
 
 
 if __name__ == '__main__':
@@ -166,15 +176,17 @@ if __name__ == '__main__':
 
     all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
 
-    driveLU.process_Todos(todos, missing)
+    out_of_balance = driveLU.process_Todos(todos)
 
     driveLU.save_all_groups(all)
     driveLU.save_Q4_folders(q4s)
     driveLU.save_missing(missing)
+    driveLU.save_out_of_balance(out_of_balance)
     driveLU.save_Todos(todos)
 
     print(f"All Groups = {all}")
     print(f"Q4s = {q4s}")
     print(f"Missing = {missing}")
+    print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")
 

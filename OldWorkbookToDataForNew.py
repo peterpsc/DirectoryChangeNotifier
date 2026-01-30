@@ -228,27 +228,6 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
-        # Checks not cleared on statement to Outstanding
-        first_cols = "CDE"
-        next_cols = "FGH"
-        new_cols = "EDK"
-        for row in range(8):
-            for col in range(3):
-                val = ws_old_primary_account[f"{first_cols[col]}{row+27}"].value
-                if col == 1:
-                    val = self.dmy(val)
-                if val is None:
-                    break
-                self.append_data("Outstanding", f"{new_cols[col]}{row+14}", val)
-        for row in range(8):
-            for col in range(3):
-                val = ws_old_primary_account[f"{next_cols[col]}{row+27}"].value
-                if col == 1:
-                    val = self.dmy(val)
-                if val is None:
-                    break
-                self.append_data("Outstanding", f"{new_cols[col]}{row+22}", val)
-
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
         ws_old_secondary_account = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
@@ -312,17 +291,49 @@ class OldWorkbookToDataForNew:
         old_cols = "DEF"
         new_cols = "BDG"
 
+        # General Fund
+        value = ws_old_funds["F14"].value
+        self.append_data("Summary", "G60", value)
+
+        # Named Funds
         for row in range(26):
             for col in range(3):
                 value = ws_old_funds[f"{old_cols[col]}{row+15}"].value
                 if value is None:
                     return
-                self.append_data("Summary", f"{new_cols[col]}{row+61}", value, False)
+                self.append_data("Summary", f"{new_cols[col]}{row+61}", value)
             # TODO G column isn't formatted in $
 
     def save_outstanding(self):
-        # TODO PRIMARY_ACCOUNT_2a 1. Balance from bank statement at end of period (6 of them)
-        # and 16 possible checks
+        # Checks not cleared on statement to Outstanding TODO -ve
+        ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
+
+        first_cols = "CDE"
+        next_cols = "FGH"
+        new_cols = "ECK"
+        for row in range(8):
+            for col in range(3):
+                val = ws_old_primary_account[f"{first_cols[col]}{row+27}"].value
+                if col == 1:
+                    val = self.dmy(val)
+                if val is None:
+                    break
+                self.append_data("Outstanding", f"{new_cols[col]}{row+14}", val)
+        for row in range(8):
+            for col in range(3):
+                val = ws_old_primary_account[f"{next_cols[col]}{row+27}"].value
+                if col == 1:
+                    val = self.dmy(val)
+                if val is None:
+                    break
+                self.append_data("Outstanding", f"{new_cols[col]}{row+22}", val)
+
+        # TODO ASSET_DTL_5a Undeposited +ve
+        # for row in range(21,23):
+        #     deposit_date = self.dmy([f"C{row}"].value)
+        #     if deposit_date is None:
+        #         break
+        #     self.append_data("Outstanding", f"{row}", deposit_date)
         # ASSET_DTL_5a undeposited funds... (6 of them)
         pass
 
@@ -383,6 +394,7 @@ class OldWorkbookToDataForNew:
         self.save_exchequer()
         self.save_deputy_exchequer_1()
         self.save_deputy_exchequer_2()
+        self.save_outstanding()
         self.save_financial_committee()
         self.save_primary_account()
         self.save_secondary_accounts()
