@@ -175,18 +175,18 @@ if __name__ == '__main__':
     folders = driveLU.get_last_year_folders()
 
     all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
-
-    out_of_balance = driveLU.process_Todos(todos)
-
     driveLU.save_all_groups(all)
     driveLU.save_Q4_folders(q4s)
     driveLU.save_missing(missing)
-    driveLU.save_out_of_balance(out_of_balance)
-    driveLU.save_Todos(todos)
-
     print(f"All Groups = {all}")
     print(f"Q4s = {q4s}")
     print(f"Missing = {missing}")
+
+    out_of_balance = driveLU.process_Todos(todos)
+
+    driveLU.save_out_of_balance(out_of_balance)
+    driveLU.save_Todos(todos)
+
     print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")
 
