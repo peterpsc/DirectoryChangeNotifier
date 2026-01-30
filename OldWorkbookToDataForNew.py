@@ -318,7 +318,8 @@ class OldWorkbookToDataForNew:
             amount = ws_old_primary_account[f"E{row+27}"].value
             self.append_data("Outstanding", f"E{row+14}", check_no)
             self.append_data("Outstanding", f"C{row + 14}", date)
-            self.append_data("Outstanding", f"K{row + 14}", -amount)
+            if amount:
+                self.append_data("Outstanding", f"K{row + 14}", -amount)
         for row in range(8):
             check_no = ws_old_primary_account[f"F{row + 27}"].value
             if check_no is None:
@@ -372,7 +373,7 @@ class OldWorkbookToDataForNew:
                 return choice
             elif choice.lower() in value.lower():
                 return choice
-        print(f"Invalid choice: {value}")
+        print(f'Invalid choice: "{value}" not in {choices}')
         return value
 
     def save_data(self):
@@ -390,23 +391,25 @@ class OldWorkbookToDataForNew:
         return new_data_file_name
 
     def save_new_data(self):
-        self.save_notes()
-        self.save_summary()
-        self.save_exchequer()
-        self.save_deputy_exchequer_1()
-        self.save_deputy_exchequer_2()
-        self.save_outstanding()
-        self.save_financial_committee()
-        self.save_primary_account()
-        self.save_secondary_accounts()
-        self.save_funds()
-        self.save_liabilities()
-        self.save_outstanding()
-        self.save_assets()
-        self.save_income()
+        try:
+            self.save_notes()
+            self.save_summary()
+            self.save_exchequer()
+            self.save_deputy_exchequer_1()
+            self.save_deputy_exchequer_2()
+            self.save_outstanding()
+            self.save_financial_committee()
+            self.save_primary_account()
+            self.save_secondary_accounts()
+            self.save_funds()
+            self.save_liabilities()
+            self.save_outstanding()
+            self.save_assets()
+            self.save_income()
 
-        self.save_data()
-
+            self.save_data()
+        finally:
+            pass
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
