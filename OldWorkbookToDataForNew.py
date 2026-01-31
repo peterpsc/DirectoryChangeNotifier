@@ -430,12 +430,16 @@ class OldWorkbookToDataForNew:
 
     @staticmethod
     def dmy(dt):
-        if not dt:
+        try:
+            if not dt:
+                return None
+            if type(dt) == str:
+                return dt.replace(" ", "")
+            dmy = dt.strftime("%m/%d/%Y")
+            return dmy
+        except Exception as e:
+            print(e)
             return None
-        if type(dt) == str:
-            return dt.replace(" ", "")
-        dmy = dt.strftime("%m/%d/%Y")
-        return dmy
 
     def set_new_data(self, new_data):
         print(new_data)
