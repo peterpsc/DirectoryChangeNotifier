@@ -459,6 +459,8 @@ class OldWorkbookToDataForNew:
                 if group_type not in self.GROUP_TYPES:
                     group_type = csv[4].strip()
                 break
+        if group_type is None:
+            print(f"Could not find group type for {name_of_branch}")
         assert group_type is not None, f"Could not find group type for {name_of_branch}"
         return group_name, group_type
 
