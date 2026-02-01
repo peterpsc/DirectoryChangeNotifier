@@ -8,7 +8,6 @@ we will need to write a macro to load the data and save the file, then delete th
 This reading of the data file and saving may have to be executed for each file manually
 '''
 from datetime import datetime
-from os.path import exists
 
 import openpyxl
 
@@ -465,20 +464,20 @@ class OldWorkbookToDataForNew:
 
 def main():
     wbs = OldWorkbookToDataForNew("Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
-                                  "Resources\\2026 Q1 An Dubh.xlsm")
+                                  "Resources")
 
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                                      "Resources\\2026 Q1 Barony of Carolingia.xlsm")
+                                      "Resources")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
-                                  "Resources\\EK-Towers 2025-Q4.xlsm")
+                                  "Resources")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
