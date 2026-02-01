@@ -195,7 +195,7 @@ class OldWorkbookToDataForNew:
         bank_contact = ws_old_primary_account["F17"].value
         self.append_data("Accounts", "B10", bank_contact)
         bank_account_type = ws_old_primary_account["E15"].value
-        choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Chacking")
+        choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
         self.append_data("Accounts", "B12", choice)
 
         signature_requirement = ws_old_primary_account["H15"].value
