@@ -93,7 +93,7 @@ class DirChangeNotifier:
             if file_path not in ignore_paths:
                 if item.is_file():
                     if cls.is_in_filter_path(filter_paths, file_path):
-                        file_paths.append(file_path)
+                        continue
                 if item.is_dir():
                     PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
                     if recursive:
