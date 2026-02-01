@@ -460,12 +460,19 @@ class OldWorkbookToDataForNew:
                 if group_type not in self.GROUP_TYPES:
                     group_type = csv[4].strip()
                 break
+        assert group_type is not None, f"Could not find group type for {name_of_branch}"
         return group_name, group_type
 
 def main():
-    # TODO state from google drive if missing
+    wbs = OldWorkbookToDataForNew("Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
+                                  "Resources\\2026 Q1 An Dubh.xlsm")
+
+    wbs.save_new_data()
+    if VERIFY_DATA_ONLY:
+        wbs.save_new_workbook()
+
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                                  "Resources\\2026 Q1 Barony of Carolingia.xlsm")
+                                      "Resources\\2026 Q1 Barony of Carolingia.xlsm")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
