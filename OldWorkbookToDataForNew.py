@@ -56,7 +56,7 @@ class OldWorkbookToDataForNew:
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
-        print(f"Branch name = {name_of_branch}")
+        print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
         self.name_of_branch, group_type = self.lookup_group_name_type(name_of_branch)
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
