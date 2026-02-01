@@ -196,7 +196,7 @@ class OldWorkbookToDataForNew:
         bank_contact = ws_old_primary_account["F17"].value
         self.append_data("Accounts", "B10", bank_contact)
         bank_account_type = ws_old_primary_account["E15"].value
-        choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type)
+        choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Chacking")
         self.append_data("Accounts", "B12", choice)
 
         signature_requirement = ws_old_primary_account["H15"].value
@@ -246,7 +246,7 @@ class OldWorkbookToDataForNew:
 
             self.append_data("Accounts", f"B{new_row_start+2}", bank_name)
             bank_account_type = ws_old_secondary_account[f"{col}16"].value
-            choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type)
+            choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
             bank_account_title = f"{bank_name}, {choice}"
             self.append_data("Summary", f"B{new_summary_row+account}", bank_account_title)
             self.append_data("Accounts", f"B{new_row_start+5}", choice)
@@ -365,7 +365,7 @@ class OldWorkbookToDataForNew:
         # TODO from Depr_DTL_8 to ?
         pass
 
-    def get_choice(self, choices, value):
+    def get_choice(self, choices, value, default=None):
         if value is None:
             return None
         for choice in choices:
@@ -377,8 +377,9 @@ class OldWorkbookToDataForNew:
                 return choice
             elif choice.lower() in value.lower():
                 return choice
-        print(f'Invalid choice: "{value}" not in {choices}')
-        return value
+
+        print(f'Invalid choice: "{value}" not in {choices}.  Using default: "{default}"')
+        return default
 
     def save_data(self):
         lines = []
