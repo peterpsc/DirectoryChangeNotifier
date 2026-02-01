@@ -64,7 +64,7 @@ class DirChangeNotifier:
         return path, options
 
     @classmethod
-    def get_file_paths(cls, path_options, ignore_paths, filter_paths=[]):
+    def get_file_paths(cls, path_options, ignore_paths, filter_paths=[], ignore_files_containing=[]):
         file_paths = []
         for path_option in path_options:
             if path_option:
@@ -72,11 +72,11 @@ class DirChangeNotifier:
                 recursive = False
                 if "S" in option:
                     recursive = True
-                cls.append_file_paths(file_paths, path, ignore_paths, filter_paths, recursive=recursive)
+                cls.append_file_paths(file_paths, path, ignore_paths, filter_paths, ignore_files_containing, recursive)
         return file_paths
 
     @classmethod
-    def append_file_paths(cls, file_paths, root_path, ignore_paths, filter_paths=[], recursive=False):
+    def append_file_paths(cls, file_paths, root_path, ignore_paths, filter_paths=[], ignore_files_containing=[], recursive=False):
         if root_path in ignore_paths:
             return
 
@@ -92,12 +92,16 @@ class DirChangeNotifier:
             file_path = Persistence.single_back_slash(file_path)
             if file_path not in ignore_paths:
                 if item.is_file():
+                    if ignore_files_containing:
+                        for ignore_containing in ignore_files_containing:
+                            if ignore_containing in name:
+                                continue
                     if cls.is_in_filter_path(filter_paths, file_path):
-                        continue
+                        file_paths.append(file_path)
                 if item.is_dir():
                     PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
                     if recursive:
-                        cls.append_file_paths(file_paths, file_path, ignore_paths, filter_paths, recursive)
+                        cls.append_file_paths(file_paths, file_path, ignore_paths, filter_paths, ignore_files_containing, recursive)
 
     @classmethod
     def get_dir_paths(cls, path_options, ignore_paths):
@@ -218,11 +222,12 @@ class DirChangeNotifier:
         path_options = self.get_dir_change_path_options(notification_name)
         ignore_paths = self.get_ignore_paths(notification_name)
         filter_paths = self.get_filter_paths(notification_name)
+        ignore_files_containing = self.get_ignore_files_containing(notification_name)
         title = self.get_title(notification_name)
         notification_list = self.get_notification_list(notification_name)
         signature = Substitutions().get_signature("")
         try:
-            current_file_paths = self.get_file_paths(path_options, ignore_paths, filter_paths)
+            current_file_paths = self.get_file_paths(path_options, ignore_paths, filter_paths, ignore_files_containing)
             changed = self.notify(title, notification_list, path_options, ignore_paths, filter_paths,
                                   previous_date_string, previous_file_paths, current_file_paths, signature)
 
@@ -238,6 +243,10 @@ class DirChangeNotifier:
 
     def get_ignore_paths(self, notification_name):
         file_path = self.copy_first_if_missing(notification_name, "_Ignore_Paths.txt")
+        return Persistence.get_lines(file_path, Persistence.FILE_PATH)
+
+    def get_ignore_files_containing(self, notification_name):
+        file_path = self.copy_first_if_missing(notification_name, "_Ignore_Files_Containing.txt")
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def get_filter_paths(self, notification_name):
