@@ -461,7 +461,7 @@ class OldWorkbookToDataForNew:
                 break
         if group_type is None: # TODO
             if group_name.startswith("Crown Province"):
-                group_type = "Barony"
+                group_type = "Province"
             else:
                 group_type = "Canton"
             group_name = name_of_branch.split(" of ")[1].strip()
