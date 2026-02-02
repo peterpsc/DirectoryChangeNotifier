@@ -465,7 +465,7 @@ class OldWorkbookToDataForNew:
             group_split = name_of_branch.split(" of ")
             if len(group_split) > 1:
                 group_name = name_of_branch.split(" of ")[1].strip()
-                if "Province" in group_name[0]:
+                if "Province" in group_split[0]:
                     group_type = "Province"
                 else:
                     group_type = "Canton"
