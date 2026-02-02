@@ -61,7 +61,7 @@ class DriveLookup:
                 # Optional: filter out directories if you only want files
                 if path.is_file():
                     file_name = path.name
-                    if not file_name.endswith(".xlsm") and not file_name.endswith(".xlsx"):
+                    if not file_name.endswith(".xlsm") and not file_name.endswith(".xlsx") and not file_name.startswith("~"):
                         continue
                     if "Q4" in file_name or "4Q" in file_name or "EOY" in file_name or "4th" in file_name:
                         q4s.append(f"{folder}\\{file_name}")
@@ -110,9 +110,9 @@ class DriveLookup:
 
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=out_of_balance)
 
-    def save_Todos(self, todos):
+    def save_todos(self, todos):
         file_path = Persistence.get_file_path("G:\My Drive\Todos.csv", Persistence.FILE_PATH)
-        if not q4s:
+        if not todos:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     out_of_balance = driveLU.process_Todos(todos)
 
     driveLU.save_out_of_balance(out_of_balance)
-    driveLU.save_Todos(todos)
+    driveLU.save_todos(todos)
 
     print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")
