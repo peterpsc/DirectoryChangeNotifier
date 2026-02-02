@@ -435,6 +435,8 @@ class OldWorkbookToDataForNew:
                 return None
             if type(dt) == str:
                 return dt.replace(" ", "")
+            if type(dt) == int:
+                return dt
             dmy = dt.strftime("%m/%d/%Y")
             return dmy
         except Exception as e:
