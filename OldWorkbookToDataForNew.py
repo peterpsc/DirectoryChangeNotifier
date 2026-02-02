@@ -450,7 +450,7 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     def lookup_group_name_type(self, name_of_branch):
-        group_name = name_of_branch
+        group_name = name_of_branch.strip()
         group_type = None
         lines = Persistence.get_lines("SCA Regions.csv", Persistence.RESOURCE_PATH)
         for line in lines:
@@ -462,15 +462,14 @@ class OldWorkbookToDataForNew:
                     group_type = csv[4].strip()
                 break
         if group_type is None: # TODO
-            if group_name.startswith("Crown Province"):
-                group_type = "Province"
-            else:
-                group_type = "Canton"
             group_split = name_of_branch.split(" of ")
             if len(group_split) > 1:
                 group_name = name_of_branch.split(" of ")[1].strip()
-            else:
-                group_name = name_of_branch.strip()
+                if "Province" in group_name[0]:
+                    group_type = "Province"
+                else:
+                    group_type = "Canton"
+
             print(f"Could not find group type for {name_of_branch}")
 #        assert group_type is not None, f"Could not find group type for {name_of_branch}"
         return group_name, group_type
