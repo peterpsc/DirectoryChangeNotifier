@@ -71,7 +71,7 @@ class DriveLookup:
             all.append(f"{group_dir}")
             if found:
                 old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(folder, file_name)
-                todo = f'"{old_file_path}","{new_dir}","{new_file_name}"'
+                todo = [old_file_path,new_dir,new_file_name]
                 if not exists(new_dir):
                     os.makedirs(new_dir)
                 new_q1_file_path = f"{new_dir}\\{new_file_name}.xlsx"
@@ -103,20 +103,21 @@ class DriveLookup:
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=q4s)
 
     def save_out_of_balance(self, out_of_balance):
-        file_path = Persistence.get_file_path("G:\My Drive\Out of Balance.csv", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive\Out of Balance.lst", Persistence.FILE_PATH)
         if not out_of_balance:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=out_of_balance)
 
-    def save_todos(self, todos):
+    def save_todos(self, todos, oobs):
         file_path = Persistence.get_file_path("G:\My Drive\Todos.csv", Persistence.FILE_PATH)
         if not todos:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=todos)
+        lines = self.create_todo_lines(todos, oobs)
+        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=lines)
 
     def save_all_groups(self, all):
         file_path = Persistence.get_file_path("G:\My Drive\All Groups.lst", Persistence.FILE_PATH)
@@ -127,13 +128,17 @@ class DriveLookup:
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=all)
 
     def get_old_file_path_new_dir(self, folder, file_name) -> Any:
-        old_file_path = Path(folder).joinpath(file_name)
-        this_year_file_path = folder.replace(self.previous_year_dir, self.this_year_dir)
-        new_dir = this_year_file_path.partition("Quarterly Reports")[0]+"Quarterly Reports"
+        old_file_path = f'{folder}\\{file_name}'
+        new_dir = self.get_to_dir(folder)
         this_year_dirs = new_dir.split("\\")
         group_name = this_year_dirs[len(this_year_dirs) - 3]
         new_file_name = f"{self.this_year} Q1 {group_name}"
         return old_file_path, new_dir, new_file_name
+
+    def get_to_dir(self, from_dir) -> Any:
+        this_year_file_path = from_dir.replace(self.previous_year_dir, self.this_year_dir)
+        to_dir = this_year_file_path.partition("Quarterly Reports")[0] + "Quarterly Reports"
+        return to_dir
 
     @staticmethod
     def get_state(this_year_dirs) -> Any:
@@ -147,11 +152,8 @@ class DriveLookup:
     def process_Todos(self, todos):
         out_of_balance = []
         for todo in todos:
-            parameters = todo.replace('"', '')
-            data = parameters.split(",")
-            from_file_path = data[0]
-            to_file_dir = data[1]
-            to_q1_path = to_file_dir
+            from_file_path = todo[0]
+            to_q1_path = todo[1]
 
             wbs = OldWorkbookToDataForNew(from_file_path,
                                           to_q1_path)
@@ -160,12 +162,24 @@ class DriveLookup:
             if balanced:
                 wbs.save_new_data()
             else:
-                todos.remove(todo)
-                last_backslash_index = from_file_path.rfind('\\')
-                from_dir_path = from_file_path[:last_backslash_index]
-                out_of_balance.append(from_dir_path)
+                from_dir = self.get_from_dir(from_file_path)
+                out_of_balance.append(from_dir)
         return out_of_balance
 
+    def get_from_dir(self, from_file_path) -> Any:
+        last_backslash_index = from_file_path.rfind('\\')
+        from_dir = from_file_path[:last_backslash_index]
+        return from_dir
+
+    def create_todo_lines(self, todos, oobs):
+        lines = []
+        for todo in todos:
+            from_dir = self.get_from_dir(todo[0])
+            to_dir = self.get_to_dir(from_dir)
+            if from_dir not in oobs:
+                line = f'"{todo[0]}","{to_dir}","{todo[2]}"'
+                lines.append(line)
+        return lines
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
@@ -185,7 +199,7 @@ if __name__ == '__main__':
     out_of_balance = driveLU.process_Todos(todos)
 
     driveLU.save_out_of_balance(out_of_balance)
-    driveLU.save_todos(todos)
+    driveLU.save_todos(todos, out_of_balance)
 
     print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")

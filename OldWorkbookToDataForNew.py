@@ -461,7 +461,7 @@ class OldWorkbookToDataForNew:
                 if group_type not in self.GROUP_TYPES:
                     group_type = csv[4].strip()
                 break
-        if group_type is None: # TODO
+        if group_type is None:
             group_split = name_of_branch.split(" of ")
             if len(group_split) > 1:
                 group_name = name_of_branch.split(" of ")[1].strip()
@@ -470,7 +470,7 @@ class OldWorkbookToDataForNew:
                 else:
                     group_type = "Canton"
 
-            print(f"Could not find group type for {name_of_branch}")
+#            print(f"Could not find group type for {name_of_branch}")
 #        assert group_type is not None, f"Could not find group type for {name_of_branch}"
         return group_name, group_type
 
