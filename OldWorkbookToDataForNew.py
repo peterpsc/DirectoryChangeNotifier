@@ -518,8 +518,5 @@ def main():
     # Accounts Account type
     # Accounts Signature Requirement
 
-
-
-class OldWorkbookToNew:
     if __name__ == '__main__':
         main()
