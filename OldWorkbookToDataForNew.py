@@ -25,7 +25,7 @@ class OldWorkbookToDataForNew:
 
     def __init__(self, old_workbook_file_path,
                  output_file_path,
-                 master_data_file_path="Resources\\SCA Exchequer Report - 2026-02.xlsx",
+                 master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
                  ):
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
@@ -296,7 +296,7 @@ class OldWorkbookToDataForNew:
 
         # General Fund
         value = ws_old_funds["F14"].value
-        self.append_data("Summary", "G60", value)
+        self.append_data("Summary", "G59", value)
 
         # Named Funds
         for row in range(26):
@@ -304,7 +304,7 @@ class OldWorkbookToDataForNew:
                 value = ws_old_funds[f"{old_cols[col]}{row+15}"].value
                 if value is None:
                     return
-                self.append_data("Summary", f"{new_cols[col]}{row+61}", value)
+                self.append_data("Summary", f"{new_cols[col]}{row+60}", value)
             # TODO G column isn't formatted in $
 
     def save_outstanding(self):
@@ -475,6 +475,12 @@ class OldWorkbookToDataForNew:
         return group_name, group_type
 
 def main():
+    wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
+                                  "Resources")
+    wbs.save_new_data()
+    if VERIFY_DATA_ONLY:
+        wbs.save_new_workbook()
+
     wbs = OldWorkbookToDataForNew("Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
                                   "Resources")
 
