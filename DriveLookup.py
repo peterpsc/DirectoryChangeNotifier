@@ -61,8 +61,9 @@ class DriveLookup:
                 # Optional: filter out directories if you only want files
                 if path.is_file():
                     file_name = path.name
-                    if (not file_name.endswith(".xlsm") and not file_name.endswith(".xlsx")
-                            and not file_name.endswith(".xls") and not file_name.startswith("~")):
+                    if (not file_name.endswith(".xlsm")
+                            and not file_name.endswith(".xlsx")
+                            and not file_name.startswith("~")):
                         continue
                     if "Q4" in file_name or "4Q" in file_name or "EOY" in file_name or "4th" in file_name or "Quarter 4" in file_name:
                         q4s.append(f"{folder}\\{file_name}")
