@@ -100,7 +100,7 @@ class DriveLookup:
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=missing)
 
     def save_negative_reports(self, negative_reports):
-        file_path = Persistence.get_file_path("G:\My Drive\\Negative Reports.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive/Negative Reports.lst", Persistence.FILE_PATH)
         if not negative_reports:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
@@ -123,13 +123,13 @@ class DriveLookup:
 
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=out_of_balance)
 
-    def save_todos(self, todos, oobs):
+    def save_todos(self, todos):
         file_path = Persistence.get_file_path("G:\My Drive\Todos.csv", Persistence.FILE_PATH)
         if not todos:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        lines = self.create_todo_lines(todos, oobs, negative_reports)
+        lines = self.create_todo_lines(todos)
         Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=lines)
 
     def save_all_groups(self, all):
@@ -168,6 +168,7 @@ class DriveLookup:
         return None
 
     def process_Todos(self, todos):
+        to_convert = []
         out_of_balance = []
         negative_reports = []
         for todo in todos:
@@ -180,26 +181,27 @@ class DriveLookup:
             balanced, negative = wbs.is_balanced_or_negative()
             if balanced:
                 wbs.save_new_data()
+                to_convert.append(todo)
             elif negative:
                 negative_reports.append(from_file_path)
             else:
                 from_dir = self.get_from_dir(from_file_path)
                 out_of_balance.append(from_dir)
-        return out_of_balance, negative_reports
+        return to_convert, out_of_balance, negative_reports
 
     def get_from_dir(self, from_file_path) -> Any:
         last_backslash_index = from_file_path.rfind('\\')
         from_dir = from_file_path[:last_backslash_index]
         return from_dir
 
-    def create_todo_lines(self, todos, oobs, negative_reports):
+    def create_todo_lines(self, todos):
         lines = []
         for todo in todos:
             from_dir = self.get_from_dir(todo[0])
             to_dir = self.get_to_dir(from_dir)
-            if from_dir not in oobs and from_dir not in negative_reports:
-                line = f'"{todo[0]}","{to_dir}","{todo[2]}"'
-                lines.append(line)
+
+            line = f'"{todo[0]}","{to_dir}","{todo[2]}"'
+            lines.append(line)
         return lines
 
 if __name__ == '__main__':
@@ -217,11 +219,11 @@ if __name__ == '__main__':
     print(f"Q4s = {q4s}")
     print(f"Missing = {missing}")
 
-    out_of_balance, negative_reports = driveLU.process_Todos(todos)
+    to_convert, out_of_balance, negative_reports = driveLU.process_Todos(todos)
 
     driveLU.save_out_of_balance(out_of_balance)
     driveLU.save_negative_reports(negative_reports)
-    driveLU.save_todos(todos, out_of_balance)
+    driveLU.save_todos(to_convert)
 
     print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")
