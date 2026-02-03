@@ -8,16 +8,20 @@ we will need to write a macro to load the data and save the file, then delete th
 This reading of the data file and saving may have to be executed for each file manually
 '''
 from datetime import datetime
+from typing import Any
 
 import openpyxl
 
 import Persistence
 
 VERIFY_DATA_ONLY = False
+GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
+               "Project/Newsletter", "Province", "Shire", "Sub Account"]
+
 
 class OldWorkbookToDataForNew:
-    GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
-                   "Project/Newsletter", "Province", "Shire", "Sub Account"]
+    substitutions = Persistence.get_dict("Group_Substitutions.csv", Persistence.RESOURCE_PATH)
+    group_data = Persistence.get_lines("SCA Regions.csv", Persistence.RESOURCE_PATH)
     KINGDOM = "East Kingdom"
     BANK_ACCOUNT_TYPE_CHOICES = ["Checking", "Savings", "CD/GIC", "Money Market"]
     SIGNATORY_CHOICES = ["Single", "Dual"]
@@ -34,6 +38,7 @@ class OldWorkbookToDataForNew:
         self.state = None
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "Locked")
+
 
     def is_balanced(self):
         try:
@@ -449,16 +454,16 @@ class OldWorkbookToDataForNew:
         cell_obj = ws[new_data[1]]
         cell_obj.value = new_data[2]
 
-    def lookup_group_name_type(self, name_of_branch):
-        group_name = name_of_branch.strip()
+    @classmethod
+    def lookup_group_name_type(cls, name_of_branch):
+        name_of_branch = cls.substitute_group_name(name_of_branch)
         group_type = None
-        lines = Persistence.get_lines("SCA Regions.csv", Persistence.RESOURCE_PATH)
-        for line in lines:
+        for line in cls.group_data:
             csv = line.split(",")
             group_name = csv[1].strip()
             if group_name and group_name.lower() in name_of_branch.lower():
                 group_type = csv[0].strip()
-                if group_type not in self.GROUP_TYPES:
+                if group_type not in GROUP_TYPES:
                     group_type = csv[4].strip()
                 break
         if group_type is None:
@@ -470,9 +475,16 @@ class OldWorkbookToDataForNew:
                 else:
                     group_type = "Canton"
 
-#            print(f"Could not find group type for {name_of_branch}")
-#        assert group_type is not None, f"Could not find group type for {name_of_branch}"
         return group_name, group_type
+
+    @classmethod
+    def substitute_group_name(cls, name_of_branch) -> Any:
+        try:
+            group_name = cls.substitutions[name_of_branch]
+        except KeyError:
+            group_name = name_of_branch
+        return group_name
+
 
 def main():
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",

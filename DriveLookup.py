@@ -135,8 +135,13 @@ class DriveLookup:
         new_dir = self.get_to_dir(folder)
         this_year_dirs = new_dir.split("\\")
         group_name = this_year_dirs[len(this_year_dirs) - 3]
-        new_file_name = f"{self.this_year} Q1 {group_name}"
+        actual_group_name, group_type = self.get_group_name(group_name)
+        new_file_name = f"{self.this_year} Q1 {actual_group_name}"
         return old_file_path, new_dir, new_file_name
+
+    def get_group_name(self, group_name) -> Any:
+        actual_group_name, group_type = OldWorkbookToDataForNew.lookup_group_name_type(group_name)
+        return actual_group_name, group_type
 
     def get_to_dir(self, from_dir) -> Any:
         this_year_file_path = from_dir.replace(self.previous_year_dir, self.this_year_dir)
