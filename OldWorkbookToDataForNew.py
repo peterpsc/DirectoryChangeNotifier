@@ -40,14 +40,20 @@ class OldWorkbookToDataForNew:
         self.append_data("Sheet", "Coord", "Value", "Locked")
 
 
-    def is_balanced(self):
+    def is_balanced_or_negative(self):
+        is_balanced = False
+        is_negative = False
         try:
             ws_old_contents = self.old_workbook["Contents"]
             balanced = ws_old_contents["F11"].value
-            return not "OUT OF BALANCE" in balanced
+            is_balanced = not "OUT OF BALANCE" in balanced
         except Exception as e:
-            print(f'Exception: {e.args}')
-            return False
+            try:
+                ws_old_negative_report = self.old_workbook["NEGATIVE REPORT FORM"]
+                is_negative = True
+            except Exception as e:
+                print(f'Exception: {e.args}')
+        return is_balanced, is_negative
 
     def append_data(self, worksheet_name, cell_name, value, locked=False):
         if value:
