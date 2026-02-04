@@ -16,8 +16,8 @@ Sub UpdateTodos
     oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sDataPath), "_blank", 0, csvArgs())
     oCSVSheet = oCSV.Sheets(0)
 
-    sMasterPath = "D:/yonay/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
-'    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
+'    sMasterPath = "D:/yonay/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
+    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
 
 	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
 	    GlobalScope.BasicLibraries.LoadLibrary("Tools")
@@ -111,14 +111,21 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
         sWorksheet = oCSVSheet.getCellByPosition(0, iRow).String
         sCoord     = oCSVSheet.getCellByPosition(1, iRow).String
         sText      = oCSVSheet.getCellByPosition(2, iRow).String
-        sLocked	   = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
+        sAsString  = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
+        sLocked	   = LCase(oCSVSheet.getCellByPosition(4, iRow).String)
+        asString = False
+        If asString = "true" then asString = True
         locked = False
         If sLocked = "true" Then locked = True
 
         If oTargetDoc.Sheets.hasByName(sWorksheet) Then
             oSheet = oTargetDoc.Sheets.getByName(sWorksheet)
             oCell = oSheet.getCellRangeByName(sCoord)
-            oCell.String = sText
+            if asString then
+            	oCell.String = sText
+            else
+            	oCell.Value = Val(sText)
+            endif
        '     if locked Then
        '     	oProtection.IsLocked = True
     '			oCell.CellProtection = oProtection
