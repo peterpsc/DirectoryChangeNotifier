@@ -463,6 +463,7 @@ class OldWorkbookToDataForNew:
     @classmethod
     def lookup_group_name_type(cls, name_of_branch):
         name_of_branch = cls.substitute_group_name(name_of_branch)
+        group_name = name_of_branch
         group_type = None
         for line in cls.group_data:
             csv = line.split(",")
@@ -472,13 +473,13 @@ class OldWorkbookToDataForNew:
                 if group_type not in GROUP_TYPES:
                     group_type = csv[4].strip()
                 break
-        # if group_type is None:
-            # if " of " in name_of_branch:
-            #     group_split = name_of_branch.split(" of ")
-            #     name_of_branch = group_split[1].strip()
-            #     group_name, group_type = cls.lookup_group_name_type(name_of_branch)
-            #     assert group_type is not None
-            #     assert group_name is not None
+        if group_type is None:
+            if " of " in name_of_branch and " of the " in name_of_branch:
+                group_split = name_of_branch.split(" of ")
+                name_of_branch = group_split[1].strip()
+                group_name, group_type = cls.lookup_group_name_type(name_of_branch)
+                assert group_type is not None
+                assert group_name is not None
 
         return group_name, group_type
 
