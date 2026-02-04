@@ -473,13 +473,12 @@ class OldWorkbookToDataForNew:
                     group_type = csv[4].strip()
                 break
         if group_type is None:
-            group_split = name_of_branch.split(" of ")
-            if len(group_split) > 1:
-                group_name = name_of_branch.split(" of ")[1].strip()
-                if "Province" in group_split[0]:
-                    group_type = "Province"
-                else:
-                    group_type = "Canton"
+            if " of " in name_of_branch:
+                group_split = name_of_branch.split(" of ")
+                name_of_branch = group_split[1].strip()
+                group_name, group_type = cls.lookup_group_name_type(name_of_branch)
+                assert group_type is not None
+                assert group_name is not None
 
         return group_name, group_type
 
