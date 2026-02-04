@@ -37,7 +37,7 @@ class OldWorkbookToDataForNew:
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         self.state = None
         self.new_data = []
-        self.append_data("Sheet", "Coord", "Value", "Locked")
+        self.append_data("Sheet", "Coord", "Value", "As String", "Locked")
 
 
     def is_balanced_or_negative(self):
@@ -55,9 +55,9 @@ class OldWorkbookToDataForNew:
                 print(f'Exception: {e.args}')
         return is_balanced, is_negative
 
-    def append_data(self, worksheet_name, cell_name, value, locked=False):
+    def append_data(self, worksheet_name, cell_name, value, as_string=True, locked=False):
         if value:
-            self.new_data.append([worksheet_name, cell_name, value, locked])
+            self.new_data.append([worksheet_name, cell_name, value, as_string, locked])
 
     def save_notes(self):
         self.append_data("Notes", "A1", self.state)
@@ -216,9 +216,9 @@ class OldWorkbookToDataForNew:
         bank_account_number = ws_old_primary_account["E16"].value
         self.append_data("Accounts", "B11", bank_account_number)
         balance = ws_old_primary_account["H19"].value
-        self.append_data("Accounts", "C16", balance, True)
+        self.append_data("Accounts", "C16", balance, False, True)
         ledger_balance = ws_old_primary_account["H37"].value
-        self.append_data("Accounts", "C17", ledger_balance, True)
+        self.append_data("Accounts", "C17", ledger_balance, False, True)
         interest_bearing = ws_old_primary_account["F38"].value
         choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
         self.append_data("Accounts", "B14", choice)
@@ -269,9 +269,9 @@ class OldWorkbookToDataForNew:
             bank_account_number = ws_old_secondary_account[f"{col}14"].value
             self.append_data("Accounts", "B26", bank_account_number)
             balance = ws_old_secondary_account[f"{col}19"].value
-            self.append_data("Accounts", "C31", balance, True)
+            self.append_data("Accounts", "C31", balance, False, True)
             ledger_balance = ws_old_secondary_account["D25"].value
-            self.append_data("Accounts", "C32", ledger_balance, True)
+            self.append_data("Accounts", "C32", ledger_balance, False, True)
 
             interest_bearing = ws_old_secondary_account[f"{col}17"].value
             choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
@@ -307,7 +307,7 @@ class OldWorkbookToDataForNew:
 
         # General Fund
         value = ws_old_funds["F14"].value
-        self.append_data("Summary", "G59", value)
+        self.append_data("Summary", "G59", value, False)
 
         # Named Funds
         for row in range(26):
