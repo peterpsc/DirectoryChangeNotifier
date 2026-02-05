@@ -316,10 +316,9 @@ class OldWorkbookToDataForNew:
                 if value is None:
                     return
                 self.append_data("Summary", f"{new_cols[col]}{row+60}", value)
-            # TODO G column isn't formatted in $
 
     def save_outstanding(self):
-        # Checks not cleared on statement to Outstanding TODO -ve
+        # Checks not cleared on statement to Outstanding -ve
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
 
         next_cols = "FGH"
@@ -333,7 +332,7 @@ class OldWorkbookToDataForNew:
             self.append_data("Outstanding", f"E{row+14}", check_no)
             self.append_data("Outstanding", f"C{row + 14}", date)
             if amount:
-                self.append_data("Outstanding", f"K{row + 14}", -amount)
+                self.append_data("Outstanding", f"K{row + 14}", -amount, True)
         for row in range(8):
             check_no = ws_old_primary_account[f"F{row + 27}"].value
             if check_no is None:
@@ -342,7 +341,7 @@ class OldWorkbookToDataForNew:
             amount = ws_old_primary_account[f"H{row + 27}"].value
             self.append_data("Outstanding", f"E{row + 14}", check_no)
             self.append_data("Outstanding", f"C{row + 14}", date)
-            self.append_data("Outstanding", f"K{row + 14}", -amount)
+            self.append_data("Outstanding", f"K{row + 14}", -amount, True)
 
         # TODO ASSET_DTL_5a Undeposited +ve
         # for row in range(21,23):
