@@ -17,7 +17,8 @@ Sub UpdateTodos
     oCSVSheet = oCSV.Sheets(0)
 
 '    sMasterPath = "D:/yonay/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
-    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
+'    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
+    sMasterPath = ReadStringFromFile("g:/My Drive/EK Exchequer Master.txt")
 
 	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
 	    GlobalScope.BasicLibraries.LoadLibrary("Tools")
@@ -38,15 +39,6 @@ Sub UpdateTodos
 
 	MsgBox "Done", 64, "Success"
 End Sub
-
-
-Sub UpdateTowers
-    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
-    sDataPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/2026 Q1 Canton of the Towers.csv"
-    sOutputPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/2026 Q1 Canton of the Towers.xlsx"
-    RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
-End Sub
-
 
 Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String, bRedo As Boolean)
     Dim sOutputURL as String
@@ -155,4 +147,37 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
     oCSV.close(True)
 
     ImportAndProcessCSV = True
+End Function
+
+Function ReadStringFromFile(filePath As String) As String
+    Dim fileContent As String
+    Dim fileNum As Integer
+    Dim lineInput As String
+
+    ' Ensure the path is in the correct URL format (e.g., "file:///C:/Users/user/data.txt")
+    ' ConvertToURL is a useful function for this
+    Dim fileURL As String
+    fileURL = ConvertToURL(filePath)
+
+    ' Get the next available free file handle number
+    fileNum = FreeFile()
+
+    ' Open the file for input
+    Open fileURL For Input As #fileNum
+
+    ' Read the file line by line until the end (EOF)
+    Do While Not EOF(fileNum)
+        Line Input #fileNum, lineInput
+        fileContent = fileContent & lineInput & Chr(10) ' Concatenate the line and a newline character (Chr(10))
+    Loop
+
+    ' Close the file
+    Close #fileNum
+
+    ' Return the complete string, removing the trailing newline
+    If Len(fileContent) > 0 Then
+        ReadStringFromFile = Left(fileContent, Len(fileContent) - 1)
+    Else
+        ReadStringFromFile = ""
+    End If
 End Function
