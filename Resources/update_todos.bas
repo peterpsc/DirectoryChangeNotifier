@@ -4,7 +4,7 @@ Sub UpdateTodos
     Dim iRow As Integer
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
-    bRedoAll = True
+    bRedoAll = False
 
 
     ' Configure and Open CSV
