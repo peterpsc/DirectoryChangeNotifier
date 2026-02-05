@@ -24,11 +24,11 @@ Sub UpdateTodos
 	End If
 
     ' Loop through CSV rows
-    iRow = 0
+    iRow = 1
     Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
-        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
-        sDataPath = toFileDir + "\" + oCSVSheet.getCellByPosition(2, iRow).String +  oCSVSheet.getCellByPosition(3, iRow).String + ".csv"
-       	sOutputPath = toFileDir + "\TEST " + oCSVSheet.getCellByPosition(2, iRow).String +  oCSVSheet.getCellByPosition(3, iRow).String + ".xlsx"
+        toFileDir    = oCSVSheet.getCellByPosition(3, iRow).String
+        sDataPath = toFileDir + "\" + oCSVSheet.getCellByPosition(4, iRow).String +  oCSVSheet.getCellByPosition(5, iRow).String + ".csv"
+       	sOutputPath = toFileDir + "\TEST " + oCSVSheet.getCellByPosition(4, iRow).String +  oCSVSheet.getCellByPosition(5, iRow).String + ".xlsx"
         RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
         iRow = iRow + 1
     Loop
@@ -129,7 +129,7 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
         sAsString  = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
         sLocked	   = LCase(oCSVSheet.getCellByPosition(4, iRow).String)
         asString = False
-        If asString = "true" then asString = True
+        If sAsString = "true" then asString = True
         locked = False
         If sLocked = "true" Then locked = True
 
