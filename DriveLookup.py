@@ -123,7 +123,7 @@ class DriveLookup:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        negative_report_data = self.self.create_hyperlink_data(negative_reports, "2025 Q4 Negative Report")
+        negative_report_data = self.create_hyperlink_data(negative_reports, "2025 Q4 Negative Report")
         Persistence.save_list(negative_report_data, file_path, path_type=Persistence.FILE_PATH)
 
     def save_Q4_folders(self, q4s):
