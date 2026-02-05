@@ -13,7 +13,8 @@ from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
 REDO_ALL = True
 PREFIX = "TEST "
-# Groups.lst, Q4s.lst, Missing.lst, Todos.csv are in G:/My Drive/
+# All_Groups.csv, Q4s.csv, Missing.csv, Todos.csv are in G:/My Drive/
+# TODO make G:/My Drive/Group Status.csv
 
 class DriveLookup:
     def __init__(self):
@@ -50,11 +51,12 @@ class DriveLookup:
                         filtered_directories.remove(lower_directory + "\\" + subdirectory)
         return filtered_directories
 
-    def find_all_Q4s_missing_todos(self, folders):
+    def find_all_Q4s_missing_todos_q1s(self, folders):
         all = []
         q4s = []
         missing = []
         todos = []
+        q1s = [] # TODO return all the Q1s created already
 
         for folder in folders:
             paths = sorted(Path(folder).iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
@@ -93,7 +95,7 @@ class DriveLookup:
             else:
                 missing.append(folder)
 
-        return all, q4s, missing, todos
+        return all, q4s, missing, todos, q1s
 
     def save_missing(self, missing):
         file_path = Persistence.get_file_path("G:\My Drive\Missing.csv", Persistence.FILE_PATH)
@@ -237,14 +239,7 @@ class DriveLookup:
         return from_dir
 
 
-if __name__ == '__main__':
-    PrintHelper.printInBox()
-    PrintHelper.printInBoxWithTime("DriveLookup")
-
-    driveLU = DriveLookup()
-    folders = driveLU.get_last_year_folders()
-
-    all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
+def save_status():
     driveLU.save_all_groups(all)
     driveLU.save_Q4_folders(q4s)
     driveLU.save_missing(missing)
@@ -260,4 +255,15 @@ if __name__ == '__main__':
 
     print(f"Out of Balance = {out_of_balance}")
     print(f"Todos = {todos}")
+
+
+if __name__ == '__main__':
+    PrintHelper.printInBox()
+    PrintHelper.printInBoxWithTime("DriveLookup")
+
+    driveLU = DriveLookup()
+    folders = driveLU.get_last_year_folders()
+
+    all, q4s, missing, todos, q1s = driveLU.find_all_Q4s_missing_todos_q1s(folders)
+    save_status()
 
