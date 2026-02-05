@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 import datetime
 import os
 import random
@@ -9,7 +10,6 @@ from time import sleep
 import clipboard
 from selenium.webdriver import Keys
 
-import Persistence
 import PrintHelper
 
 REMOTE_FILE_PATH_TXT = "RemoteFilepath.txt"
@@ -166,6 +166,21 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
                 results.append(row)
 
     return results
+
+def save_list(data, filename, path_type=PRIVATE_PATH):
+    file_path = get_file_path(filename, path_type)
+    with open(file_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        for row in data:
+            formatted_row = []
+            for i, val in enumerate(row):
+                    formatted_row.append(val)
+            writer.writerow(formatted_row)
+
+def create_hyperlink(file_path: str, title: str) -> str:
+    uri_path = Path(file_path).as_uri()
+    hyperlink = f'=HYPERLINK("{uri_path}"; "{title}")'
+    return hyperlink
 
 
 def get_dict(filename, path_type=PRIVATE_PATH, header=True):

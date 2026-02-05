@@ -36,7 +36,7 @@ Sub UpdateTodos
     ' Close CSV immediately after data transfer
     oCSV.close(True)
 
-    print "Done"
+	MsgBox "Done", 64, "Success"
 End Sub
 
 
@@ -49,24 +49,24 @@ End Sub
 
 
 Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String, bRedo As Boolean)
-    Dim outputURL as String
-    outputURL = ConvertToUrl(sOutputPath)
+    Dim sOutputURL as String
+    sOutputURL = ConvertToUrl(sOutputPath)
 
-    If not FileExists(outputURL) or bRedo then
+    If not FileExists(sOutputURL) or bRedo then
 	    Dim oDoc As Object
-	    Dim saveArgs(0) As New com.sun.star.beans.PropertyValue
 
 	    ' 1. Load the target XLSX
-	    oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(sMasterPath), "_blank", 0, Array())
+	  	oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(sMasterPath), "_blank", 0, Array())
 
-	    ' 2. Delegate CSV handling entirely to the data sub
+	    ' 2. Save as the destination file
+	    SaveWorkbook(oDoc, sOutputURL)
+
+	    ' 3. Delegate CSV handling entirely to the data sub
 	    success = ImportAndProcessCSV(oDoc, sDataPath)
 
-	    ' 3. Save as .xlsx
+	    ' 4. Save as .xlsx
 	    if success then
-		    saveArgs(0).Name = "FilterName"
-		    saveArgs(0).Value = "Calc MS Excel 2007 XML"
-		    oDoc.storeAsURL(outputURL, saveArgs())
+		    SaveWorkbook(oDoc, sOutputURL)
 
 		    oDoc.close(True)
 
@@ -78,6 +78,21 @@ Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As
 	End If
 End Sub
 
+Sub SaveWorkbook(oTargetDoc As Object, sURL As String)
+    ' We now need 2 properties: Overwrite and FilterName
+    Dim args(1) As New com.sun.star.beans.PropertyValue
+
+    ' Property 1: Overwrite existing files
+    args(0).Name = "Overwrite"
+    args(0).Value = True
+
+    ' Property 2: Set the filter for Excel 2007+ (.xlsx)
+    args(1).Name = "FilterName"
+    args(1).Value = "Calc MS Excel 2007 XML"
+
+    ' Save
+    oTargetDoc.storeAsURL(sURL, args())
+End Sub
 
 Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object

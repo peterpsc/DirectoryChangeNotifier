@@ -4,6 +4,8 @@ from os.path import exists
 from pathlib import Path
 from typing import Any
 
+from openpyxl.styles.builtins import hyperlink
+
 import Persistence
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
@@ -93,38 +95,74 @@ class DriveLookup:
 
         return all, q4s, missing, todos
 
-
     def save_missing(self, missing):
-        file_path = Persistence.get_file_path("G:\My Drive\Missing.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive\Missing.csv", Persistence.FILE_PATH)
         if not q4s:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=missing)
+        missing_data = self.create_hyperlink_data(missing, "2025 Q4 dir")
+        Persistence.save_list(missing_data, file_path, path_type=Persistence.FILE_PATH)
+
+    def create_hyperlink_data(self, path_list, title) -> list[Any]:
+        formatted_rows = []
+        formatted_row = ["Hyperlink", title]
+        formatted_rows.append(formatted_row)
+
+        for negative_report in path_list:
+            formatted_row = []
+            hyperlink = Persistence.create_hyperlink(negative_report, title)
+            formatted_row.append(hyperlink)
+            formatted_row.append(negative_report)
+            formatted_rows.append(formatted_row)
+        return formatted_rows
 
     def save_negative_reports(self, negative_reports):
-        file_path = Persistence.get_file_path("G:\My Drive/Negative Reports.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive/Negative Reports.csv", Persistence.FILE_PATH)
         if not negative_reports:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=negative_reports)
+        negative_report_data = self.self.create_hyperlink_data(negative_reports, "2025 Q4 Negative Report")
+        Persistence.save_list(negative_report_data, file_path, path_type=Persistence.FILE_PATH)
 
     def save_Q4_folders(self, q4s):
-        file_path = Persistence.get_file_path("G:\My Drive\Q4s.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive\Q4s.csv", Persistence.FILE_PATH)
         if not q4s:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=q4s)
+        q4s_data = self.create_hyperlink_data(q4s, "2025 Q4")
+        Persistence.save_list(q4s_data, file_path, path_type=Persistence.FILE_PATH)
 
     def save_out_of_balance(self, out_of_balance):
-        file_path = Persistence.get_file_path("G:\My Drive\Out of Balance.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive\Out of Balance.csv", Persistence.FILE_PATH)
         if not out_of_balance:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=out_of_balance)
+        data = self.create_hyperlink_data(out_of_balance, "2025 Q4")
+        Persistence.save_list(data, file_path, Persistence.FILE_PATH)
+
+
+    def create_todo_data(self, todos):
+        formatted_rows = []
+        formatted_row = ["Hyperlink","Hyperlink", "2025 Q4", "2026 Q1 dir", "Filename"]
+        formatted_rows.append(formatted_row)
+
+        for todo in todos:
+            formatted_row = []
+            from_dir = self.get_from_dir(todo[0])
+            to_dir = self.get_to_dir(from_dir)
+            hyperlink = Persistence.create_hyperlink(todo[0], "2025 Q4")
+            formatted_row.append(hyperlink)
+            hyperlink = Persistence.create_hyperlink(to_dir, "2026 Q1 dir")
+            formatted_row.append(hyperlink)
+            formatted_row.append(todo[0])
+            formatted_row.append(to_dir)
+            formatted_row.append(todo[2])
+            formatted_rows.append(formatted_row)
+        return formatted_rows
 
     def save_todos(self, todos):
         file_path = Persistence.get_file_path("G:\My Drive\Todos.csv", Persistence.FILE_PATH)
@@ -132,16 +170,17 @@ class DriveLookup:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        lines = self.create_todo_lines(todos)
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=lines)
+        data = self.create_todo_data(todos)
+        Persistence.save_list(data, file_path, Persistence.FILE_PATH)
 
     def save_all_groups(self, all):
-        file_path = Persistence.get_file_path("G:\My Drive\All Groups.lst", Persistence.FILE_PATH)
+        file_path = Persistence.get_file_path("G:\My Drive\All Groups.csv", Persistence.FILE_PATH)
         if not folders:
             Persistence.remove(file_path, Persistence.FILE_PATH)
             return
 
-        Persistence.write_lines(file_path, path_type=Persistence.FILE_PATH, lines=all)
+        data = self.create_hyperlink_data(all, "2025 Q4")
+        Persistence.save_list(data, file_path, Persistence.FILE_PATH)
 
     def get_old_file_path_new_dir(self, folder, file_name) -> Any:
         old_file_path = f'{folder}\\{file_name}'
@@ -197,15 +236,6 @@ class DriveLookup:
         from_dir = from_file_path[:last_backslash_index]
         return from_dir
 
-    def create_todo_lines(self, todos):
-        lines = []
-        for todo in todos:
-            from_dir = self.get_from_dir(todo[0])
-            to_dir = self.get_to_dir(from_dir)
-
-            line = f'"{todo[0]}","{to_dir}","{todo[2]}"'
-            lines.append(line)
-        return lines
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
