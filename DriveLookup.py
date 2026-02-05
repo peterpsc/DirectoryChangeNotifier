@@ -84,13 +84,11 @@ class DriveLookup:
                 new_q1_file_path = f"{new_dir}\\{PREFIX}{new_file_name}.xlsx"
                 if exists(new_q1_file_path):
                     print(f"File {new_q1_file_path} already exists")
-                    if not REDO_ALL:
-                        continue
+                    continue
                 new_q1_file_path = f"{new_dir}\\{new_file_name}.xlsx"
                 if exists(new_q1_file_path):
                     print(f"File {new_q1_file_path} already exists")
-                    if not REDO_ALL:
-                        continue
+                    continue
                 todos.append(todo)
             else:
                 missing.append(folder)
@@ -238,6 +236,9 @@ class DriveLookup:
         from_dir = from_file_path[:last_backslash_index]
         return from_dir
 
+    def delete_all_q1_test_workbooks(self):
+        pass # TODO
+
 
 def save_status():
     driveLU.save_all_groups(all)
@@ -263,6 +264,8 @@ if __name__ == '__main__':
 
     driveLU = DriveLookup()
     folders = driveLU.get_last_year_folders()
+    if REDO_ALL:
+        driveLU.delete_all_q1_test_workbooks()
 
     all, q4s, missing, todos, q1s = driveLU.find_all_Q4s_missing_todos_q1s(folders)
     save_status()

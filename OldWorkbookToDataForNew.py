@@ -39,7 +39,6 @@ class OldWorkbookToDataForNew:
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "As String", "Locked")
 
-
     def is_balanced_or_negative(self):
         is_balanced = False
         is_negative = False
@@ -182,20 +181,20 @@ class OldWorkbookToDataForNew:
 
         if choice == 3:
             for i in range(17):
-                old_row = 21+i*2
+                old_row = 21 + i * 2
                 modern_name = ws_old_financial_committee[f"D{old_row}"].value
                 if not modern_name:
                     break
                 title = ws_old_financial_committee[f"C{old_row}"].value
-                sca_name = ws_old_financial_committee[f"D{old_row+1}"].value
+                sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
                 membership_no = ws_old_financial_committee[f"E{old_row}"].value
                 expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
 
-                self.append_data("FinancialCommittee", f"B{i*2+15}", title)
-                self.append_data("FinancialCommittee", f"C{i*2+15}", modern_name)
-                self.append_data("FinancialCommittee", f"C{i*2+16}", sca_name)
-                self.append_data("FinancialCommittee", f"D{i*2+15}", membership_no)
-                self.append_data("FinancialCommittee", f"E{i*2+15}", expiration_date)
+                self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
+                self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
+                self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
+                self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
+                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
 
     def save_primary_account(self):
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
@@ -223,7 +222,6 @@ class OldWorkbookToDataForNew:
         choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
         self.append_data("Accounts", "B14", choice)
 
-
         # signatories
         for i in range(6):
             row = 42 + i * 2
@@ -235,7 +233,7 @@ class OldWorkbookToDataForNew:
 
             new_row = 16 + i
             new_cols = "EIJ"
-            if i>=4:
+            if i >= 4:
                 new_row -= 4
                 new_cols = "LPQ"
             self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
@@ -249,17 +247,17 @@ class OldWorkbookToDataForNew:
         for account in range(4):
             col = old_cols[account]
             new_summary_row = 20
-            new_row_start = account*15+22
+            new_row_start = account * 15 + 22
             bank_name = ws_old_secondary_account[f"{col}13"].value
             if bank_name is None:
                 return
 
-            self.append_data("Accounts", f"B{new_row_start+2}", bank_name)
+            self.append_data("Accounts", f"B{new_row_start + 2}", bank_name)
             bank_account_type = ws_old_secondary_account[f"{col}16"].value
             choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
             bank_account_title = f"{bank_name}, {choice}"
-            self.append_data("Summary", f"B{new_summary_row+account}", bank_account_title)
-            self.append_data("Accounts", f"B{new_row_start+5}", choice)
+            self.append_data("Summary", f"B{new_summary_row + account}", bank_account_title)
+            self.append_data("Accounts", f"B{new_row_start + 5}", choice)
 
             signature_requirement = ws_old_secondary_account[f"{col}15"].value
             choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
@@ -312,10 +310,10 @@ class OldWorkbookToDataForNew:
         # Named Funds
         for row in range(26):
             for col in range(3):
-                value = ws_old_funds[f"{old_cols[col]}{row+15}"].value
+                value = ws_old_funds[f"{old_cols[col]}{row + 15}"].value
                 if value is None:
                     return
-                self.append_data("Summary", f"{new_cols[col]}{row+60}", value)
+                self.append_data("Summary", f"{new_cols[col]}{row + 60}", value)
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve
@@ -323,34 +321,40 @@ class OldWorkbookToDataForNew:
 
         next_cols = "FGH"
         new_cols = "ECK"
-        for row in range(8):
-            check_no = ws_old_primary_account[f"C{row+27}"].value
-            if check_no is None:
-                break
-            date = self.dmy(ws_old_primary_account[f"D{row+27}"].value)
-            amount = ws_old_primary_account[f"E{row+27}"].value
-            self.append_data("Outstanding", f"E{row+14}", check_no)
-            self.append_data("Outstanding", f"C{row + 14}", date)
-            if amount:
-                self.append_data("Outstanding", f"K{row + 14}", -amount, True)
-        for row in range(8):
-            check_no = ws_old_primary_account[f"F{row + 27}"].value
-            if check_no is None:
-                break
-            date = self.dmy(ws_old_primary_account[f"G{row + 27}"].value)
-            amount = ws_old_primary_account[f"H{row + 27}"].value
-            self.append_data("Outstanding", f"E{row + 14}", check_no)
-            self.append_data("Outstanding", f"C{row + 14}", date)
-            self.append_data("Outstanding", f"K{row + 14}", -amount, True)
+        to_row = 14
+        from_row_start = 27
+        from_row_end = 34
+        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "CDE")
+        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "FGH")
 
-        # TODO ASSET_DTL_5a Undeposited +ve
-        # for row in range(21,23):
-        #     deposit_date = self.dmy([f"C{row}"].value)
-        #     if deposit_date is None:
-        #         break
-        #     self.append_data("Outstanding", f"{row}", deposit_date)
-        # ASSET_DTL_5a undeposited funds... (6 of them)
-        pass
+        # ASSET_DTL_5a Undeposited +ve
+        ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
+        for from_row in range(15, 19):
+            sending_branch_or_reason = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            amount = ws_old_asset_dtl_5a[f"D{from_row}"].value
+            self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
+            self.append_data("Outstanding", f"K{to_row}", amount, False)
+            to_row = to_row + 1
+            if to_row > 33:
+                print(f"No more room for Outstanding")
+                self.append_data("Outstanding", f"H{to_row-1}", sending_branch_or_reason + " AND MORE!!!")
+                break
+
+    def gather_outstanding_checks(self, ws_old_primary_account, from_row_end: int, from_row_start: int,
+                                  to_row: int | Any,
+                                  from_cols) -> int | Any:
+        for from_row in range(from_row_start, from_row_end +1):
+            check_no = ws_old_primary_account[f"{from_cols[0]}{from_row}"].value
+            if check_no is None:
+                break
+            date = self.dmy(ws_old_primary_account[f"{from_cols[1]}{from_row}"].value)
+            amount = ws_old_primary_account[f"{from_cols[2]}{from_row}"].value
+            self.append_data("Outstanding", f"E{to_row}", check_no)
+            self.append_data("Outstanding", f"C{to_row}", date)
+            if amount:
+                self.append_data("Outstanding", f"K{to_row}", -amount, False)
+            to_row = to_row + 1
+        return to_row
 
     def save_liabilities(self):
         # TODO from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
@@ -411,7 +415,6 @@ class OldWorkbookToDataForNew:
             self.save_exchequer()
             self.save_deputy_exchequer_1()
             self.save_deputy_exchequer_2()
-            self.save_outstanding()
             self.save_financial_committee()
             self.save_primary_account()
             self.save_secondary_accounts()
@@ -506,7 +509,7 @@ def main():
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                                      "Resources")
+                                  "Resources")
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
