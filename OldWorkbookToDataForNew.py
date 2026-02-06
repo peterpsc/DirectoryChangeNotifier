@@ -21,7 +21,7 @@ GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port"
 
 class OldWorkbookToDataForNew:
     substitutions = Persistence.get_dict("Group_Substitutions.csv", Persistence.RESOURCE_PATH)
-    group_data = Persistence.get_lines("SCA Regions.csv", Persistence.RESOURCE_PATH)
+    group_data = Persistence.get_dict("SCA Regions.csv", Persistence.RESOURCE_PATH, False)
     KINGDOM = "East Kingdom"
     BANK_ACCOUNT_TYPE_CHOICES = ["Checking", "Savings", "CD/GIC", "Money Market"]
     SIGNATORY_CHOICES = ["Single", "Dual"]
@@ -31,6 +31,7 @@ class OldWorkbookToDataForNew:
                  output_file_path,
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
                  ):
+        self.name_of_branch = None
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
         self.output_file_path = output_file_path
@@ -66,13 +67,13 @@ class OldWorkbookToDataForNew:
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
         print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        self.name_of_branch, group_type = self.lookup_group_name_type(name_of_branch)
+        self.name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch)
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         self.state = state
         self.append_data("Summary", "D8", state)
-        self.append_data("Summary", "D9", name_of_branch)
+        self.append_data("Summary", "D9", self.name_of_branch)
         currency = ws_old_contents["C14"].value
         self.append_data("Summary", "H8", currency)
 
@@ -357,25 +358,113 @@ class OldWorkbookToDataForNew:
         return to_row
 
     def save_liabilities(self):
-        # TODO from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
-        pass
+        # from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
+        ws_old_liability_dtl_5b = self.old_workbook["LIABILITY_DTL_5b"]
+
+        # Deferred Revenue
+        to_row = 12
+        from_row_start = 16
+        from_row_end = 30
+        from_cols = "CF"
+        for from_row in range(from_row_start, from_row_end +1):
+            event = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
+            if event is None:
+                break
+            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
+            self.append_data("LiabilityDetails", f"F{to_row}", event)
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+            to_row = to_row + 1
+
+        # Payables
+        to_row = 38
+        from_row_start = 37
+        from_row_end = 43
+        from_cols = "CDF"
+        for from_row in range(from_row_start, from_row_end +1):
+            owed_to = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
+            if owed_to is None:
+                break
+            reason = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
+            # ignore prior_amount
+            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
+            self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
+            self.append_data("LiabilityDetails", f"D{to_row}", reason)
+            # ignore prior_amount
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+            to_row = to_row + 1
+
+        # Other Liabilities
+        to_row = 54
+        from_row_start = 49
+        from_row_end = 55
+        from_cols = "CDF"
+        for from_row in range(from_row_start, from_row_end + 1):
+            owed_to = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
+            if owed_to is None:
+                break
+            reason = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
+            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
+            self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
+            self.append_data("LiabilityDetails", f"D{to_row}", reason)
+            #ignore prior_amount
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+            to_row = to_row + 1
 
     def save_assets(self):
-        # TODO from ASSET_DTL_5a to AssetDetails Prepaid Expenses, Other Assets, Receivables only if Current Amount != 0
+        # from ASSET_DTL_5a to AssetDetails Prepaid Expenses, Other Assets, Receivables only if Current Amount != 0
         # if prior amount != 0 then year = 2024 otherwise 2025
-        pass
 
-    def save_income(self):
-        # TODO from INCOME_DTL_11a, INCOME_DTL_11b, INCOME_DTL_11c
-        # Don't do anything?
-        pass
+        ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
+
+        # Prepaid Expenses
+        to_row = 12
+        from_row_start = 31
+        from_row_end = 51
+        from_cols = "CEF"
+        for from_row in range(from_row_start, from_row_end + 1):
+            event = ws_old_asset_dtl_5a[f"{from_cols[0]}{from_row}"].value
+            if event is None:
+                break
+            reason = ws_old_asset_dtl_5a[f"{from_cols[1]}{from_row}"].value
+            current_amount = ws_old_asset_dtl_5a[f"{from_cols[2]}{from_row}"].value
+            self.append_data("LiabilityDetails", f"F{to_row}", event)
+            self.append_data("LiabilityDetails", f"D{to_row}", reason, False)
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+            to_row = to_row + 1
+
+    def save_depreciation(self):
+        # TODO from Depr_DTL_8 to Assets&Inventory
+        ws_old_depr_dtl_8 = self.old_workbook["Depr_DTL_8"]
+        to_ws = "Assets&Inventory"
+
+        # Prepaid Expenses
+        to_row = 12
+        from_row_start = 14
+        from_row_end = 23
+        from_cols = "DEFJ"
+        for from_row in range(from_row_start, from_row_end + 1):
+            oa_ar_fr = ws_old_depr_dtl_8[f"{from_cols[0]}{from_row}"].value
+            if oa_ar_fr is None:
+                break
+            item_description = ws_old_depr_dtl_8[f"{from_cols[1]}{from_row}"].value
+            quantity = ws_old_depr_dtl_8[f"{from_cols[2]}{from_row}"].value
+            purchase_year = ws_old_depr_dtl_8[f"{from_cols[3]}{from_row}"].value
+            current_amount = ws_old_depr_dtl_8[f"{from_cols[4]}{from_row}"].value
+            self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
+            self.append_data(to_ws, f"C{to_row}", item_description)
+            self.append_data(to_ws, f"D{to_row}", quantity)
+            self.append_data(to_ws, f"B{to_row}", purchase_year)
+            self.append_data(to_ws, f"E{to_row}", current_amount, False)
+            to_row = to_row + 1
+
 
     def save_inventory(self):
         # TODO from Inventory_DTL_6 to Assets&Inventory
         pass
 
-    def save_depreciation(self):
-        # TODO from Depr_DTL_8 to ?
+    def save_income(self):
+        # from INCOME_DTL_11a, INCOME_DTL_11b, INCOME_DTL_11c
+        # Don't do anything, it doesn't carry over to the next year
         pass
 
     def get_choice(self, choices, value, default=None):
@@ -463,27 +552,43 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     @classmethod
-    def lookup_group_name_type(cls, name_of_branch):
+    def lookup_group_full_name_type(cls, name_of_branch):
         name_of_branch = cls.substitute_group_name(name_of_branch)
-        group_name = name_of_branch
-        group_type = None
-        for line in cls.group_data:
-            csv = line.split(",")
-            group_name = csv[1].strip()
-            if group_name and group_name.lower() in name_of_branch.lower():
-                group_type = csv[0].strip()
-                if group_type not in GROUP_TYPES:
-                    group_type = csv[4].strip()
-                break
-        if group_type is None:
-            if " of " in name_of_branch and " of the " in name_of_branch:
+        full_name_of_branch = name_of_branch
+        try:
+            group_name_data = cls.group_data[name_of_branch]
+        except KeyError as e:
+            if " of the " in name_of_branch:
+                group_split = name_of_branch.split(" of the ")
+                name_of_branch = group_split[1].strip()
+                full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
+                assert group_type is not None
+                assert full_name_of_branch is not None
+                return full_name_of_branch, group_type
+            elif " of " in name_of_branch:
                 group_split = name_of_branch.split(" of ")
                 name_of_branch = group_split[1].strip()
-                group_name, group_type = cls.lookup_group_name_type(name_of_branch)
+                full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
                 assert group_type is not None
-                assert group_name is not None
+                assert full_name_of_branch is not None
+                return full_name_of_branch, group_type
 
-        return group_name, group_type
+        if group_name_data is None:
+            return None,None
+
+        full_name_of_branch = group_name_data[0]
+        group_type = group_name_data[1]
+
+        return full_name_of_branch, group_type
+
+
+    @classmethod
+    def lookup_full_group_name(cls, group_name):
+        try:
+            full_group_name = cls.group_data[group_name]
+            return full_group_name[0]
+        except KeyError:
+            return None
 
     @classmethod
     def substitute_group_name(cls, name_of_branch) -> Any:
@@ -492,7 +597,6 @@ class OldWorkbookToDataForNew:
         except KeyError:
             group_name = name_of_branch
         return group_name
-
 
 def main():
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",

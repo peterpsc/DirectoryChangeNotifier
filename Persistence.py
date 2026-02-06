@@ -177,13 +177,15 @@ def save_list(data, filename, path_type=PRIVATE_PATH):
                     formatted_row.append(val)
             writer.writerow(formatted_row)
 
-def create_hyperlink(file_path: str, title: str) -> str:
+def create_hyperlink(file_path, title: str) -> str:
+    if file_path is None:
+        return "MISSING"
     uri_path = Path(file_path).as_uri()
     hyperlink = f'=HYPERLINK("{uri_path}"; "{title}")'
     return hyperlink
 
 
-def get_dict(filename, path_type=PRIVATE_PATH, header=True):
+def get_dict(filename, path_type=PRIVATE_PATH, header=True, lower=False):
     file_path = get_file_path(filename, path_type)
     if not exists(file_path):
         line = "KEY,VALUE"
@@ -198,9 +200,15 @@ def get_dict(filename, path_type=PRIVATE_PATH, header=True):
 
             for row in reader:
                 if len(row) == 2:
-                    key = row[0]
-                    value = row[1]
+                    key = row[0].strip()
+                    value = row[1].strip()
                     dict[key] = value
+                else:
+                    key = row[0].strip()
+                    if lower:
+                        key = key.lower()
+                    stripped_list = [s.strip() for s in row[1:]]
+                    dict[key] = stripped_list
 
     return dict
 
@@ -450,7 +458,7 @@ def is_more_without_dups(r_file_path, l_file_path):
 
         r_lines = get_lines(temp_file_path, path_type=FILE_PATH)
         r_lines = remove_dups_of_previous_lines(r_lines)
-        l_lines = Persistence.get_lines(l_file_path, path_type=FILE_PATH)
+        l_lines = get_lines(l_file_path, path_type=FILE_PATH)
         l_lines = remove_dups_of_previous_lines(l_lines)
 
         r_len = len(r_lines)
