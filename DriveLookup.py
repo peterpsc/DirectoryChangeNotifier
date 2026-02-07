@@ -355,7 +355,7 @@ class DriveLookup:
                 hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
             elif q4_path is None:
                 hyperlink_status = "MISSING"
-            elif group in bugs:
+            elif group in bugs or "None" in q1_data_path:
                 hyperlink_status = "BUG"
             elif group in negative_reports:
                 hyperlink_status = hyperlink_q4_negative
