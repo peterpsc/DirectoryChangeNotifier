@@ -370,7 +370,7 @@ class OldWorkbookToDataForNew:
             event = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
             if event is None:
                 break
-            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
+            current_amount = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
             self.append_data("LiabilityDetails", f"F{to_row}", event)
             self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
