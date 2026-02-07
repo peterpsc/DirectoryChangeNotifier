@@ -288,6 +288,7 @@ class DriveLookup:
     def save_status(self, all, q4s, missing, todos):
         to_convert, out_of_balance, negative_reports = self.process_Todos(todos)
 
+        self.save_todos(todos)
         #self.save_out_of_balance(out_of_balance)
         self.save_negative_reports(negative_reports)
 
