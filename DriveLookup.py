@@ -342,10 +342,11 @@ class DriveLookup:
             hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{self.this_year} Q1 dir")
             formatted_row.append(hyperlink_q1_dir)
 
-            q1_file_name = f"{PREFIX} {self.this_year} Q1 {full_group_name}.xlsx"
-            q1_path = f"{to_dir}\\{q1_file_name}"
+            q1_file_name = f"{PREFIX}{self.this_year} Q1 {full_group_name}.xlsx"
+            q1_path = f"{to_dir}{q1_file_name}"
             q1_data_path = f"{to_dir}\\{new_data_file_name}"
             hyperlink_status = Persistence.create_hyperlink(q1_data_path, f"READY")
+            print(q1_path)
             if exists(q1_path):
                 hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
             elif q4_path is None:
