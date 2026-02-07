@@ -594,6 +594,7 @@ class OldWorkbookToDataForNew:
 
     @classmethod
     def substitute_group_name(cls, name_of_branch) -> Any:
+        name_of_branch = Persistence.remove_surrounding_parens(name_of_branch)
         try:
             group_name = cls.substitutions[name_of_branch]
         except KeyError:

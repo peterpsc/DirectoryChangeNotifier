@@ -1,4 +1,5 @@
 import csv
+import re
 from pathlib import Path
 import datetime
 import os
@@ -503,11 +504,20 @@ def remove(filename, path_type=PRIVATE_PATH):
     if exists(file_path):
         os.remove(file_path)
 
+def remove_surrounding_parens(text):
+    cleaned = re.sub(r'\(.*?\)', '', text)
+    cleaned = cleaned.replace(' ', '')
+    return cleaned
+
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Persistence.py")
 
     PrintHelper.printInBox()
+    before = " actual (extra) "
+    PrintHelper.printInBox(f'"{before}"')
+    after = remove_surrounding_parens(before)
+    PrintHelper.printInBox(f'"{after}"')
 
     filename = "BirthdaysPostedToday.csv"
     dt = get_last_modified_datetime(filename)
@@ -552,5 +562,3 @@ if __name__ == '__main__':
     PrintHelper.printInBox(random_value(winning_list))
 
     PrintHelper.printInBox()
-
-
