@@ -555,7 +555,7 @@ class OldWorkbookToDataForNew:
     def lookup_group_full_name_type(cls, name_of_branch):
         name_of_branch = cls.substitute_group_name(name_of_branch)
         full_name_of_branch = name_of_branch
-        group_name_data = []
+        group_name_data = None
         try:
             group_name_data = cls.group_data[name_of_branch]
         except KeyError as e:
