@@ -489,12 +489,14 @@ class OldWorkbookToDataForNew:
             lines.append(f'"{data[0]}","{data[1]}","{data[2]}","{data[3]}","{data[4]}"')
 
         new_data_file_name = self.get_new_data_file_name()
+
         new_data_file_path = f"{self.output_file_path}\\{new_data_file_name}.csv"
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
     def get_new_data_file_name(self) -> str:
         current_year = datetime.now().year
         new_data_file_name = f"{current_year} Q1 {self.name_of_branch}"
+        assert self.name_of_branch is not None, f"name_of_branch not set"
         return new_data_file_name
 
     def save_new_data(self):
