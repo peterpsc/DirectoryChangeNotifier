@@ -504,9 +504,11 @@ def remove(filename, path_type=PRIVATE_PATH):
     if exists(file_path):
         os.remove(file_path)
 
-def remove_surrounding_parens(text):
+def remove_surrounding_parens(text, strip=True):
     cleaned = re.sub(r'\(.*?\)', '', text)
-    cleaned = cleaned.replace(' ', '')
+    cleaned = cleaned.replace('  ', ' ')
+    if strip:
+        cleaned = cleaned.strip()
     return cleaned
 
 if __name__ == '__main__':
@@ -514,7 +516,7 @@ if __name__ == '__main__':
     PrintHelper.printInBoxWithTime("Persistence.py")
 
     PrintHelper.printInBox()
-    before = " actual (extra) "
+    before = " actual wanted (extra) "
     PrintHelper.printInBox(f'"{before}"')
     after = remove_surrounding_parens(before)
     PrintHelper.printInBox(f'"{after}"')
