@@ -31,24 +31,29 @@ class DriveLookup:
         all_directories = self.dcn.get_dir_paths(path_options, ignore_paths)
         filtered_directories = []
         for directory in all_directories:
-            if self.previous_year_dir in directory:
-                if "\\Quarterly Reports\\" in directory:
-                    filtered_directories.append(directory)
-                elif directory.endswith("\\Quarterly Reports"):
-                    filtered_directories.append(directory)
-        for directory in filtered_directories:
-            if "\\Quarterly Reports\\" in directory:
-                right_index = directory.index("\\Quarterly Reports")
-                lower_directory = directory[:right_index + len("\\Quarterly Reports")]
-                if lower_directory in filtered_directories:
-                    filtered_directories.remove(lower_directory)
+            if f"{self.previous_year_dir}Quarterly Reports" in directory:
+                filtered_directories.append(directory)
 
-                # remove any subdirectories that don't have 4 and Q
-                subdirectories = os.listdir(lower_directory)
-                for subdirectory in subdirectories:
-                    if "4" not in subdirectory or "Q" not in subdirectory:
-                        filtered_directories.remove(lower_directory + "\\" + subdirectory)
-        return filtered_directories
+        result = self.remove_extra_directories(filtered_directories)
+
+        return result
+
+    def remove_extra_directories(self, filtered_directories):
+        extra_directories = []
+        result = []
+
+        for directory in reversed(filtered_directories):
+            subdirectory = directory.split("\\")[-1]
+            if subdirectory == "Quarterly Reports" and directory not in extra_directories:
+                result.append(directory)
+            elif "4" in subdirectory and "Q" in subdirectory:
+                extra_directories.append(directory)
+                result.append(directory)
+            else:
+                sub_directory = directory.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
+                extra_directories.append(sub_directory)
+
+        return reversed(result)
 
     def get_this_year_folders(self):
         notification_name = "GoogleDrive"
@@ -157,6 +162,7 @@ class DriveLookup:
 
         negative_report_data = self.create_hyperlink_data(negative_reports, "2025 Q4 Negative Report")
         Persistence.save_list(negative_report_data, file_path, path_type=Persistence.FILE_PATH)
+        print(f"Negative Reports = {negative_reports}")
 
     def save_Q4_folders(self, q4s):
         file_path = Persistence.get_file_path("G:\My Drive\Q4s.csv", Persistence.FILE_PATH)
@@ -175,6 +181,8 @@ class DriveLookup:
 
         data = self.create_hyperlink_data(out_of_balance, "2025 Q4")
         Persistence.save_list(data, file_path, Persistence.FILE_PATH)
+        print(f"Out of Balance = {out_of_balance}")
+
 
 
     def create_todo_data(self, todos):
@@ -218,14 +226,15 @@ class DriveLookup:
         old_file_path = f'{folder}\\{file_name}'
         new_dir = self.get_to_dir(folder)
         this_year_dirs_split = new_dir.split("\\")
-        group_name = this_year_dirs_split[- 3]
+        group_name = this_year_dirs_split[- 4]
         full_group_name, group_type = OldWorkbookToDataForNew.lookup_group_full_name_type(group_name)
         new_file_name = f"{self.this_year} Q1 {full_group_name}"
         return old_file_path, new_dir, new_file_name
 
     def get_to_dir(self, from_dir) -> Any:
-        to_dir = from_dir.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
-        to_dir = to_dir.replace(self.previous_year_dir, self.this_year_dir)
+        to_dir = from_dir.partition(f"{self.previous_year_dir}")[0]
+        to_dir = f"{to_dir}\\{self.this_year}\\Quarterly Reports\\"
+
         return to_dir
 
     @staticmethod
@@ -277,21 +286,10 @@ class DriveLookup:
 
 
     def save_status(self, all, q4s, missing, todos):
-        self.save_all_groups(all)
-        self.save_Q4_folders(q4s)
-        self.save_missing(missing)
-        print(f"All Groups = {all}")
-        print(f"Q4s = {q4s}")
-        print(f"Missing = {missing}")
-
         to_convert, out_of_balance, negative_reports = self.process_Todos(todos)
 
-        self.save_out_of_balance(out_of_balance)
+        #self.save_out_of_balance(out_of_balance)
         self.save_negative_reports(negative_reports)
-        self.save_todos(to_convert)
-
-        print(f"Out of Balance = {out_of_balance}")
-        print(f"Todos = {todos}")
 
         file_path = Persistence.get_file_path("G:\My Drive\Group Status.csv", Persistence.FILE_PATH)
         Persistence.remove(file_path, Persistence.FILE_PATH)
@@ -301,28 +299,37 @@ class DriveLookup:
 
     def create_group_status_data(self, all_last_year, q4s, missing, out_of_balance, negative_reports):
         formatted_rows = []
-        formatted_row = ["Hyperlink","Hyperlink", "2025 Q4", "2026 Q1 dir", "Filename"]
+        formatted_row = ["Group", "Full Group Name","Hyperlink", "Hyperlink", "Hyperlink", "Status"]
         formatted_rows.append(formatted_row)
 
         for group in all_last_year:
             formatted_row = []
             group_last_dir, group_name, full_group_name  = self.get_group_dir_name_full(group)
             q4_file_name = self.find_q4_file_name(group)
+            new_data_file_name = f"{self.this_year} Q1 {full_group_name}.csv"
             q4_path = None
             if q4_file_name is not None:
-                q4_path = group_last_dir + q4_file_name
-            to_dir = self.get_to_dir(group_last_dir)
-            if full_group_name:
-                hyperlink_group = Persistence.create_hyperlink(to_dir, f"{full_group_name}")
-            else:
-                hyperlink_group = Persistence.create_hyperlink(to_dir, f"UNKNOWN {group_name}")
+                q4_path = group + "\\" + q4_file_name
+            to_dir = self.get_to_dir(f"{group_last_dir}")
+            group_last_dir = group_last_dir + self.previous_year_dir
+            group_dir = to_dir.partition(f"\\Quarterly Reports")[0]
+
+            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
             formatted_row.append(hyperlink_group)
-            hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{self.this_year} Q1 dir")
-            formatted_row.append(hyperlink_q1_dir)
-            if q4_path in negative_reports:
+
+            if full_group_name:
+                hyperlink_group = Persistence.create_hyperlink(group_dir, f"{full_group_name}")
+            else:
+                hyperlink_group = Persistence.create_hyperlink(group_dir, f"UNKNOWN: {group_name}")
+            formatted_row.append(hyperlink_group)
+
+            hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{self.previous_year} dir")
+            formatted_row.append(hyperlink_last_dir)
+
+            if group in negative_reports:
                 hyperlink_q4_negative = Persistence.create_hyperlink(q4_path, f"Negative Report")
                 formatted_row.append(hyperlink_q4_negative)
-            elif q4_path in out_of_balance:
+            elif group in out_of_balance:
                 hyperlink_q4_oob = Persistence.create_hyperlink(q4_path, f"Out of Balance")
                 formatted_row.append(hyperlink_q4_oob)
             elif q4_path is None:
@@ -331,8 +338,22 @@ class DriveLookup:
                 hyperlink_q4 = Persistence.create_hyperlink(q4_path, f"{self.previous_year} Q4")
                 formatted_row.append(hyperlink_q4)
 
-            hyperlink_q1 = Persistence.create_hyperlink(q4_path, f"{self.this_year} Q1")
-            formatted_row.append(hyperlink_q1)
+            hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{self.this_year} Q1 dir")
+            formatted_row.append(hyperlink_q1_dir)
+
+            q1_file_name = f"{PREFIX} {self.this_year} Q1 {full_group_name}.xlsx"
+            q1_path = f"{to_dir}\\{q1_file_name}"
+            q1_data_path = f"{to_dir}\\{new_data_file_name}"
+            hyperlink_status = Persistence.create_hyperlink(q1_data_path, f"READY")
+            if exists(q1_path):
+                hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
+            elif q4_path is None:
+                hyperlink_status = "MISSING"
+            elif group in negative_reports:
+                hyperlink_status = hyperlink_q4_negative
+            elif group in out_of_balance:
+                hyperlink_status = hyperlink_q4_oob
+            formatted_row.append(hyperlink_status)
 
             formatted_rows.append(formatted_row)
         return formatted_rows
@@ -352,6 +373,7 @@ class DriveLookup:
             if full_group_name:
                 return f"{to_dir}\\{PREFIX} {self.this_year} Q1 {group_name}.xlsx"
         return None
+
 
 
 if __name__ == '__main__':
