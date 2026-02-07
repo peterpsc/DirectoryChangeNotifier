@@ -104,13 +104,15 @@ class DriveLookup:
                 q4s.append(f"{folder}\\{file_name}")
                 old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(folder, file_name)
                 todo = [old_file_path,new_dir,new_file_name]
-                if not exists(new_dir):
+                new_dir_exists = exists(new_dir)
+                if not new_dir_exists:
                     os.makedirs(new_dir)
-                    new_q1_file_path = f"{new_dir}\\{PREFIX}{new_file_name}.xlsx"
-                    if exists(new_q1_file_path):
-                        print(f"File {new_q1_file_path} already exists")
-                        continue
-                    todos.append(todo)
+
+                new_q1_file_path = f"{new_dir}\\{PREFIX}{new_file_name}.xlsx"
+                if exists(new_q1_file_path):
+                    print(f"File {new_q1_file_path} already exists")
+                    continue
+                todos.append(todo)
             else:
                 missing.append(folder)
 
@@ -292,9 +294,9 @@ class DriveLookup:
         to_convert, out_of_balance, negative_reports, bugs = self.process_Todos(todos)
 
         self.save_todos(todos)
-        #self.save_out_of_balance(out_of_balance)
-        self.save_negative_reports(negative_reports)
+        self.save_out_of_balance(out_of_balance)
 
+        self.save_negative_reports(negative_reports)
         file_path = Persistence.get_file_path("G:\My Drive\Group Status.csv", Persistence.FILE_PATH)
         Persistence.remove(file_path, Persistence.FILE_PATH)
 
@@ -330,7 +332,7 @@ class DriveLookup:
             hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{self.previous_year} dir")
             formatted_row.append(hyperlink_last_dir)
 
-            if group in negative_reports:
+            if q4_path and q4_path in negative_reports:
                 hyperlink_q4_negative = Persistence.create_hyperlink(q4_path, f"Negative Report")
                 formatted_row.append(hyperlink_q4_negative)
             elif group in out_of_balance:
@@ -350,14 +352,14 @@ class DriveLookup:
             q1_data_path = f"{to_dir}\\{new_data_file_name}"
             hyperlink_status = Persistence.create_hyperlink(q1_data_path, f"READY")
             print(q1_path)
-            if exists(q1_path):
+            if q4_path and q4_path in negative_reports:
+                hyperlink_status = hyperlink_q4_negative
+            elif exists(q1_path):
                 hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
             elif q4_path is None:
                 hyperlink_status = "MISSING"
             elif group in bugs or "None" in q1_data_path:
                 hyperlink_status = "BUG"
-            elif group in negative_reports:
-                hyperlink_status = hyperlink_q4_negative
             elif group in out_of_balance:
                 hyperlink_status = hyperlink_q4_oob
             formatted_row.append(hyperlink_status)
