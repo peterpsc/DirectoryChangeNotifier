@@ -91,12 +91,11 @@ class DriveLookup:
         return q1s
 
 
-    def find_all_Q4s_missing_todos_bugs(self, folders):
+    def find_all_Q4s_missing_todos(self, folders):
         all = []
         q4s = []
         missing = []
         todos = []
-        bugs = []
 
         for folder in folders:
             file_name = self.find_q4_file_name(folder)
@@ -107,9 +106,6 @@ class DriveLookup:
                 todo = [old_file_path,new_dir,new_file_name]
                 if not exists(new_dir):
                     os.makedirs(new_dir)
-                if new_file_name is None:
-                    bugs.append(todo)
-                else:
                     new_q1_file_path = f"{new_dir}\\{PREFIX}{new_file_name}.xlsx"
                     if exists(new_q1_file_path):
                         print(f"File {new_q1_file_path} already exists")
@@ -118,7 +114,7 @@ class DriveLookup:
             else:
                 missing.append(folder)
 
-        return all, q4s, missing, todos, bugs
+        return all, q4s, missing, todos
 
     def find_q4_file_name(self, folder):
         paths = sorted(Path(folder).iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
@@ -254,6 +250,7 @@ class DriveLookup:
         to_convert = []
         out_of_balance = []
         negative_reports = []
+        bugs = []
         for todo in todos:
             from_file_path = todo[0]
             to_q1_path = todo[1]
@@ -263,14 +260,16 @@ class DriveLookup:
 
             balanced, negative = wbs.is_balanced_or_negative()
             if balanced:
-                wbs.save_new_data()
+                bug = wbs.save_new_data()
+                if bug:
+                    bugs.append(bug)
                 to_convert.append(todo)
             elif negative:
                 negative_reports.append(from_file_path)
             else:
                 from_dir = self.get_from_dir(from_file_path)
                 out_of_balance.append(from_dir)
-        return to_convert, out_of_balance, negative_reports
+        return to_convert, out_of_balance, negative_reports, bugs
 
     def get_from_dir(self, from_file_path) -> Any:
         last_backslash_index = from_file_path.rfind('\\')
@@ -289,8 +288,8 @@ class DriveLookup:
         pass # TODO
 
 
-    def save_status(self, all, q4s, missing, todos, bugs):
-        to_convert, out_of_balance, negative_reports = self.process_Todos(todos)
+    def save_status(self, all, q4s, missing, todos):
+        to_convert, out_of_balance, negative_reports, bugs = self.process_Todos(todos)
 
         self.save_todos(todos)
         #self.save_out_of_balance(out_of_balance)
@@ -394,9 +393,9 @@ if __name__ == '__main__':
 
     folders = driveLU.get_last_year_folders()
 
-    all, q4s, missing, todos, bugs = driveLU.find_all_Q4s_missing_todos_bugs(folders)
+    all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
 
-    driveLU.save_status(all, q4s, missing, todos, bugs)
+    driveLU.save_status(all, q4s, missing, todos)
 
     if COPY_G_TO_A:
         driveLU.copy_g_to_a(q4s)

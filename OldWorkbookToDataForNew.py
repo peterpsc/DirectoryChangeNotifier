@@ -512,10 +512,11 @@ class OldWorkbookToDataForNew:
             self.save_outstanding()
             self.save_assets()
             self.save_income()
-
             self.save_data()
-        finally:
-            pass
+            return None
+        except Exception as e:
+            return f"{self.name_of_branch}{e}"
+
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
@@ -609,19 +610,19 @@ def main():
     wbs = OldWorkbookToDataForNew("Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
                                   "Resources")
 
-    wbs.save_new_data()
+    bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
                                   "Resources")
-    wbs.save_new_data()
+    bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
                                   "Resources")
-    wbs.save_new_data()
+    bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
