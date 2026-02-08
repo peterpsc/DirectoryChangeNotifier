@@ -259,18 +259,25 @@ class DriveLookup:
 
             wbs = OldWorkbookToDataForNew(from_file_path,
                                           to_q1_path)
-
-            balanced, negative = wbs.is_balanced_or_negative()
-            if balanced:
-                bug = wbs.save_new_data()
-                if bug:
-                    bugs.append(bug)
-                to_convert.append(todo)
-            elif negative:
-                negative_reports.append(from_file_path)
+            if wbs.error:
+                bugs.append([todo, wbs.error])
             else:
-                from_dir = self.get_from_dir(from_file_path)
-                out_of_balance.append(from_dir)
+                balanced, negative = wbs.is_balanced_or_negative()
+                if balanced:
+                    bug = wbs.save_new_data()
+                    if bug:
+                        bugs.append(todo, bug)
+                    to_convert.append(todo)
+                elif negative:
+                    negative_reports.append(from_file_path)
+                else:
+                    from_dir = self.get_from_dir(from_file_path)
+                    out_of_balance.append(from_dir)
+            if bugs:
+                for bug in bugs:
+                    todo = bug[0]
+                    todos.remove(todo)
+
         return to_convert, out_of_balance, negative_reports, bugs
 
     def get_from_dir(self, from_file_path) -> Any:
