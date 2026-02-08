@@ -37,6 +37,7 @@ class OldWorkbookToDataForNew:
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
         self.output_file_path = output_file_path
+        print(f"Opening workbook {self.old_workbook_file_path}")
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "As String", "Locked")
