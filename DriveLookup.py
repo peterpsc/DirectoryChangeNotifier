@@ -260,14 +260,15 @@ class DriveLookup:
             wbs = OldWorkbookToDataForNew(from_file_path,
                                           to_q1_path)
             if wbs.error:
-                bugs.append([todo, wbs.error])
+                bugs.append(from_file_path)
             else:
                 balanced, negative = wbs.is_balanced_or_negative()
                 if balanced:
                     bug = wbs.save_new_data()
                     if bug:
-                        bugs.append(todo, bug)
-                    to_convert.append(todo)
+                        bugs.append(bug)
+                    else:
+                        to_convert.append(todo)
                 elif negative:
                     negative_reports.append(from_file_path)
                 else:
@@ -307,10 +308,10 @@ class DriveLookup:
         file_path = Persistence.get_file_path("G:\My Drive\Group Status.csv", Persistence.FILE_PATH)
         Persistence.remove(file_path, Persistence.FILE_PATH)
 
-        data = self.create_group_status_data(all, q4s, missing, out_of_balance, negative_reports, bugs)
+        data = self.create_group_status_data(all, out_of_balance, negative_reports, bugs)
         Persistence.save_list(data, file_path, Persistence.FILE_PATH)
 
-    def create_group_status_data(self, all_last_year, q4s, missing, out_of_balance, negative_reports, bugs):
+    def create_group_status_data(self, all_last_year, out_of_balance, negative_reports, bugs):
         formatted_rows = []
         formatted_row = ["Group", "Full Group Name","Hyperlink", "Hyperlink", "Hyperlink", "Status"]
         formatted_rows.append(formatted_row)
