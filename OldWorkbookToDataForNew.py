@@ -31,12 +31,13 @@ class OldWorkbookToDataForNew:
                  output_file_path,
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
                  ):
-        self.name_of_branch = None
+        self.state = None
+        split_path = output_file_path.split("\\")
+        self.name_of_branch = split_path[-4]
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
         self.output_file_path = output_file_path
         self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
-        self.state = None
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "As String", "Locked")
 
@@ -67,7 +68,7 @@ class OldWorkbookToDataForNew:
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
         print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        self.name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch)
+        self.name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch, self.name_of_branch)
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
@@ -338,13 +339,13 @@ class OldWorkbookToDataForNew:
             to_row = to_row + 1
             if to_row > 33:
                 print(f"No more room for Outstanding")
-                self.append_data("Outstanding", f"H{to_row-1}", sending_branch_or_reason + " AND MORE!!!")
+                self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
                 break
 
     def gather_outstanding_checks(self, ws_old_primary_account, from_row_end: int, from_row_start: int,
                                   to_row: int | Any,
                                   from_cols) -> int | Any:
-        for from_row in range(from_row_start, from_row_end +1):
+        for from_row in range(from_row_start, from_row_end + 1):
             check_no = ws_old_primary_account[f"{from_cols[0]}{from_row}"].value
             if check_no is None:
                 break
@@ -366,7 +367,7 @@ class OldWorkbookToDataForNew:
         from_row_start = 16
         from_row_end = 30
         from_cols = "CF"
-        for from_row in range(from_row_start, from_row_end +1):
+        for from_row in range(from_row_start, from_row_end + 1):
             event = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
             if event is None:
                 break
@@ -380,7 +381,7 @@ class OldWorkbookToDataForNew:
         from_row_start = 37
         from_row_end = 43
         from_cols = "CDF"
-        for from_row in range(from_row_start, from_row_end +1):
+        for from_row in range(from_row_start, from_row_end + 1):
             owed_to = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
             if owed_to is None:
                 break
@@ -406,7 +407,7 @@ class OldWorkbookToDataForNew:
             current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
             self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
             self.append_data("LiabilityDetails", f"D{to_row}", reason)
-            #ignore prior_amount
+            # ignore prior_amount
             self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
 
@@ -457,7 +458,6 @@ class OldWorkbookToDataForNew:
             self.append_data(to_ws, f"E{to_row}", current_amount, False)
             to_row = to_row + 1
 
-
     def save_inventory(self):
         # TODO from Inventory_DTL_6 to Assets&Inventory
         pass
@@ -490,7 +490,7 @@ class OldWorkbookToDataForNew:
 
         new_data_file_name = self.get_new_data_file_name()
 
-        new_data_file_path = f"{self.output_file_path}\\{new_data_file_name}.csv"
+        new_data_file_path = f"{self.output_file_path}{new_data_file_name}.csv"
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
     def get_new_data_file_name(self) -> str:
@@ -518,7 +518,6 @@ class OldWorkbookToDataForNew:
             return None
         except Exception as e:
             return f"{self.name_of_branch}{e}"
-
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
@@ -555,7 +554,7 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     @classmethod
-    def lookup_group_full_name_type(cls, name_of_branch):
+    def lookup_group_full_name_type(cls, name_of_branch, hint=None):
         name_of_branch = cls.substitute_group_name(name_of_branch)
         full_name_of_branch = name_of_branch
         group_name_data = None
@@ -576,15 +575,19 @@ class OldWorkbookToDataForNew:
                 assert group_type is not None
                 assert full_name_of_branch is not None
                 return full_name_of_branch, group_type
+            elif hint and hint in name_of_branch:
+                full_name_of_branch, group_type = cls.lookup_group_full_name_type(hint)
+                assert group_type is not None
+                assert full_name_of_branch is not None
+                return full_name_of_branch, group_type
 
         if group_name_data is None:
-            return None,None
+            return None, None
 
         full_name_of_branch = group_name_data[0]
         group_type = group_name_data[1]
 
         return full_name_of_branch, group_type
-
 
     @classmethod
     def lookup_full_group_name(cls, group_name):
@@ -602,6 +605,7 @@ class OldWorkbookToDataForNew:
         except KeyError:
             group_name = name_of_branch
         return group_name
+
 
 def main():
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
