@@ -274,10 +274,6 @@ class DriveLookup:
                 else:
                     from_dir = self.get_from_dir(from_file_path)
                     out_of_balance.append(from_dir)
-            if bugs:
-                for bug in bugs:
-                    todo = bug[0]
-                    todos.remove(todo)
 
         return to_convert, out_of_balance, negative_reports, bugs
 
