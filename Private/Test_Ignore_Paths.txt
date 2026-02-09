@@ -1,0 +1,5 @@
+Other computers
+file-revisions-by-id
+shortcut-targets-by-id
+$RECYCLE.BIN
+desktop.ini

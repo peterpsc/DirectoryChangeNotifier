@@ -440,6 +440,9 @@ class OldWorkbookToDataForNew:
             self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
 
+        # TODO Other Assets
+        # TODO Receivables
+
     def save_depreciation(self):
         # TODO from Depr_DTL_8 to Assets&Inventory
         ws_old_depr_dtl_8 = self.old_workbook["Depr_DTL_8"]
@@ -520,6 +523,7 @@ class OldWorkbookToDataForNew:
             self.save_liabilities()
             self.save_outstanding()
             self.save_assets()
+            self.save_depreciation()
             self.save_income()
             self.save_data()
             return None

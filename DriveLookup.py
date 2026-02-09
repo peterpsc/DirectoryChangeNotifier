@@ -418,6 +418,7 @@ if __name__ == '__main__':
     PrintHelper.printInBoxWithTime("DriveLookup")
 
     driveLU = DriveLookup("GoogleDrive")
+    # driveLU = DriveLookup("Test")
     if REDO_ALL:
         driveLU.delete_all_q1_test_workbooks()
 
