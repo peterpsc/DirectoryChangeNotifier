@@ -13,6 +13,8 @@ from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 COPY_G_TO_A = False
 REDO_ALL = False
 PREFIX = "TEST "
+
+
 # Negative Reports.csv, Out Of Balance.csv, Missing.csv, Todos.csv, Group Status.csv are in G:/My Drive/
 
 class DriveLookup:
@@ -84,12 +86,12 @@ class DriveLookup:
             for path in paths:
                 if path.is_file():
                     file_name = path.name
-                    if not file_name.startswith(f"{PREFIX} {self.this_year_dir} Q1 ") or not file_name.endswith(".xlsx"):
+                    if not file_name.startswith(f"{PREFIX} {self.this_year_dir} Q1 ") or not file_name.endswith(
+                            ".xlsx"):
                         continue
                     q1s.append(f"{folder}\\{file_name}")
 
         return q1s
-
 
     def find_all_Q4s_missing_todos(self, folders):
         all = []
@@ -103,7 +105,7 @@ class DriveLookup:
             if file_name:
                 q4s.append(f"{folder}\\{file_name}")
                 old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(folder, file_name)
-                todo = [old_file_path,new_dir,new_file_name]
+                todo = [old_file_path, new_dir, new_file_name]
                 new_dir_exists = exists(new_dir)
                 if not new_dir_exists:
                     os.makedirs(new_dir)
@@ -185,11 +187,9 @@ class DriveLookup:
         Persistence.save_list(data, file_path, Persistence.FILE_PATH)
         print(f"Out of Balance = {out_of_balance}")
 
-
-
     def create_todo_data(self, todos):
         formatted_rows = []
-        formatted_row = ["Hyperlink","Hyperlink", "2025 Q4", "2026 Q1 dir", "Filename"]
+        formatted_row = ["Hyperlink", "Hyperlink", "2025 Q4", "2026 Q1 dir", "Filename"]
         formatted_rows.append(formatted_row)
 
         for todo in todos:
@@ -244,7 +244,7 @@ class DriveLookup:
         for i in range(len(this_year_dirs)):
             subdir = this_year_dirs[i]
             if subdir == "East Kingdom Exchequer":
-                state = this_year_dirs[i+1]
+                state = this_year_dirs[i + 1]
                 return state
         return None
 
@@ -293,7 +293,7 @@ class DriveLookup:
     def copy_g_to_a(self, all, q4s):
         # from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
         from_file_path = 'g:\\Shared drives'
-        l =len(from_file_path)
+        l = len(from_file_path)
         to_file_path = 'a:\\East Kingdom Exchequer Test'
         for from_group_path in all:
             to_group_path = f"{to_file_path}{from_group_path[l:]}"
@@ -318,7 +318,6 @@ class DriveLookup:
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
 
-
     def save_status(self, all, q4s, missing, todos):
         to_convert, out_of_balance, negative_reports, bugs = self.process_Todos(todos)
 
@@ -334,12 +333,12 @@ class DriveLookup:
 
     def create_group_status_data(self, all_last_year, out_of_balance, negative_reports, bugs):
         formatted_rows = []
-        formatted_row = ["Group", "Full Group Name","Hyperlink", "Hyperlink", "Hyperlink", "Status"]
+        formatted_row = ["Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
         formatted_rows.append(formatted_row)
 
         for group in all_last_year:
             formatted_row = []
-            group_last_dir, group_name, full_group_name  = self.get_group_dir_name_full(group)
+            group_last_dir, group_name, full_group_name = self.get_group_dir_name_full(group)
             q4_file_name = self.find_q4_file_name(group)
             new_data_file_name = f"{self.this_year} Q1 {full_group_name}.csv"
             q4_path = None
@@ -423,7 +422,6 @@ def getDriveLookup():
         driveLU = DriveLookup("GoogleDrive")
 
 
-
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
@@ -439,5 +437,3 @@ if __name__ == '__main__':
         driveLU.copy_g_to_a(all, q4s)
     else:
         driveLU.save_status(all, q4s, missing, todos)
-
-
