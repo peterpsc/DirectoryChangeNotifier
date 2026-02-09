@@ -10,7 +10,7 @@ import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
-COPY_G_TO_A = True
+COPY_G_TO_A = False
 REDO_ALL = False
 PREFIX = "TEST "
 # Negative Reports.csv, Out Of Balance.csv, Missing.csv, Todos.csv, Group Status.csv are in G:/My Drive/
@@ -412,13 +412,22 @@ class DriveLookup:
         return None
 
 
+def getDriveLookup():
+    global driveLU
+
+    where = Persistence.get_line("GoogleDrive_Path_Options.txt")
+    if where == "g:\\ /S":
+        driveLU = DriveLookup("Test")
+    else:
+        driveLU = DriveLookup("GoogleDrive")
+
+
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
-    driveLU = DriveLookup("GoogleDrive")
-    # driveLU = DriveLookup("Test")
+    getDriveLookup()
     if REDO_ALL:
         driveLU.delete_all_q1_test_workbooks()
 
