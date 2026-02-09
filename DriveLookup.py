@@ -291,7 +291,8 @@ class DriveLookup:
                     os.remove(file_path)
 
     def copy_g_to_a(self, all, q4s):
-        from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
+        # from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
+        from_file_path = 'g:\\Shared drives'
         l =len(from_file_path)
         to_file_path = 'a:\\East Kingdom Exchequer Test'
         for from_group_path in all:
