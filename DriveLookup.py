@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 from os.path import exists
 from pathlib import Path
@@ -9,14 +10,14 @@ import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
-COPY_G_TO_A = False
+COPY_G_TO_A = True
 REDO_ALL = False
 PREFIX = "TEST "
-# All_Groups.csv, Q4s.csv, Missing.csv, Todos.csv are in G:/My Drive/
-# TODO make G:/My Drive/Group Status.csv
+# Negative Reports.csv, Out Of Balance.csv, Missing.csv, Todos.csv, Group Status.csv are in G:/My Drive/
 
 class DriveLookup:
-    def __init__(self):
+    def __init__(self, notification_name: str):
+        self.notification_name = notification_name
         notification_names = Persistence.get_lines("NotificationNames.txt")
         self.dcn = DirChangeNotifier(notification_names)
         self.this_year = datetime.now().strftime("%Y")
@@ -25,9 +26,8 @@ class DriveLookup:
         self.this_year_dir = f"\\{self.this_year}\\"
 
     def get_last_year_folders(self):
-        notification_name = "GoogleDrive"
-        path_options = self.dcn.get_dir_change_path_options(notification_name)
-        ignore_paths = self.dcn.get_ignore_paths(notification_name)
+        path_options = self.dcn.get_dir_change_path_options(self.notification_name)
+        ignore_paths = self.dcn.get_ignore_paths(self.notification_name)
         all_directories = self.dcn.get_dir_paths(path_options, ignore_paths)
         filtered_directories = []
         for directory in all_directories:
@@ -290,8 +290,32 @@ class DriveLookup:
                     file_path = folder + "\\" + file_name
                     os.remove(file_path)
 
-    def copy_g_to_a(self, q4s):
-        pass # TODO
+    def copy_g_to_a(self, all, q4s):
+        from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
+        l =len(from_file_path)
+        to_file_path = 'a:\\East Kingdom Exchequer Test'
+        for from_group_path in all:
+            to_group_path = f"{to_file_path}{from_group_path[l:]}"
+            os.makedirs(to_group_path, exist_ok=True)
+            to_new_group_path = to_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
+            to_new_group_path = to_new_group_path.replace(self.previous_year_dir, self.this_year_dir)
+            os.makedirs(to_new_group_path, exist_ok=True)
+        for from_q4_path in q4s:
+            to_q4_path = f"{to_file_path}{from_q4_path[l:]}"
+            try:
+                # This will overwrite the destination file if it already exists
+                shutil.copy2(from_q4_path, to_q4_path)
+                print(f"File '{to_q4_path}' copied to '{to_q4_path}' successfully.")
+            except FileNotFoundError:
+                print("The source or destination file was not found.")
+            except PermissionError:
+                print("You don't have permission to access the source or destination file.")
+            except shutil.SameFileError:
+                print("Source and destination represent the same file.")
+            except IsADirectoryError:
+                print("The destination path is a directory but was expected to be a file path.")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
 
 
     def save_status(self, all, q4s, missing, todos):
@@ -393,16 +417,16 @@ if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
-    driveLU = DriveLookup()
+    driveLU = DriveLookup("GoogleDrive")
     if REDO_ALL:
         driveLU.delete_all_q1_test_workbooks()
 
     folders = driveLU.get_last_year_folders()
 
     all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
-
-    driveLU.save_status(all, q4s, missing, todos)
-
     if COPY_G_TO_A:
-        driveLU.copy_g_to_a(q4s)
+        driveLU.copy_g_to_a(all, q4s)
+    else:
+        driveLU.save_status(all, q4s, missing, todos)
+
 
