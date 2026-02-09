@@ -65,7 +65,7 @@ def printInBox(txt=None, force_style=None, length=80, color=""):
             after = get_remaining_spaces(before, text, length)
             text = f"|{before}{text}{after}|"
             if color:
-                text = f"{color}|{before}{text}{after}|{color_end}"
+                text = f"{color}{text}{color_end}"
             print(text)
 
 

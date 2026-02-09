@@ -12,7 +12,7 @@ Sub UpdateTodos
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-    sDataPath = "g:/My Drive/Todos.csv"
+    sDataPath = "g:/My Drive/To Convert.csv"
     oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sDataPath), "_blank", 0, csvArgs())
     oCSVSheet = oCSV.Sheets(0)
 
