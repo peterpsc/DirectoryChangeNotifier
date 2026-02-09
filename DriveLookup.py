@@ -12,6 +12,8 @@ from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
 COPY_G_TO_A = False
 REDO_ALL = False
+PROCESS_SINGLE = None
+# PROCESS_SINGLE = "Quintavia" # 'a:\\East Kingdom Exchequer Test\\MA branches\\Quintavia\\2025\\Quarterly Reports'
 PREFIX = "TEST "
 
 
@@ -229,7 +231,7 @@ class DriveLookup:
         new_dir = self.get_to_dir(folder)
         this_year_dirs_split = new_dir.split("\\")
         group_name = this_year_dirs_split[- 4]
-        full_group_name, group_type = OldWorkbookToDataForNew.lookup_group_full_name_type(group_name)
+        group_name, full_group_name, group_type = OldWorkbookToDataForNew.lookup_group_full_name_type(group_name)
         new_file_name = f"{self.this_year} Q1 {full_group_name}"
         return old_file_path, new_dir, new_file_name
 
@@ -431,6 +433,15 @@ if __name__ == '__main__':
         driveLU.delete_all_q1_test_workbooks()
 
     folders = driveLU.get_last_year_folders()
+
+    if PROCESS_SINGLE:
+        name_of_branch, full_name_of_branch, group_type = OldWorkbookToDataForNew.lookup_group_full_name_type(
+            PROCESS_SINGLE)
+        for folder in folders:
+            group_dir, group_name, full_group_name = driveLU.get_group_dir_name_full(folder)
+            if group_name == name_of_branch:
+                folders = [folder]
+                break
 
     all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(folders)
     if COPY_G_TO_A:

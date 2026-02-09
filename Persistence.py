@@ -1,11 +1,11 @@
 import csv
-import re
-from pathlib import Path
 import datetime
 import os
 import random
+import re
 import shutil
 from os.path import exists
+from pathlib import Path
 from time import sleep
 
 import clipboard
@@ -25,6 +25,16 @@ REMOTE_PRIVATE_PATH = 4
 REMOTE_RESOURCES_PATH = 5
 
 the_remote_file_path = ""  # get it from a file
+
+
+class CaseInsensitiveDict(dict):
+    """Case-insensitive dictionary implementation."""
+
+    def __setitem__(self, key, value):
+        super(CaseInsensitiveDict, self).__setitem__(key.casefold(), value)
+
+    def __getitem__(self, key):
+        return super(CaseInsensitiveDict, self).__getitem__(key.casefold())
 
 
 def find_private():
@@ -192,7 +202,7 @@ def get_dict(filename, path_type=PRIVATE_PATH, header=True, lower=False):
         line = "KEY,VALUE"
         write_string(file_path, line)
 
-    dict = {}
+    dict = CaseInsensitiveDict()
     if file_path:
         with open(file_path, newline='', encoding="utf-8") as csvfile:
             reader = csv.reader(csvfile)

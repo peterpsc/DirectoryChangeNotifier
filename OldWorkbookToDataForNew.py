@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any
 
 import openpyxl
+from colorama import Fore, Style
 
 import Persistence
 
@@ -34,6 +35,7 @@ class OldWorkbookToDataForNew:
         self.state = None
         split_path = output_file_path.split("\\")
         self.name_of_branch = split_path[-4]
+        self.full_name_of_branch = self.name_of_branch
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path
         self.output_file_path = output_file_path
@@ -41,7 +43,8 @@ class OldWorkbookToDataForNew:
         try:
             self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         except Exception as e:
-            print(f'Error opening workbook: {self.old_workbook_file_path} due to\n{e.args}')
+            print(
+                Fore.RED + f'Error opening workbook: {self.old_workbook_file_path} due to\n{e.args}' + Style.RESET_ALL)
             self.error = e
             self.old_workbook = None
 
@@ -60,7 +63,7 @@ class OldWorkbookToDataForNew:
                 ws_old_negative_report = self.old_workbook["NEGATIVE REPORT FORM"]
                 is_negative = True
             except Exception as e:
-                print(f'Exception: {e.args}')
+                print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
         return is_balanced, is_negative
 
     def append_data(self, worksheet_name, cell_name, value, as_string=True, locked=False):
@@ -75,13 +78,14 @@ class OldWorkbookToDataForNew:
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
         print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        self.name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch, self.name_of_branch)
+        self.name_of_branch, self.full_name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch,
+                                                                                                     self.name_of_branch)
         self.append_data("Summary", "D6", group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         self.state = state
         self.append_data("Summary", "D8", state)
-        self.append_data("Summary", "D9", self.name_of_branch)
+        self.append_data("Summary", "D9", self.full_name_of_branch)
         currency = ws_old_contents["C14"].value
         self.append_data("Summary", "H8", currency)
 
@@ -444,15 +448,19 @@ class OldWorkbookToDataForNew:
         # TODO Receivables
 
     def save_depreciation(self):
-        # TODO from Depr_DTL_8 to Assets&Inventory
-        ws_old_depr_dtl_8 = self.old_workbook["Depr_DTL_8"]
+        try:
+            ws_old_depr_dtl_8 = self.old_workbook["DEPR_DTL_8"]
+        except Exception as e:
+            print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+            return
+
         to_ws = "Assets&Inventory"
 
         # Prepaid Expenses
         to_row = 12
         from_row_start = 14
         from_row_end = 23
-        from_cols = "DEFJ"
+        from_cols = "DEFGJ"
         for from_row in range(from_row_start, from_row_end + 1):
             oa_ar_fr = ws_old_depr_dtl_8[f"{from_cols[0]}{from_row}"].value
             if oa_ar_fr is None:
@@ -469,7 +477,7 @@ class OldWorkbookToDataForNew:
             to_row = to_row + 1
 
     def save_inventory(self):
-        # TODO from Inventory_DTL_6 to Assets&Inventory
+        # TODO from INVENTORY_DTL_6 to Assets&Inventory
         pass
 
     def save_income(self):
@@ -505,8 +513,8 @@ class OldWorkbookToDataForNew:
 
     def get_new_data_file_name(self) -> str:
         current_year = datetime.now().year
-        new_data_file_name = f"{current_year} Q1 {self.name_of_branch}"
-        assert self.name_of_branch is not None, f"name_of_branch not set"
+        assert self.full_name_of_branch is not None, f"full_name_of_branch not set for {self.name_of_branch}"
+        new_data_file_name = f"{current_year} Q1 {self.full_name_of_branch}"
         return new_data_file_name
 
     def save_new_data(self):
@@ -528,7 +536,9 @@ class OldWorkbookToDataForNew:
             self.save_data()
             return None
         except Exception as e:
-            return f"{self.name_of_branch}{e}"
+            error = f"EXCEPTION:{self.name_of_branch} {e}"
+            print(Fore.RED + error + Style.RESET_ALL)
+            return error
 
     def save_new_workbook(self):
         self.new_workbook = openpyxl.load_workbook(self.master_data_file_path)
@@ -555,7 +565,7 @@ class OldWorkbookToDataForNew:
             dmy = dt.strftime("%m/%d/%Y")
             return dmy
         except Exception as e:
-            print(e)
+            print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
             return None
 
     def set_new_data(self, new_data):
@@ -575,30 +585,30 @@ class OldWorkbookToDataForNew:
             if " of the " in name_of_branch:
                 group_split = name_of_branch.split(" of the ")
                 name_of_branch = group_split[1].strip()
-                full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
+                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type
             elif " of " in name_of_branch:
                 group_split = name_of_branch.split(" of ")
                 name_of_branch = group_split[1].strip()
-                full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
+                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type
             elif hint and hint in name_of_branch:
-                full_name_of_branch, group_type = cls.lookup_group_full_name_type(hint)
+                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(hint)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type
 
         if group_name_data is None:
-            return None, None
+            return name_of_branch, None, None
 
         full_name_of_branch = group_name_data[0]
         group_type = group_name_data[1]
 
-        return full_name_of_branch, group_type
+        return name_of_branch, full_name_of_branch, group_type
 
     @classmethod
     def lookup_full_group_name(cls, group_name):
