@@ -1,50 +1,67 @@
 Sub UpdateTodos
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
-    Dim iRow As Integer
+    Dim iRow As Integer, convertedCount As Integer
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
     bRedoAll = False
-
+	iRow = 0
 
     ' Configure and Open CSV
     csvArgs(0).Name = "FilterName" : csvArgs(0).Value = "Text - txt - csv (StarCalc)"
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-    sDataPath = "g:/My Drive/To Convert.csv"
-    oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sDataPath), "_blank", 0, csvArgs())
-    oCSVSheet = oCSV.Sheets(0)
+	sReportPath = "G:/My Drive/" 					' Remote Computer
+    sReportPath = "A:/East Kingdom Exchequer Test/"	' local Computer
+    sToConvertPath = sReportPath + "To Convert.csv"
 
-'    sMasterPath = "D:/yonay/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
-'    sMasterPath = "C:/Users/peter/PycharmProjects/DirectoryChangeNotifier/Resources/SCA Exchequer Report - 2026-03.xlsx"
-    sMasterPath = ReadStringFromFile("g:/My Drive/EK Exchequer Master.txt")
+    If not FileExists(sToConvertPath) Then
+        MsgBox "The file does not exist at: " & sToConvertPath, 48, "File Check Result"
+    	Exit Sub
+    Else
+	   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sToConvertPath), "_blank", 0, csvArgs())
+	    oCSVSheet = oCSV.Sheets(0)
 
-	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
-	    GlobalScope.BasicLibraries.LoadLibrary("Tools")
-	End If
+	    sMasterPath = ReadStringFromFile(sReportPath + "EK Exchequer Master.txt")
 
-    ' Loop through CSV rows
-    iRow = 1
-    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
-        toFileDir    = oCSVSheet.getCellByPosition(3, iRow).String
-        sDataPath = toFileDir + "\" + oCSVSheet.getCellByPosition(4, iRow).String +  oCSVSheet.getCellByPosition(5, iRow).String + ".csv"
-       	sOutputPath = toFileDir + "\TEST " + oCSVSheet.getCellByPosition(4, iRow).String +  oCSVSheet.getCellByPosition(5, iRow).String + ".xlsx"
-        RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
-        iRow = iRow + 1
-    Loop
+		If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
+		    GlobalScope.BasicLibraries.LoadLibrary("Tools")
+		End If
 
-    ' Close CSV immediately after data transfer
-    oCSV.close(True)
+	    ' Loop through CSV rows
+	    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
+	        fromFileDir    = oCSVSheet.getCellByPosition(0, iRow).String
+	        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
+	        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
+	        sDataPath = toFileDir + toFileName + ".csv"
+	       	sOutputPath = toFileDir + "TEST " + toFileName +  ".xlsx"
+	        RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
+	        iRow = iRow + 1
+	    Loop
 
-	MsgBox "Done", 64, "Success"
+	    ' Close CSV immediately after data transfer
+	    oCSV.close(True)
+
+    End If
+    MsgBox "Converted " + iRow, 64, "Success"
 End Sub
 
-Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String, bRedo As Boolean)
+Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String)
     Dim sOutputURL as String
     sOutputURL = ConvertToUrl(sOutputPath)
 
-    If not FileExists(sOutputURL) or bRedo then
+	Dim bOutputExists as Boolean, bDataExists as Boolean
+	bOutputExists =  FileExists(sOutputPath)
+
+	If not bOutputExists then
+		bDataExists =  FileExists(sDataPath)
+
+		if not bDataExists then
+			print("Can't open " + sDataPath)
+			Exit Sub
+		End If
+
 	    Dim oDoc As Object
 
 	    ' 1. Load the target XLSX
@@ -67,7 +84,7 @@ Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As
 	        	Kill(sDataUrl)
 	        End If
 	    End if
-	End If
+	End if
 End Sub
 
 Sub SaveWorkbook(oTargetDoc As Object, sURL As String)
@@ -87,12 +104,9 @@ Sub SaveWorkbook(oTargetDoc As Object, sURL As String)
 End Sub
 
 Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
-    Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
-    Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
-    Dim iRow As Integer
-    Dim sWorksheet As String, sCoord As String, sText As String
-    Dim oProt As New com.sun.star.util.CellProtection
     ImportAndProcessCSV = False
+    Dim oCSV As Object
+    Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
 
     ' Configure and Open CSV
     csvArgs(0).Name = "FilterName" : csvArgs(0).Value = "Text - txt - csv (StarCalc)"
@@ -109,6 +123,18 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
     	print "Could NOT Open " + sDataPath
     	Exit Function
     end if
+
+
+    ImportAndProcessCSV = ProcessCSV(oCSV, oTargetDoc)
+End Function
+
+Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
+    ProcessCSV = False
+    Dim oCSVSheet As Object, oSheet As Object, oCell As Object
+    Dim iRow As Integer
+    Dim sWorksheet As String, sCoord As String, sText As String
+    Dim oProt As New com.sun.star.util.CellProtection
+    Dim locked As Boolean, asString As Boolean
 
     oCSVSheet = oCSV.Sheets(0)
 
@@ -145,8 +171,7 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
 
     ' Close CSV immediately after data transfer
     oCSV.close(True)
-
-    ImportAndProcessCSV = True
+    ProcessCSV = True
 End Function
 
 Function ReadStringFromFile(filePath As String) As String

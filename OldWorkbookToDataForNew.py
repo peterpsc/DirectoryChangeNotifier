@@ -33,7 +33,7 @@ class OldWorkbookToDataForNew:
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
                  ):
         self.state = None
-        split_path = output_file_path.split("\\")
+        split_path = output_file_path.split("/")
         self.name_of_branch = split_path[-4]
         self.full_name_of_branch = self.name_of_branch
         self.old_workbook_file_path = old_workbook_file_path

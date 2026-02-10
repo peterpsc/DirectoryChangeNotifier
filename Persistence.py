@@ -168,7 +168,7 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
     results = []
     file_path = get_file_path(filename, path_type)
     if exists(file_path):
-        with open(file_path, newline='', encoding="utf-8") as csvfile:
+        with open(file_path, newline='', encoding=UTF_8) as csvfile:
             reader = csv.reader(csvfile)
             if header:
                 next(reader)  # This skips the first row of the CSV file.
@@ -180,7 +180,7 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
 
 def save_list(data, filename, path_type=PRIVATE_PATH):
     file_path = get_file_path(filename, path_type)
-    with open(file_path, 'w', newline='') as f:
+    with open(file_path, 'w', encoding=UTF_8, newline='') as f:
         writer = csv.writer(f)
         for row in data:
             formatted_row = []
@@ -204,7 +204,7 @@ def get_dict(filename, path_type=PRIVATE_PATH, header=True, lower=False):
 
     dict = CaseInsensitiveDict()
     if file_path:
-        with open(file_path, newline='', encoding="utf-8") as csvfile:
+        with open(file_path, newline='', encoding=UTF_8) as csvfile:
             reader = csv.reader(csvfile)
             if header:
                 next(reader)  # This skips the first row of the CSV file.
@@ -227,7 +227,7 @@ def get_dict(filename, path_type=PRIVATE_PATH, header=True, lower=False):
 def get_dict_rows(filename, path_type=PRIVATE_PATH, col_names=None, header=True):
     file_path = get_file_path(filename, path_type)
     rows = []
-    with open(file_path, newline='', encoding="utf-8") as csvfile:
+    with open(file_path, newline='', encoding=UTF_8) as csvfile:
         reader = csv.DictReader(csvfile, fieldnames=col_names)
         if header:
             next(reader)  # This skips the first row of the CSV file.
@@ -266,7 +266,7 @@ def append_lines(filename, lines, path=PRIVATE_PATH):
 
 def replace_lines(filename, lines, path=PRIVATE_PATH):
     file_path = get_file_path(filename, path)
-    f = open(file_path, mode="w")
+    f = open(file_path, mode="w", encoding=UTF_8)
     for line in lines:
         f.write(line + "\n")
     f.close()
@@ -361,7 +361,7 @@ def write_string(file_path, string):
     if file_path[0].upper() == "G":
         raise Exception("Can't write to a Google Drive this way")
     else:
-        with open(file_path, mode="w", encoding="utf-8") as f:
+        with open(file_path, mode="w", encoding=UTF_8) as f:
             f.write(string)
 
 
@@ -509,7 +509,8 @@ def copy_remote_file_if_newer(filename, local_path_type=PRIVATE_PATH, remote_pat
         return l_datestamp
     return r_datestamp
 
-def remove(filename, path_type=PRIVATE_PATH):
+
+def remove_file(filename, path_type=FILE_PATH):
     file_path = get_file_path(filename, path_type=path_type)
     if exists(file_path):
         os.remove(file_path)

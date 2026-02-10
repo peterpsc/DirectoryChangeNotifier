@@ -122,7 +122,7 @@ class DirChangeNotifier:
         paths = list(pathlib.Path(root_path).iterdir())
         for item in paths:
             name = item.name
-            if name[0] == ".":
+            if name.startswith("."):
                 continue
             if name in ignore_paths:
                 continue
