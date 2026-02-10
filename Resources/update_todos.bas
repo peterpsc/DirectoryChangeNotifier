@@ -5,7 +5,8 @@ Sub UpdateTodos
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
     bRedoAll = False
-	iRow = 0
+    converted_count = 0
+
 
     ' Configure and Open CSV
     csvArgs(0).Name = "FilterName" : csvArgs(0).Value = "Text - txt - csv (StarCalc)"
@@ -30,24 +31,28 @@ Sub UpdateTodos
 		End If
 
 	    ' Loop through CSV rows
+	    iRow = 0
 	    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
 	        fromFileDir    = oCSVSheet.getCellByPosition(0, iRow).String
 	        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
 	        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
 	        sDataPath = toFileDir + toFileName + ".csv"
 	       	sOutputPath = toFileDir + "TEST " + toFileName +  ".xlsx"
-	        RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
+	        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
+			convertedCount = convertedCount + success
 	        iRow = iRow + 1
 	    Loop
 
-	    ' Close CSV immediately after data transfer
-	    oCSV.close(True)
-
     End If
-    MsgBox "Converted " + iRow, 64, "Success"
+
+    ' Close CSV immediately after data transfer
+    oCSV.close(True)
+
+    MsgBox "Converted " + convertedCount, 64, "Success"
 End Sub
 
-Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String)
+Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
+	RunWorkbookUpdate = 0
     Dim sOutputURL as String
     sOutputURL = ConvertToUrl(sOutputPath)
 
@@ -59,7 +64,7 @@ Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As
 
 		if not bDataExists then
 			print("Can't open " + sDataPath)
-			Exit Sub
+			Exit Function
 		End If
 
 	    Dim oDoc As Object
@@ -77,15 +82,17 @@ Sub RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As
 	    if success then
 		    SaveWorkbook(oDoc, sOutputURL)
 
-		    oDoc.close(True)
+		    RunWorkbookUpdate = 1
 
 		    sDataUrl = ConvertToUrl(sDataPath)
 		    If FileExists(sDataUrl) Then
 	        	Kill(sDataUrl)
 	        End If
 	    End if
+
+		oDoc.close(True)
 	End if
-End Sub
+End Function
 
 Sub SaveWorkbook(oTargetDoc As Object, sURL As String)
     ' We now need 2 properties: Overwrite and FilterName
@@ -170,7 +177,6 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
     Loop
 
     ' Close CSV immediately after data transfer
-    oCSV.close(True)
     ProcessCSV = True
 End Function
 
