@@ -326,7 +326,7 @@ class OldWorkbookToDataForNew:
                 value = ws_old_funds[f"{old_cols[col]}{row + 15}"].value
                 if value is None:
                     return
-                self.append_data("Summary", f"{new_cols[col]}{row + 60}", value)
+                self.append_data("Summary", f"{new_cols[col]}{row + 60}", value, False)
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve

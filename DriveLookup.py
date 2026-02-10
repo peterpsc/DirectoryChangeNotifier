@@ -15,8 +15,8 @@ from OldWorkbookToDataForNew import OldWorkbookToDataForNew
 
 COPY_G_TO_A = False
 REDO_ALL = False
-PROCESS_SPECIFIC = ["Hartshorn-dale"]
 PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
+PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
 PROCESS_SPECIFIC = None
 
 PREFIX = "TEST "
