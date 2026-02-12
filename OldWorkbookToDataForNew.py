@@ -18,7 +18,15 @@ import Persistence
 VERIFY_DATA_ONLY = False
 GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
                "Project/Newsletter", "Province", "Shire", "Sub Account"]
+PREFIX = "TEST "
+THIS_YEAR = datetime.now().year
+THIS_YEAR_DIR = f"\\{THIS_YEAR}\\"
+THIS_YEAR_PREFIX = f"{PREFIX}{THIS_YEAR} Q1 "
+LAST_YEAR = datetime.now().year - 1
+LAST_YEAR_DIR = f"\\{LAST_YEAR}\\"
 
+
+# it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
 
 class OldWorkbookToDataForNew:
     substitutions = Persistence.get_dict("Group_Substitutions.csv", Persistence.RESOURCE_PATH)
@@ -33,6 +41,8 @@ class OldWorkbookToDataForNew:
                  master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
                  ):
         self.state = None
+        self.region = None
+        self.group_type = None
         split_path = output_file_path.split("/")
         self.name_of_branch = split_path[-4]
         self.full_name_of_branch = self.name_of_branch
@@ -77,10 +87,12 @@ class OldWorkbookToDataForNew:
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
-        print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        self.name_of_branch, self.full_name_of_branch, group_type = self.lookup_group_full_name_type(name_of_branch,
-                                                                                                     self.name_of_branch)
-        self.append_data("Summary", "D6", group_type)
+        self.name_of_branch, self.full_name_of_branch, self.group_type, self.region = self.lookup_group_full_name_type_region(
+            name_of_branch,
+            self.name_of_branch)
+        # print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
+        print(f"Region = {self.region}, Branch name = {name_of_branch}")
+        self.append_data("Summary", "D6", self.group_type)
         self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         self.state = state
@@ -347,6 +359,7 @@ class OldWorkbookToDataForNew:
             amount = ws_old_asset_dtl_5a[f"D{from_row}"].value
             self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
             self.append_data("Outstanding", f"K{to_row}", amount, False)
+            self.append_data("Outstanding", f"J{to_row}", "Undeposited Funds")
             to_row = to_row + 1
             if to_row > 33:
                 print(f"No more room for Outstanding")
@@ -428,8 +441,23 @@ class OldWorkbookToDataForNew:
 
         ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
 
-        # Prepaid Expenses
+        # Undeposited Funds
         to_row = 12
+        from_row_start = 15
+        from_row_end = 18
+        from_col_count = 2
+        from_cols = "CD EG"
+        for from_col in range(from_col_count):
+            for from_row in range(from_row_start, from_row_end + 1):
+                from_col_char = from_cols[from_col * 3]
+                reason = ws_old_asset_dtl_5a[f"{from_col_char}{from_row}"].value
+                from_col_char = from_cols[from_col * 3 + 1]
+                current_amount = ws_old_asset_dtl_5a[f"{from_col_char}{from_row}"].value
+                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                to_row = to_row + 1
+
+        # Prepaid Expenses
         from_row_start = 31
         from_row_end = 51
         from_cols = "CEF"
@@ -440,7 +468,7 @@ class OldWorkbookToDataForNew:
             reason = ws_old_asset_dtl_5a[f"{from_cols[1]}{from_row}"].value
             current_amount = ws_old_asset_dtl_5a[f"{from_cols[2]}{from_row}"].value
             self.append_data("LiabilityDetails", f"F{to_row}", event)
-            self.append_data("LiabilityDetails", f"D{to_row}", reason, False)
+            self.append_data("LiabilityDetails", f"D{to_row}", reason)
             self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
 
@@ -448,10 +476,9 @@ class OldWorkbookToDataForNew:
         # TODO Receivables
 
     def save_depreciation(self):
-        try:
-            ws_old_depr_dtl_8 = self.old_workbook["DEPR_DTL_8"]
-        except Exception as e:
-            print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+        sheet_name = "DEPR_DTL_8"
+        ws_old_depr_dtl_8 = self.get_worksheet(sheet_name)
+        if ws_old_depr_dtl_8 is None:
             return
 
         to_ws = "Assets&Inventory"
@@ -512,9 +539,8 @@ class OldWorkbookToDataForNew:
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
     def get_new_data_file_name(self) -> str:
-        current_year = datetime.now().year
         assert self.full_name_of_branch is not None, f"full_name_of_branch not set for {self.name_of_branch}"
-        new_data_file_name = f"{current_year} Q1 {self.full_name_of_branch}"
+        new_data_file_name = f"{THIS_YEAR_PREFIX}{self.full_name_of_branch}"
         return new_data_file_name
 
     def save_new_data(self):
@@ -575,9 +601,8 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     @classmethod
-    def lookup_group_full_name_type(cls, name_of_branch, hint=None):
+    def lookup_group_full_name_type_region(cls, name_of_branch, hint=None):
         name_of_branch = cls.substitute_group_name(name_of_branch)
-        full_name_of_branch = name_of_branch
         group_name_data = None
         try:
             group_name_data = cls.group_data[name_of_branch]
@@ -585,30 +610,33 @@ class OldWorkbookToDataForNew:
             if " of the " in name_of_branch:
                 group_split = name_of_branch.split(" of the ")
                 name_of_branch = group_split[1].strip()
-                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
+                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(
+                    name_of_branch, hint)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type, region
             elif " of " in name_of_branch:
                 group_split = name_of_branch.split(" of ")
                 name_of_branch = group_split[1].strip()
-                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(name_of_branch)
+                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(
+                    name_of_branch, hint)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type, region
             elif hint and hint in name_of_branch:
-                name_of_branch, full_name_of_branch, group_type = cls.lookup_group_full_name_type(hint)
+                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(hint)
                 assert group_type is not None
                 assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type
+                return name_of_branch, full_name_of_branch, group_type, region
 
         if group_name_data is None:
-            return name_of_branch, None, None
+            return name_of_branch, None, None, None
 
         full_name_of_branch = group_name_data[0]
         group_type = group_name_data[1]
+        region = f"{group_name_data[5]} / {group_name_data[3]}"
 
-        return name_of_branch, full_name_of_branch, group_type
+        return name_of_branch, full_name_of_branch, group_type, region
 
     @classmethod
     def lookup_full_group_name(cls, group_name):
@@ -626,6 +654,15 @@ class OldWorkbookToDataForNew:
         except KeyError:
             group_name = name_of_branch
         return group_name
+
+    def get_worksheet(self, sheet_name, print_exception=False):
+        try:
+            worksheet = self.old_workbook[sheet_name]
+            return worksheet
+        except Exception as e:
+            if print_exception:
+                print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+        return None
 
 
 def main():

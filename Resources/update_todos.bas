@@ -37,7 +37,7 @@ Sub UpdateTodos
 	        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
 	        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
 	        sDataPath = toFileDir + toFileName + ".csv"
-	       	sOutputPath = toFileDir + "TEST " + toFileName +  ".xlsx"
+	       	sOutputPath = toFileDir + toFileName +  ".xlsx"
 	        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
 			convertedCount = convertedCount + success
 	        iRow = iRow + 1
@@ -80,17 +80,19 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 
 	    ' 4. Save as .xlsx
 	    if success then
+	    	RunWorkbookUpdate = 1
 		    SaveWorkbook(oDoc, sOutputURL)
+			oDoc.close(True)
 
-		    RunWorkbookUpdate = 1
-
-		    sDataUrl = ConvertToUrl(sDataPath)
-		    If FileExists(sDataUrl) Then
-	        	Kill(sDataUrl)
-	        End If
+			sDataUrl = ConvertToURL(sDataPath)
+			If FileExists(sDataUrl) Then
+			    Kill(sDataUrl)
+			End If
+		Else
+		    oDoc.close(True)
 	    End if
 
-		oDoc.close(True)
+
 	End if
 End Function
 
@@ -133,6 +135,7 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
 
 
     ImportAndProcessCSV = ProcessCSV(oCSV, oTargetDoc)
+
 End Function
 
 Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
@@ -177,7 +180,14 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
     Loop
 
     ' Close CSV immediately after data transfer
+   	oCSV.close(True)
+	sDataUrl = ConvertToUrl(sDataPath)
+	If FileExists(sDataUrl) Then
+    	Kill(sDataUrl)
+    End If
+
     ProcessCSV = True
+
 End Function
 
 Function ReadStringFromFile(filePath As String) As String
@@ -212,3 +222,48 @@ Function ReadStringFromFile(filePath As String) As String
         ReadStringFromFile = ""
     End If
 End Function
+
+Sub CloseAndOpenNew
+    Dim oComponents As Object
+    Dim oEnum As Object
+    Dim oComp As Object
+    Dim sTargetTitle As String
+    Dim sNewFileUrl As String
+
+    sTargetTitle = "Group Status.csv" ' The exact window title to look for
+    sNewFileUrl = ConvertToURL("C:\path\to\your\NewFile.csv")
+
+    ' 1. Get all open LibreOffice windows
+    oComponents = StarDesktop.getComponents()
+    oEnum = oComponents.createEnumeration()
+
+    ' 2. Loop through open documents to find the match
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+
+        ' Check if the component is a spreadsheet and matches the title
+        If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+            If oComp.Title = sTargetTitle Then
+                oComp.close(True) ' Close it (True = deliver ownership)
+                Exit Do ' Stop looking once found and closed
+            End If
+        End If
+    Loop
+
+    ' 3. Open the new file (using the standard load method)
+    Dim aProps(0) As New com.sun.star.beans.PropertyValue
+    StarDesktop.loadComponentFromURL(sNewFileUrl, "_blank", 0, aProps())
+End Sub
+
+Sub RunExternalProgram
+    ' Path to the executable
+    Dim sExePath As String
+    sExePath = "C:\Windows\System32\notepad.exe"
+
+    ' Optional: Arguments for the program
+    Dim sArgs As String
+    sArgs = "C:\path\to\your\file.txt"
+
+    ' 1 = Normal window, True/False = Wait for it to finish
+    Shell(sExePath, 1, sArgs, True)
+End Sub

@@ -1,6 +1,5 @@
 import os
 import shutil
-from datetime import datetime
 from os.path import exists
 from pathlib import Path
 from typing import Any
@@ -11,25 +10,22 @@ import Persistence
 import PlaySound
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
-from OldWorkbookToDataForNew import OldWorkbookToDataForNew
+from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
+                                     THIS_YEAR_PREFIX)
 
 COPY_G_TO_A = False
-REDO_ALL = False
 PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
-PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
 PROCESS_SPECIFIC = None
-
-PREFIX = "TEST "
-
+PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
+DELETE_ALL_Q1 = True
+DELETE_ALL_Q1_DATA = True
+DEBUG = False
+SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
+SAVE_STATUS_REPORT = True
 
 # Negative Reports.csv, Out Of Balance.csv, Missing.csv, Todos.csv, Group Status.csv are in G:/My Drive/
 
 class DriveLookup:
-    this_year = datetime.now().strftime("%Y")
-    last_year = f"{int(this_year) - 1}"
-    last_year_dir = f"\\{int(this_year) - 1}\\"
-    this_year_dir = f"\\{this_year}\\"
-
     def __init__(self, notification_name: str, report_path):
         self.notification_name = notification_name
         self.report_path = report_path
@@ -42,12 +38,12 @@ class DriveLookup:
         all_directories = self.dcn.get_dir_paths(path_options, ignore_paths)
         filtered_directories = []
         for directory in all_directories:
-            if f"{self.last_year_dir}Quarterly Reports" in directory:
+            if f"{LAST_YEAR_DIR}Quarterly Reports" in directory:
                 filtered_directories.append(directory)
 
-        result = self.remove_extra_directories(filtered_directories)
+        last_year_dirs = self.remove_extra_directories(filtered_directories)
 
-        return result
+        return last_year_dirs
 
     def get_this_year_dirs(self, last_year_dirs):
         this_year_dirs = []
@@ -59,15 +55,15 @@ class DriveLookup:
 
     def remove_extra_directories(self, filtered_directories):
         extra_directories = []
-        result = []
+        intermediate_results = []
 
         for directory in filtered_directories:
             subdirectory = directory.split("\\")[-1]
             if subdirectory == "Quarterly Reports" and directory not in extra_directories:
-                result.append(directory)
+                intermediate_results.append(directory)
             elif "4" in subdirectory and "Q" in subdirectory:
                 extra_directories.append(directory)
-                result.append(directory)
+                intermediate_results.append(directory)
             else:
                 sub_directory = directory.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
                 extra_directories.append(sub_directory)
@@ -77,12 +73,12 @@ class DriveLookup:
         for directory in extra_directories:
             sub_directory = directory.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
             not_wanted_directories.append(sub_directory)
-        for directory in result:
+        for directory in intermediate_results:
             if directory not in not_wanted_directories:
                 returning_directories.append(directory)
         return returning_directories
 
-    def find_all_Q4s_missing_todos(self, folders):
+    def find_all_q4s_missing_todos(self, folders):
         all = []
         q4s = []
         missing = []
@@ -99,7 +95,7 @@ class DriveLookup:
                 if not new_dir_exists:
                     os.makedirs(new_dir)
 
-                new_q1_file_path = f"{new_dir}{PREFIX}{new_file_name}.xlsx"
+                new_q1_file_path = f"{new_dir}{new_file_name}.xlsx"
                 if exists(new_q1_file_path):
                     print(f"File {new_q1_file_path} already exists")
                     continue
@@ -109,7 +105,8 @@ class DriveLookup:
 
         return all, q4s, missing, todos
 
-    def find_q4_file_name(self, folder):
+    @staticmethod
+    def find_q4_file_name(folder):
         paths = sorted(Path(folder).iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
         found = False
         file_name = None
@@ -125,25 +122,25 @@ class DriveLookup:
                     return file_name
         return None
 
-    def create_convert_data(self, todos):
+    @staticmethod
+    def create_convert_data(todos):
         formatted_rows = []
 
         for todo in todos:
-            formatted_row = []
-            formatted_row.append(todo[0])
-            formatted_row.append(todo[1])
-            formatted_row.append(todo[2])
+            formatted_row = [todo[0], todo[1], todo[2]]
             formatted_rows.append(formatted_row)
         return formatted_rows
 
-    def save_to_convert(self, to_convert):
-        file_path = Persistence.get_file_path(f"{self.report_path}To Convert.csv", Persistence.FILE_PATH)
+    def save_to_convert(self, to_convert, file_name="To Convert.csv"):
+        to_convert_file_path = Persistence.get_file_path(f"{self.report_path}{file_name}", Persistence.FILE_PATH)
         if not to_convert:
-            Persistence.remove_file(file_path)
+            Persistence.remove_file(to_convert_file_path)
             return
 
         data = self.create_convert_data(to_convert)
-        Persistence.save_list(data, file_path, Persistence.FILE_PATH)
+        Persistence.save_list(data, to_convert_file_path, Persistence.FILE_PATH)
+
+
 
     @classmethod
     def fix_slashes(cls, file_path):
@@ -155,18 +152,20 @@ class DriveLookup:
         new_dir = self.get_this_year_dir(folder)
         this_year_dirs_split = new_dir.split("/")
         group_name = this_year_dirs_split[- 4]
-        group_name, full_group_name, group_type = OldWorkbookToDataForNew.lookup_group_full_name_type(group_name)
-        new_file_name = f"{self.this_year} Q1 {full_group_name}"
+        group_name, full_group_name, group_type, region = OldWorkbookToDataForNew.lookup_group_full_name_type_region(
+            group_name)
+        new_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}"
         return old_file_path, new_dir, new_file_name
 
     @classmethod
     def get_this_year_dir(cls, last_year_dir) -> Any:
-        to_dir = last_year_dir.partition(f"{cls.last_year_dir}")[0]
-        to_dir = cls.fix_slashes(f"{to_dir}\\{cls.this_year}\\Quarterly Reports\\")
+        to_dir = last_year_dir.partition(f"{LAST_YEAR_DIR}")[0]
+        to_dir = cls.fix_slashes(f"{to_dir}{THIS_YEAR_DIR}Quarterly Reports\\")
 
         return to_dir
 
-    def process_Todos(self, todos):
+    @staticmethod
+    def process_todos(todos):
         to_convert = []
         out_of_balance = []
         negative_reports = []
@@ -194,15 +193,34 @@ class DriveLookup:
 
         return to_convert, out_of_balance, negative_reports, bugs
 
-    def delete_all_q1_test_workbooks(self, this_year_dirs):
+    def delete_all_q1_test_workbooks(self, this_year_dirs, delete_q1=False, delete_q1_data=False):
         for this_year_dir in this_year_dirs:
             for file_name in os.listdir(this_year_dir):
-                if file_name.startswith(f"TEST {self.this_year} Q1") and file_name.endswith(".xlsx"):
+                delete = self.should_delete_file_name(file_name, delete_q1, delete_q1_data)
+                if delete:
                     file_path = this_year_dir + file_name
                     print(f"Deleting {file_path}")
                     Persistence.remove_file(file_path, path_type=Persistence.FILE_PATH)
+                    if self.notification_name == "Test":  # also delete from B:
+                        file_path = "B:" + file_path[2:]
+                        Persistence.remove_file(file_path, path_type=Persistence.FILE_PATH)
 
-    def copy_g_to_a(self, all, q4s):
+    def should_delete_file_name(self, file_name: str, delete_q1, delete_q1_data) -> bool:
+        delete = False
+        if self.notification_name == "Test":
+            if delete_q1 and file_name.endswith(".xlsx"):
+                delete = True
+            if delete_q1_data and file_name.endswith(".csv"):
+                delete = True
+        else:
+            if delete_q1 and file_name.startswith(f"{THIS_YEAR_PREFIX}") and file_name.endswith(".xlsx"):
+                delete = True
+            if delete_q1_data and file_name.startswith(f"{THIS_YEAR_PREFIX}") and file_name.endswith(".csv"):
+                delete = True
+        return delete
+
+    @staticmethod
+    def copy_g_to_a(all, q4s):
         # from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
         from_file_path = 'g:\\Shared drives'
         l = len(from_file_path)
@@ -211,7 +229,7 @@ class DriveLookup:
             to_group_path = f"{to_file_path}{from_group_path[l:]}"
             os.makedirs(to_group_path, exist_ok=True)
             to_new_group_path = to_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
-            to_new_group_path = to_new_group_path.replace(self.last_year_dir, self.this_year_dir)
+            to_new_group_path = to_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
             os.makedirs(to_new_group_path, exist_ok=True)
         for from_q4_path in q4s:
             to_q4_path = f"{to_file_path}{from_q4_path[l:]}"
@@ -233,7 +251,7 @@ class DriveLookup:
     def save_status(self, all, todos):
         group_status_file_path = self.delete_old_status_report()
 
-        to_convert, out_of_balance, negative_reports, bugs = self.process_Todos(todos)
+        to_convert, out_of_balance, negative_reports, bugs = self.process_todos(todos)
 
         self.save_to_convert(to_convert)
 
@@ -262,12 +280,12 @@ class DriveLookup:
             formatted_row = []
             group_last_dir, group_name, full_group_name = self.get_group_dir_name_full(group)
             q4_file_name = self.find_q4_file_name(group)
-            new_data_file_name = f"{self.this_year} Q1 {full_group_name}.csv"
+            new_data_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.csv"
             q4_path = None
             if q4_file_name is not None:
                 q4_path = self.fix_slashes(group + "\\" + q4_file_name)
             to_dir = self.get_this_year_dir(f"{group_last_dir}")
-            group_last_dir = group_last_dir + self.last_year_dir
+            group_last_dir = group_last_dir + LAST_YEAR_DIR
             group_dir = to_dir.partition(f"\\Quarterly Reports")[0]
 
             hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
@@ -279,7 +297,7 @@ class DriveLookup:
                 hyperlink_group = Persistence.create_hyperlink(group_dir, f"UNKNOWN: {group_name}")
             formatted_row.append(hyperlink_group)
 
-            hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{self.last_year} dir")
+            hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{LAST_YEAR} dir")
             formatted_row.append(hyperlink_last_dir)
 
             hyperlink_q4_negative = None
@@ -293,15 +311,16 @@ class DriveLookup:
             elif q4_path is None:
                 formatted_row.append("MISSING")
             else:
-                hyperlink_q4 = Persistence.create_hyperlink(q4_path, f"{self.last_year} Q4")
+                hyperlink_q4 = Persistence.create_hyperlink(q4_path, f"{LAST_YEAR} Q4")
                 formatted_row.append(hyperlink_q4)
 
-            hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{self.this_year} Q1 dir")
+            hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{THIS_YEAR} Q1 dir")
             formatted_row.append(hyperlink_q1_dir)
 
-            q1_file_name = f"{PREFIX}{self.this_year} Q1 {full_group_name}.xlsx"
+            q1_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.xlsx"
             q1_path = f"{to_dir}{q1_file_name}"
             q1_data_path = f"{to_dir}{new_data_file_name}"
+            hyperlink_status = None
             if exists(q1_path):
                 hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
             elif exists(q1_data_path):
@@ -315,13 +334,14 @@ class DriveLookup:
             elif q4_path is None:
                 hyperlink_status = "MISSING"
 
-            formatted_row.append(hyperlink_status)
+            if hyperlink_status:
+                formatted_row.append(hyperlink_status)
 
             formatted_rows.append(formatted_row)
         return formatted_rows
 
     def get_group_dir_name_full(self, group_last_dir) -> tuple[Any, Any]:
-        group_dir = group_last_dir.partition(f"{self.last_year_dir}Quarterly Reports")[0]
+        group_dir = group_last_dir.partition(f"{LAST_YEAR_DIR}Quarterly Reports")[0]
         group_dir_split = group_dir.split("\\")
         group_dir = self.fix_slashes(group_dir)
         group_name = group_dir_split[- 1]
@@ -331,9 +351,8 @@ class DriveLookup:
         return group_dir, group_name, full_group_name
 
 
-def getDriveLookup():
+def get_drive_lookup():
     global driveLU
-
     where = Persistence.get_line("GoogleDrive_Path_Options.txt")
     if where == "g:\\ /S":
         driveLU = DriveLookup("Test", "a:\\East Kingdom Exchequer Test\\")
@@ -345,7 +364,7 @@ if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
-    getDriveLookup()
+    get_drive_lookup()
 
     last_year_dirs = driveLU.get_last_year_dirs()
     if PROCESS_SPECIFIC:
@@ -356,16 +375,18 @@ if __name__ == '__main__':
                 result.append(folder)
         last_year_dirs = result
 
-    if REDO_ALL:
+    if DELETE_ALL_Q1 or DELETE_ALL_Q1_DATA:
         this_year_dirs = driveLU.get_this_year_dirs(last_year_dirs)
-        driveLU.delete_all_q1_test_workbooks(this_year_dirs)
+        driveLU.delete_all_q1_test_workbooks(this_year_dirs, DELETE_ALL_Q1, DELETE_ALL_Q1_DATA)
 
     group_status_file_path = driveLU.delete_old_status_report()
     if group_status_file_path is not None:
-        all, q4s, missing, todos = driveLU.find_all_Q4s_missing_todos(last_year_dirs)
+        all, q4s, missing, todos = driveLU.find_all_q4s_missing_todos(last_year_dirs)
         if COPY_G_TO_A:
             driveLU.copy_g_to_a(all, q4s)
-        else:
+        if SAVE_TODOS:
+            driveLU.save_to_convert(todos, "Todos.csv")
+        if SAVE_STATUS_REPORT:
             driveLU.save_status(all, todos)
 
     PrintHelper.printInBox()

@@ -1,63 +1,63 @@
-Group Name,Full Group Name,Group Type,Region,Location,Note
-Tir Mara,The Crown Principality of Tir Mara,,,Canada,
- Ar n-Eilean-ne ,Shire of Ar n-Eilean-ne ,Shire,Newfoundland and Labrador, Canada,(DORMANT)
- Avonmore,Shire of Avonmore,Shire, New Brunswick, Canada,
- Havre des Glaces,Baronnie du Havre des Glaces,Barony, NE Quebec Province, Canada,
- L'ile du Dragon Dormant, Barony of L'ile du Dragon Dormant,Barony, Montreal QE , Canada,
- Lyndhaven ,Shire of Lyndhaven ,Shire, New Brunswick , Canada,
- Ruantallan, Barony of Ruantallan,Barony, NS & PEI, Canada,
- Distant Shore, Canton of Distant Shore,Canton, NS, Canada,
- Seashire, Canton of Seashire,Canton, Halifax NS, Canada,
- Ynys y Gwaun , Canton of Ynys y Gwaun ,Canton,PEI, Canada,
-Northern,The Northern Region,,,New England,
- Coldwood , Shire of Coldwood ,Shire, Plattsburgh, NY,
- Endewearde, Barony of Endewearde,Barony, Central and Northern Maine ,ME,
- Basingestoches , Canton of Basingestoches ,Canton, Endewearde ,ME,
- Glenn Linn, Shire of Glenn Linn,Shire, Warren-Washington County, NY,
- Hadchester, Shire of Hadchester,Shire, Mid-coast Maine ,ME,
- Malagentia, Province of Malagentia,Province, Southern, ME,
- Giggleswick, Riding of Giggleswick,Riding, Southern York County - Maine, ME, Canton
- Ravensbridge, Riding of Ravensbridge,Riding, Augusta - Lewiston - Auburn, ME, Canton
- Mountain Freehold,Shire of Mountain Freehold,Shire, Northwestern Vermont, VT,
- Northern Outpost, Shire of Northern Outpost,Shire, Potsdam, NY,
- Panther Vale, Shire of Panther Vale,Shire,Northeastern Vermont, VT,
- Stonemarche,Barony of Stonemarche,Barony, New Hampshire , NH,
-Central,The Central Region,,,New England,
- Anglespur, Shire of Anglespur,Shire, Troy, NY,
- Bergental, Barony of Bergental,Barony, Western MA,MA,
- Beyond the Mountain, Barony Beyond the Mountain,Barony, North East CT, CT,
- Carolingia, Barony of Carolingia,Barony , Greater Boston, MA,
- Towers,Canton of the Towers,Canton,Northeast MA , MA,
- Coill Tuar, Shire of Coill Tuar,Shire , Southern Ulster County, NY,
- Concordia of the Snows, Barony of Concordia of the Snows,Barony , Albany, NY,
- Dragonship Haven, Barony of Dragonship Haven,Barony , Southwestern CT, CT,
- Nordenhal, Shire of Nordenhal,Shire , Kingston, NY,
- Quintavia, Shire of Quintavia,Shire , Worcester County, MA,
- Smoking Rocks, Barony of Smoking Rocks,Barony , Southeast MA ,MA,
- Bridge, Barony of the Bridge,Barony , RI State , RI,
-Southern,The Southern Region,,,New England,
- An Dubhaigeainn, Barony of An Dubhaigeainn,Barony , Suffolk County, NY,
- Hawke's Reache, Canton of Hawke's Reache,Canton , Western Suffolk County, NY,
- Barren Sands, Shire of Barren Sands,Shire , Atlantic - Cape May - Cumberland - Salem County, NJ,
- Bhakail, Barony of Bhakail,Barony , Philadelphia - Delaware and South Chester County, PA,
- Ivyeinrust, Bailiwick of Ivyeinrust,Bailiwick , University of PA, PA, College
- Blak Rose, Shire of Blak Rose,Shire , Camp Hill and Harrisburg, PA,
- Buckland Cross, Barony of Buckland Cross,Barony , Southern Bucks County, PA,
- Caer Adamant, Shire of Caer Adamant,Shire , State of Delaware, DE,
- Carillion, Barony of Carillion,Barony , Monmouth - Ocean - S.Middlesex County, NJ,
- Eisental, Shire of Eisental,Shire , Allentown - Bethlehem - Easton & Reading, PA,
- Hartshorn-dale, Shire of Hartshorn-dale,Shire , Chester-Montgomery,PA,
- Iron Bog, Barony of Iron Bog,Barony , Camden - Gloucester - S. Burlington, NJ,
- Montevale, Shire of Montevale,Shire , Fulton - Franklin - Cumberland, PA,
- Owlsherst, Shire of Owlsherst,Shire , York - Lancaster - eastern portions of Adams Counties, PA,
- Østgarðr, Crown Province of Østgarðr,Crown Province, Greater NYC - Westchester - Putnam Counties, NY, Barony
- Appleholm, Canton of Appleholm,Canton , Manhattan - NYC , NY,
- Brokenbridge, Canton of Brokenbridge,Canton , Brooklyn, NY,
- Lions End, Canton of Lions End,Canton , Nassau County, NY,
- Midland Vale, Canton of Midland Vale,Canton , Sullivan and Orange Counties, NY,
- Northpass, Canton of Northpass,Canton , Putnam & Westchester, NY,
- Old Stonebridges, Canton of Old Stonebridges,Canton ,Rockland County, NY,
- Rusted Woodlands, Shire of Rusted Woodlands,Shire , Bergen - Sussex - Passaic County, NJ,
- Settmour Swamp, Barony of Settmour Swamp,Barony , Somerset - Morris County, NJ,
- Gryphonwald, Canton of Gryphonwald,Canton , Middlesex City, NJ,
- Known World Players, Known World Players Guild,Guild, ,PA, Canton
+Group Name,Full Group Name,Group Type,Region,Location,Note,Region
+Tir Mara,The Crown Principality of Tir Mara,,,Canada,,Tir Mara
+ Ar n-Eilean-ne ,Shire of Ar n-Eilean-ne ,Shire,Newfoundland and Labrador, Canada,(DORMANT),Tir Mara
+ Avonmore,Shire of Avonmore,Shire, New Brunswick, Canada,,Tir Mara
+ Havre des Glaces,Baronnie du Havre des Glaces,Barony, NE Quebec Province, Canada,,Tir Mara
+ L'ile du Dragon Dormant, Barony of L'ile du Dragon Dormant,Barony, Montreal QE , Canada,,Tir Mara
+ Lyndhaven ,Shire of Lyndhaven ,Shire, New Brunswick , Canada,,Tir Mara
+ Ruantallan, Barony of Ruantallan,Barony, NS & PEI, Canada,,Tir Mara
+ Distant Shore, Canton of Distant Shore,Canton, NS, Canada,,Tir Mara
+ Seashire, Canton of Seashire,Canton, Halifax NS, Canada,,Tir Mara
+ Ynys y Gwaun , Canton of Ynys y Gwaun ,Canton,PEI, Canada,,Tir Mara
+Northern,The Northern Region,,,,,Northern
+ Coldwood , Shire of Coldwood ,Shire, Plattsburgh, NY,,Northern
+ Endewearde, Barony of Endewearde,Barony, Central and Northern Maine ,ME,,Northern
+ Basingestoches , Canton of Basingestoches ,Canton, Endewearde ,ME,,Northern
+ Glenn Linn, Shire of Glenn Linn,Shire, Warren-Washington County, NY,,Northern
+ Hadchester, Shire of Hadchester,Shire, Mid-coast Maine ,ME,,Northern
+ Malagentia, Province of Malagentia,Province, Southern, ME,,Northern
+ Giggleswick, Riding of Giggleswick,Riding, Southern York County - Maine, ME, Canton,Northern
+ Ravensbridge, Riding of Ravensbridge,Riding, Augusta - Lewiston - Auburn, ME, Canton,Northern
+ Mountain Freehold,Shire of Mountain Freehold,Shire, Northwestern Vermont, VT,,Northern
+ Northern Outpost, Shire of Northern Outpost,Shire, Potsdam, NY,,Northern
+ Panther Vale, Shire of Panther Vale,Shire,Northeastern Vermont, VT,,Northern
+ Stonemarche,Barony of Stonemarche,Barony, New Hampshire , NH,,Northern
+Central,The Central Region,,,,,Central
+ Anglespur, Shire of Anglespur,Shire, Troy, NY,,Central
+ Bergental, Barony of Bergental,Barony, Western MA,MA,,Central
+ Beyond the Mountain, Barony Beyond the Mountain,Barony, North East CT, CT,,Central
+ Carolingia, Barony of Carolingia,Barony , Greater Boston, MA,,Central
+ Towers,Canton of the Towers,Canton,Northeast MA , MA,,Central
+ Coill Tuar, Shire of Coill Tuar,Shire , Southern Ulster County, NY,,Central
+ Concordia of the Snows, Barony of Concordia of the Snows,Barony , Albany, NY,,Central
+ Dragonship Haven, Barony of Dragonship Haven,Barony , Southwestern CT, CT,,Central
+ Nordenhal, Shire of Nordenhal,Shire , Kingston, NY,,Central
+ Quintavia, Shire of Quintavia,Shire , Worcester County, MA,,Central
+ Smoking Rocks, Barony of Smoking Rocks,Barony , Southeast MA ,MA,,Central
+ Bridge, Barony of the Bridge,Barony , RI State , RI,,Central
+Southern,The Southern Region,,,,,Southern
+ An Dubhaigeainn, Barony of An Dubhaigeainn,Barony , Suffolk County, NY,,Southern
+ Hawke's Reache, Canton of Hawke's Reache,Canton , Western Suffolk County, NY,,Southern
+ Barren Sands, Shire of Barren Sands,Shire , Atlantic - Cape May - Cumberland - Salem County, NJ,,Southern
+ Bhakail, Barony of Bhakail,Barony , Philadelphia - Delaware and South Chester County, PA,,Southern
+ Ivyeinrust, Bailiwick of Ivyeinrust,Bailiwick , University of PA, PA, College,Southern
+ Blak Rose, Shire of Blak Rose,Shire , Camp Hill and Harrisburg, PA,,Southern
+ Buckland Cross, Barony of Buckland Cross,Barony , Southern Bucks County, PA,,Southern
+ Caer Adamant, Shire of Caer Adamant,Shire , State of Delaware, DE,,Southern
+ Carillion, Barony of Carillion,Barony , Monmouth - Ocean - S.Middlesex County, NJ,,Southern
+ Eisental, Shire of Eisental,Shire , Allentown - Bethlehem - Easton & Reading, PA,,Southern
+ Hartshorn-dale, Shire of Hartshorn-dale,Shire , Chester-Montgomery,PA,,Southern
+ Iron Bog, Barony of Iron Bog,Barony , Camden - Gloucester - S. Burlington, NJ,,Southern
+ Montevale, Shire of Montevale,Shire , Fulton - Franklin - Cumberland, PA,,Southern
+ Owlsherst, Shire of Owlsherst,Shire , York - Lancaster - eastern portions of Adams Counties, PA,,Southern
+ Østgarðr, Crown Province of Østgarðr,Crown Province, Greater NYC - Westchester - Putnam Counties, NY, Barony,Southern
+ Appleholm, Canton of Appleholm,Canton , Manhattan - NYC , NY,,Southern
+ Brokenbridge, Canton of Brokenbridge,Canton , Brooklyn, NY,,Southern
+ Lions End, Canton of Lions End,Canton , Nassau County, NY,,Southern
+ Midland Vale, Canton of Midland Vale,Canton , Sullivan and Orange Counties, NY,,Southern
+ Northpass, Canton of Northpass,Canton , Putnam & Westchester, NY,,Southern
+ Old Stonebridges, Canton of Old Stonebridges,Canton ,Rockland County, NY,,Southern
+ Rusted Woodlands, Shire of Rusted Woodlands,Shire , Bergen - Sussex - Passaic County, NJ,,Southern
+ Settmour Swamp, Barony of Settmour Swamp,Barony , Somerset - Morris County, NJ,,Southern
+ Gryphonwald, Canton of Gryphonwald,Canton , Middlesex City, NJ,,Southern
+ Known World Players, Known World Players Guild,Guild, ,PA, Canton,Southern
