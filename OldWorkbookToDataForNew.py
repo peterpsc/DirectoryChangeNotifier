@@ -334,12 +334,19 @@ class OldWorkbookToDataForNew:
         self.append_data("Summary", "G59", value, False)
 
         # Named Funds
-        for row in range(26):
-            for col in range(3):
-                value = ws_old_funds[f"{old_cols[col]}{row + 15}"].value
-                if value is None:
-                    return
-                self.append_data("Summary", f"{new_cols[col]}{row + 60}", value, False)
+        to_row = 60
+        from_row_start = 15
+        from_row_end = 55
+        for from_row in range(from_row_start, from_row_end + 1):
+            value = ws_old_funds[f"F{from_row}"].value
+            if value:
+                name_of_fund = ws_old_funds[f"D{from_row}"].value
+                purpose_of_fund = ws_old_funds[f"E{from_row}"].value
+
+                self.append_data("Summary", f"B{to_row}", name_of_fund)
+                self.append_data("Summary", f"D{to_row}", purpose_of_fund)
+                self.append_data("Summary", f"G{to_row}", value, False)
+                to_row = to_row + 1
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve
