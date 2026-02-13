@@ -4,6 +4,7 @@ Sub UpdateTodos
     Dim iRow As Integer, convertedCount As Integer
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
+
     bRedoAll = False
     converted_count = 0
 
@@ -13,8 +14,7 @@ Sub UpdateTodos
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-	sReportPath = "G:/My Drive/" 					' Remote Computer
-    sReportPath = "A:/East Kingdom Exchequer Test/"	' local Computer
+	sReportPath = GetGroupDataDir()
     sToConvertPath = sReportPath + "To Convert.csv"
 
     If not FileExists(sToConvertPath) Then
@@ -49,6 +49,8 @@ Sub UpdateTodos
     oCSV.close(True)
 
     MsgBox "Converted " + convertedCount, 64, "Success"
+
+    RefreshGroupStatus()
 End Sub
 
 Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
@@ -223,15 +225,19 @@ Function ReadStringFromFile(filePath As String) As String
     End If
 End Function
 
-Sub CloseAndOpenNew
+Sub RefreshGroupStatus
+    CloseGroupStatusReport()
+    RunDriveLookup()
+    OpenGroupStatusReport()
+ End Sub
+
+Sub CloseGroupStatusReport
     Dim oComponents As Object
     Dim oEnum As Object
     Dim oComp As Object
     Dim sTargetTitle As String
-    Dim sNewFileUrl As String
 
     sTargetTitle = "Group Status.csv" ' The exact window title to look for
-    sNewFileUrl = ConvertToURL("C:\path\to\your\NewFile.csv")
 
     ' 1. Get all open LibreOffice windows
     oComponents = StarDesktop.getComponents()
@@ -249,21 +255,83 @@ Sub CloseAndOpenNew
             End If
         End If
     Loop
-
-    ' 3. Open the new file (using the standard load method)
-    Dim aProps(0) As New com.sun.star.beans.PropertyValue
-    StarDesktop.loadComponentFromURL(sNewFileUrl, "_blank", 0, aProps())
 End Sub
 
-Sub RunExternalProgram
+Sub RunDriveLookup
     ' Path to the executable
     Dim sExePath As String
-    sExePath = "C:\Windows\System32\notepad.exe"
+    dir = GetPythonDir()
+    sExePath = dir +"DriveLookup.bat"
 
     ' Optional: Arguments for the program
     Dim sArgs As String
-    sArgs = "C:\path\to\your\file.txt"
+    sArgs = ""
 
     ' 1 = Normal window, True/False = Wait for it to finish
     Shell(sExePath, 1, sArgs, True)
+End Sub
+
+Function GetPythonDir
+    where = "g:\\ /S"
+    'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
+
+    GetPythonDir = None
+    if where = "g:\\ /S" then
+        GetPythonDir = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\\"
+    else
+        GetPythonDir = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\\"
+    end if
+End Function
+
+Function GetGroupDataDir
+    where = "g:\\ /S" ' local computer
+    'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
+
+    GetGroupDataDir = None
+    if where = "g:\\ /S" then
+        GetGroupDataDir = "A:/East Kingdom Exchequer Test/"	' local Computer
+    else
+    	GetGroupDataDir = "G:/My Drive/" 					' Remote Computer
+    end if
+End Function
+
+Sub OpenGroupStatusReport
+    sReportPath = GetGroupDataDir()
+    sTargetTitle = "Group Status.csv"
+    sStatusReportFilePath = sReportPath + sTargetTitle
+
+End Sub
+
+Sub RefreshGroupStatus2
+    Dim sFileUrl As String
+    Dim oDoc As Object
+    Dim sBatchPath As String
+
+    ' 1. Define the CSV File URL and Batch File Path
+    ' Change "C:\path\to\" to the actual folder path
+    sFileUrl = ConvertToURL("C:\path\to\Group Status.csv")
+    sBatchPath = "C:\path\to\Update Group Status.bat"
+
+    oDoc = ThisComponent
+
+    ' 2. Close the CSV File
+    If HasUnoInterfaces(oDoc, "com.sun.star.util.XCloseable") Then
+        oDoc.close(True)
+    Else
+        oDoc.dispose()
+    End If
+
+    ' Optional: Wait for file handle to release
+    Wait 1000
+
+    ' 3. Execute the Batch File
+    ' 1 = Normal window, True/False = Wait for it to finish
+    Shell(sBatchPath, 1, sArgs, True)
+
+    ' 4. Open the CSV file again
+    Dim mArgs(0) As New com.sun.star.beans.PropertyValue
+    mArgs(0).Name = "Hidden"
+    mArgs(0).Value = False
+
+    StarDesktop.loadComponentFromURL(sFileUrl, "_blank", 0, mArgs())
 End Sub

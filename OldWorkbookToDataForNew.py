@@ -12,6 +12,7 @@ from typing import Any
 
 import openpyxl
 from colorama import Fore, Style
+from openpyxl.utils.cell import get_column_letter
 
 import Persistence
 
@@ -436,8 +437,7 @@ class OldWorkbookToDataForNew:
             to_row = to_row + 1
 
     def save_assets(self):
-        # from ASSET_DTL_5a to AssetDetails Prepaid Expenses, Other Assets, Receivables only if Current Amount != 0
-        # if prior amount != 0 then year = 2024 otherwise 2025
+        # from ASSET_DTL_5a to Undeposited Funds, Receivables, AssetDetails Prepaid Expenses, Other Assets,
 
         ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
 
@@ -457,54 +457,126 @@ class OldWorkbookToDataForNew:
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
                 to_row = to_row + 1
 
+        # Receivables only if Current Amount != 0
+        # if prior amount != 0 then year = 2024 otherwise 2025
+        from_row_start = 24
+        from_row_end = 34
+        for from_row in range(from_row_start, from_row_end + 1):
+            owed_from = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            reason = ws_old_asset_dtl_5a[f"D{from_row}"].value
+            if reason is None:
+                break
+            prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
+            year = LAST_YEAR
+            if prior_amount:
+                year -= 1
+            current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+            self.append_data("LiabilityDetails", f"B{to_row}", owed_from)
+            self.append_data("LiabilityDetails", f"C{to_row}", year)
+            self.append_data("LiabilityDetails", f"D{to_row}", reason)
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+            to_row = to_row + 1
+
         # Prepaid Expenses
         from_row_start = 31
         from_row_end = 51
-        from_cols = "CEF"
         for from_row in range(from_row_start, from_row_end + 1):
-            event = ws_old_asset_dtl_5a[f"{from_cols[0]}{from_row}"].value
+            event = ws_old_asset_dtl_5a[f"C{from_row}"].value
             if event is None:
                 break
-            reason = ws_old_asset_dtl_5a[f"{from_cols[1]}{from_row}"].value
-            current_amount = ws_old_asset_dtl_5a[f"{from_cols[2]}{from_row}"].value
+            reason = ws_old_asset_dtl_5a[f"E{from_row}"].value
+            current_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
             self.append_data("LiabilityDetails", f"F{to_row}", event)
             self.append_data("LiabilityDetails", f"D{to_row}", reason)
             self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
 
-        # TODO Other Assets
-        # TODO Receivables
-
-    def save_depreciation(self):
-        sheet_name = "DEPR_DTL_8"
-        ws_old_depr_dtl_8 = self.get_worksheet(sheet_name)
-        if ws_old_depr_dtl_8 is None:
-            return
-
-        to_ws = "Assets&Inventory"
-
-        # Prepaid Expenses
-        to_row = 12
-        from_row_start = 14
-        from_row_end = 23
-        from_cols = "DEFGJ"
+        # Other Assets
+        from_row_start = 54
+        from_row_end = 61
         for from_row in range(from_row_start, from_row_end + 1):
-            oa_ar_fr = ws_old_depr_dtl_8[f"{from_cols[0]}{from_row}"].value
-            if oa_ar_fr is None:
+            description = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            if description is None:
                 break
-            item_description = ws_old_depr_dtl_8[f"{from_cols[1]}{from_row}"].value
-            quantity = ws_old_depr_dtl_8[f"{from_cols[2]}{from_row}"].value
-            purchase_year = ws_old_depr_dtl_8[f"{from_cols[3]}{from_row}"].value
-            current_amount = ws_old_depr_dtl_8[f"{from_cols[4]}{from_row}"].value
-            self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-            self.append_data(to_ws, f"C{to_row}", item_description)
-            self.append_data(to_ws, f"D{to_row}", quantity)
-            self.append_data(to_ws, f"B{to_row}", purchase_year)
-            self.append_data(to_ws, f"E{to_row}", current_amount, False)
+            prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
+            current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+            self.append_data("LiabilityDetails", f"D{to_row}", description)
+            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
             to_row = to_row + 1
 
-    def save_inventory(self):
-        # TODO from INVENTORY_DTL_6 to Assets&Inventory
+    def save_depreciation_and_inventory(self):
+        sheet_name = "DEPR_DTL_8"
+        ws_old_depr_dtl_8 = self.get_worksheet(sheet_name)
+        if ws_old_depr_dtl_8:
+            to_ws = "Assets&Inventory"
+
+            # 5 Year Depreciation
+            to_row = 11
+            from_row_start = 14
+            from_row_end = 23
+            for from_row in range(from_row_start, from_row_end + 1):
+                oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
+                if oa_ar_fr is None:
+                    break
+                item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
+                quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
+                purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
+                current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
+                self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
+                self.append_data(to_ws, f"C{to_row}", item_description)
+                self.append_data(to_ws, f"D{to_row}", quantity)
+                self.append_data(to_ws, f"B{to_row}", purchase_year)
+                self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
+                to_row = to_row + 1
+
+            # 7 Year Depreciation
+            from_row_start = 32
+            from_row_end = 41
+            for from_row in range(from_row_start, from_row_end + 1):
+                oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
+                if oa_ar_fr is None:
+                    break
+                item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
+                quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
+                purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
+                current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
+                self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
+                self.append_data(to_ws, f"C{to_row}", item_description)
+                self.append_data(to_ws, f"D{to_row}", quantity)
+                self.append_data(to_ws, f"B{to_row}", purchase_year)
+                self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                self.append_data(to_ws, f"I{to_row}", "7-Year Depreciable Assets")
+
+                to_row = to_row + 1
+
+        # from INVENTORY_DTL_6 to Assets&Inventory
+        sheet_name = "INVENTORY_DTL_6"
+        ws_old_inventory_dtl_6 = self.get_worksheet(sheet_name)
+        if ws_old_inventory_dtl_6:
+            from_col_start = 5
+            from_col_end = 12
+            for from_col_index in range(from_col_start, from_col_end + 1):
+                from_col = get_column_letter(from_col_index)
+                description_and_year_purchaced = ws_old_inventory_dtl_6[f"{from_col}{13}"].value
+                if description_and_year_purchaced is None:
+                    break
+                suggested_selling_price = ws_old_inventory_dtl_6[f"{from_col}{14}"].value
+                existing_lot_quantity = ws_old_inventory_dtl_6[f"{from_col}{16}"].value
+                existing_lot_extended_cost = ws_old_inventory_dtl_6[f"{from_col}{17}"].value
+                new_lot_purchase_quantity = ws_old_inventory_dtl_6[f"{from_col}{19}"].value
+                new_lot_purchase_cost = ws_old_inventory_dtl_6[f"{from_col}{20}"].value
+                quantity_sold_at_any_price = ws_old_inventory_dtl_6[f"{from_col}{24}"].value
+                quantity_removed_or_discarded = ws_old_inventory_dtl_6[f"{from_col}{25}"].value
+                actual_gross_income_from_inventory_sales = ws_old_inventory_dtl_6[f"{from_col}{30}"].value
+
+                self.append_data(to_ws, f"C{to_row}", description_and_year_purchaced)
+                self.append_data(to_ws, f"D{to_row}", existing_lot_quantity)
+                self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, False)
+                self.append_data(to_ws, f"I{to_row}", "Inventory")
+                self.append_data(to_ws, f"T{to_row}", quantity_removed_or_discarded)
+
+                to_row = to_row + 1
         pass
 
     def save_income(self):
@@ -557,7 +629,7 @@ class OldWorkbookToDataForNew:
             self.save_liabilities()
             self.save_outstanding()
             self.save_assets()
-            self.save_depreciation()
+            self.save_depreciation_and_inventory()
             self.save_income()
             self.save_data()
             return None
@@ -690,12 +762,6 @@ def main():
     bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
-
-    # TODO fix data validation https://openpyxl.readthedocs.io/en/3.1/validation.html
-    # FinancialCommittee B7 validation
-    # Accounts interest bearing Yes/No
-    # Accounts Account type
-    # Accounts Signature Requirement
 
     if __name__ == '__main__':
         main()
