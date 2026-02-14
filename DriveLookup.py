@@ -18,7 +18,11 @@ PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale",
 PROCESS_SPECIFIC = ["An Dubhaigeainn"]
 PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
 PROCESS_SPECIFIC = ["Carolingia"]
+PROCESS_SPECIFIC = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
+                    "Ynys y Gwaun"]
+PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = None
+
 DELETE_ALL_Q1 = False
 DELETE_ALL_Q1_DATA = False
 DEBUG = False
@@ -167,7 +171,7 @@ class DriveLookup:
         group_name = this_year_dirs_split[- 4]
         group_name, full_group_name, group_type, region = OldWorkbookToDataForNew.lookup_group_full_name_type_region(
             group_name, new_dir)
-        new_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}"
+        new_file_name = f"{THIS_YEAR_PREFIX}{group_name}"
         return old_file_path, new_dir, new_file_name
 
     @classmethod

@@ -87,14 +87,14 @@ class OldWorkbookToDataForNew:
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
-        self.name_of_branch, self.full_name_of_branch, group_type, self.region = self.lookup_group_full_name_type_region(
+        name_of_branch, self.full_name_of_branch, group_type, self.region = self.lookup_group_full_name_type_region(
             name_of_branch,
             self.output_file_path,
             self.name_of_branch)
         # if group_type is None:
         #    group_type = # TODO
         # print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        print(f"Region = {self.region}, Branch name = {self.name_of_branch}")
+        print(f"Region = {self.region}, Branch name = {self.full_name_of_branch}")
         self.append_data("Summary", "D6", self.group_type)
         if self.region == "Other":
             self.append_data("Summary", "D7", "Other")
@@ -602,7 +602,7 @@ class OldWorkbookToDataForNew:
 
     def get_new_data_file_name(self) -> str:
         assert self.full_name_of_branch is not None, f"full_name_of_branch not set for {self.name_of_branch}"
-        new_data_file_name = f"{THIS_YEAR_PREFIX}{self.full_name_of_branch}"
+        new_data_file_name = f"{THIS_YEAR_PREFIX}{self.name_of_branch}"
         return new_data_file_name
 
     def save_new_data(self):
