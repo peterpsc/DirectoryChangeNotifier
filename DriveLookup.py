@@ -15,8 +15,9 @@ from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YE
 
 COPY_G_TO_A = False
 PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
-PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
 PROCESS_SPECIFIC = ["An Dubhaigeainn"]
+PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
+PROCESS_SPECIFIC = ["Stonemarche"]
 PROCESS_SPECIFIC = None
 DELETE_ALL_Q1 = False
 DELETE_ALL_Q1_DATA = False
@@ -24,14 +25,19 @@ DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
 
-# Negative Reports.csv, Out Of Balance.csv, Missing.csv, Todos.csv, Group Status.csv are in G:/My Drive/
 
+# Creates:
+# Group Status.csv
+# To Convert.csv
 class DriveLookup:
-    def __init__(self, notification_name: str, report_path):
+    def __init__(self, notification_name: str, report_path, process_specific: list = None):
         self.notification_name = notification_name
         self.report_path = report_path
+        self.process_specific = process_specific
         notification_names = Persistence.get_lines("NotificationNames.txt")
         self.dcn = DirChangeNotifier(notification_names)
+        self.last_year_dirs = self.get_last_year_dirs()
+        self.this_year_dirs = self.get_this_year_dirs(self.last_year_dirs)
 
     def get_last_year_dirs(self):
         path_options = self.dcn.get_dir_change_path_options(self.notification_name)
@@ -44,6 +50,13 @@ class DriveLookup:
 
         last_year_dirs = self.remove_extra_directories(filtered_directories)
 
+        if self.process_specific:
+            result = []
+            for folder in last_year_dirs:
+                group_dir, group_name, full_group_name, branch = self.get_group_dir_name_full_region(folder)
+                if group_name in self.process_specific:
+                    result.append(folder)
+            last_year_dirs = result
         return last_year_dirs
 
     def get_this_year_dirs(self, last_year_dirs):
@@ -79,18 +92,18 @@ class DriveLookup:
                 returning_directories.append(directory)
         return returning_directories
 
-    def find_all_q4s_missing_todos(self, folders):
+    def find_all_q4s_missing_todos(self):
         all = []
         q4s = []
         missing = []
         todos = []
 
-        for folder in folders:
-            file_name = self.find_q4_file_name(folder)
-            all.append(f"{folder}")
+        for last_year_dir in self.last_year_dirs:
+            file_name = self.find_q4_file_name(last_year_dir)
+            all.append(f"{last_year_dir}")
             if file_name:
-                q4s.append(f"{folder}\\{file_name}")
-                old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(folder, file_name)
+                q4s.append(f"{last_year_dir}\\{file_name}")
+                old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(last_year_dir, file_name)
                 todo = [old_file_path, new_dir, new_file_name]
                 new_dir_exists = exists(new_dir)
                 if not new_dir_exists:
@@ -102,7 +115,7 @@ class DriveLookup:
                     continue
                 todos.append(todo)
             else:
-                missing.append(folder)
+                missing.append(last_year_dir)
 
         return all, q4s, missing, todos
 
@@ -154,7 +167,7 @@ class DriveLookup:
         this_year_dirs_split = new_dir.split("/")
         group_name = this_year_dirs_split[- 4]
         group_name, full_group_name, group_type, region = OldWorkbookToDataForNew.lookup_group_full_name_type_region(
-            group_name)
+            group_name, new_dir)
         new_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}"
         return old_file_path, new_dir, new_file_name
 
@@ -194,8 +207,8 @@ class DriveLookup:
 
         return to_convert, out_of_balance, negative_reports, bugs
 
-    def delete_all_q1_test_workbooks(self, this_year_dirs, delete_q1=False, delete_q1_data=False):
-        for this_year_dir in this_year_dirs:
+    def delete_all_q1_test_workbooks(self, delete_q1=False, delete_q1_data=False):
+        for this_year_dir in self.this_year_dirs:
             for file_name in os.listdir(this_year_dir):
                 delete = self.should_delete_file_name(file_name, delete_q1, delete_q1_data)
                 if delete:
@@ -274,115 +287,143 @@ class DriveLookup:
 
     def create_group_status_data(self, all_last_year, out_of_balance, negative_reports, bugs):
         formatted_rows = []
-        formatted_row = ["Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
+        formatted_row = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
         formatted_rows.append(formatted_row)
 
+        regions = {}
         for group in all_last_year:
-            formatted_row = []
-            group_last_dir, group_name, full_group_name = self.get_group_dir_name_full(group)
-            q4_file_name = self.find_q4_file_name(group)
-            new_data_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.csv"
-            q4_path = None
-            if q4_file_name is not None:
-                q4_path = self.fix_slashes(group + "\\" + q4_file_name)
-            to_dir = self.get_this_year_dir(f"{group_last_dir}")
-            group_last_dir = group_last_dir + LAST_YEAR_DIR
-            group_dir = to_dir.partition(f"\\Quarterly Reports")[0]
+            self.create_status_row(regions, bugs, group, negative_reports, out_of_balance)
 
-            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
-            formatted_row.append(hyperlink_group)
+        # sort by region and Other is last
+        for region in regions:
+            if region == "Other":
+                continue
+            self.create_region_status(formatted_rows, region, regions)
+        if "Other" in regions:
+            self.create_region_status(formatted_rows, "Other", regions)
 
-            if full_group_name:
-                hyperlink_group = Persistence.create_hyperlink(group_dir, f"{full_group_name}")
-            else:
-                hyperlink_group = Persistence.create_hyperlink(group_dir, f"UNKNOWN: {group_name}")
-            formatted_row.append(hyperlink_group)
-
-            hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{LAST_YEAR} dir")
-            formatted_row.append(hyperlink_last_dir)
-
-            hyperlink_q4_negative = None
-            hyperlink_q4_oob = None
-            if q4_path and q4_path in negative_reports:
-                hyperlink_q4_negative = Persistence.create_hyperlink(q4_path, f"Negative Report")
-                formatted_row.append(hyperlink_q4_negative)
-            elif q4_path in out_of_balance:
-                hyperlink_q4_oob = Persistence.create_hyperlink(q4_path, f"Out of Balance")
-                formatted_row.append(hyperlink_q4_oob)
-            elif q4_path is None:
-                formatted_row.append("MISSING")
-            else:
-                hyperlink_q4 = Persistence.create_hyperlink(q4_path, f"{LAST_YEAR} Q4")
-                formatted_row.append(hyperlink_q4)
-
-            hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{THIS_YEAR} Q1 dir")
-            formatted_row.append(hyperlink_q1_dir)
-
-            q1_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.xlsx"
-            q1_path = f"{to_dir}{q1_file_name}"
-            q1_data_path = f"{to_dir}{new_data_file_name}"
-            hyperlink_status = None
-            if exists(q1_path):
-                hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
-            elif exists(q1_data_path):
-                hyperlink_status = Persistence.create_hyperlink(q1_data_path, f"TO CONVERT")
-            elif hyperlink_q4_oob:
-                hyperlink_status = hyperlink_q4_oob
-            elif q4_path and q4_path in negative_reports:
-                hyperlink_status = hyperlink_q4_negative
-            elif group in bugs:
-                hyperlink_status = "BUG"
-            elif q4_path is None:
-                hyperlink_status = "MISSING"
-
-            if hyperlink_status:
-                formatted_row.append(hyperlink_status)
-
-            formatted_rows.append(formatted_row)
         return formatted_rows
 
-    def get_group_dir_name_full(self, group_last_dir) -> tuple[Any, Any]:
+    def create_region_status(self, formatted_rows: list[Any], region, regions: dict[Any, Any]):
+        title = [""]
+        formatted_rows.append(title)
+        formatted_rows.append([f"{region}:"])
+        for formatted_row in regions[region]:
+            formatted_rows.append(formatted_row)
+
+    def create_status_row(self, regions, bugs, group, negative_reports, out_of_balance):
+        group_last_dir, group_name, full_group_name, region = self.get_group_dir_name_full_region(group)
+        q4_file_name = self.find_q4_file_name(group)
+        if full_group_name:
+            new_data_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.csv"
+        else:
+            new_data_file_name = f"{THIS_YEAR_PREFIX}{group_name}.csv"
+        q4_path = None
+        if q4_file_name is not None:
+            q4_path = self.fix_slashes(group + "\\" + q4_file_name)
+        to_dir = self.get_this_year_dir(f"{group_last_dir}")
+        group_last_dir = group_last_dir + LAST_YEAR_DIR
+        group_dir = to_dir.partition(f"\\Quarterly Reports")[0]
+
+        formatted_row = []
+        hyperlink_region = Persistence.create_hyperlink(group_dir, f"{region}")
+        formatted_row.append(hyperlink_region)
+
+        hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
+        formatted_row.append(hyperlink_group)
+
+        unknown = False
+        if full_group_name:
+            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{full_group_name}")
+        else:
+            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
+            unknown = True
+        formatted_row.append(hyperlink_group)
+
+        hyperlink_last_dir = Persistence.create_hyperlink(group_last_dir, f"{LAST_YEAR} dir")
+        formatted_row.append(hyperlink_last_dir)
+
+        hyperlink_q4_negative = None
+        hyperlink_q4_oob = None
+        if q4_path and q4_path in negative_reports:
+            hyperlink_q4_negative = Persistence.create_hyperlink(q4_path, f"Negative Report")
+            formatted_row.append(hyperlink_q4_negative)
+        elif q4_path in out_of_balance:
+            hyperlink_q4_oob = Persistence.create_hyperlink(q4_path, f"Out of Balance")
+            formatted_row.append(hyperlink_q4_oob)
+        elif q4_path is None:
+            formatted_row.append("MISSING")
+        else:
+            hyperlink_q4 = Persistence.create_hyperlink(q4_path, f"{LAST_YEAR} Q4")
+            formatted_row.append(hyperlink_q4)
+
+        hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{THIS_YEAR} Q1 dir")
+        formatted_row.append(hyperlink_q1_dir)
+
+        if full_group_name:
+            q1_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.xlsx"
+        else:
+            q1_file_name = f"{THIS_YEAR_PREFIX}{group_name}.xlsx"
+        q1_path = f"{to_dir}{q1_file_name}"
+        q1_data_path = f"{to_dir}{new_data_file_name}"
+        hyperlink_status = None
+        if exists(q1_path):
+            hyperlink_status = Persistence.create_hyperlink(q1_path, f"{q1_file_name}")
+        elif exists(q1_data_path):
+            hyperlink_status = Persistence.create_hyperlink(q1_data_path, f"TO CONVERT")
+        elif hyperlink_q4_oob:
+            hyperlink_status = hyperlink_q4_oob
+        elif q4_path and q4_path in negative_reports:
+            hyperlink_status = hyperlink_q4_negative
+        elif group in bugs:
+            hyperlink_status = "BUG"
+        elif q4_path is None:
+            hyperlink_status = "MISSING"
+
+        if hyperlink_status:
+            formatted_row.append(hyperlink_status)
+
+        region_rows = []
+        try:
+            region_rows = regions[region]
+        except KeyError:
+            regions[region] = region_rows
+
+        region_rows.append(formatted_row)
+        regions[region] = region_rows
+
+    def get_group_dir_name_full_region(self, group_last_dir) -> tuple[Any, Any]:
         group_dir = group_last_dir.partition(f"{LAST_YEAR_DIR}Quarterly Reports")[0]
         group_dir_split = group_dir.split("\\")
         group_dir = self.fix_slashes(group_dir)
         group_name = group_dir_split[- 1]
-        group_name = OldWorkbookToDataForNew.substitute_group_name(group_name)
-        full_group_name = OldWorkbookToDataForNew.lookup_full_group_name(group_name)
+        name_of_branch, full_name_of_branch, group_type, region = OldWorkbookToDataForNew.lookup_group_full_name_type_region(
+            group_name, group_dir, group_name)
 
-        return group_dir, group_name, full_group_name
+        return group_dir, name_of_branch, full_name_of_branch, region
 
 
-def get_drive_lookup():
+def get_drive_lookup(process_specific: list = None):
     global driveLU
     where = Persistence.get_line("GoogleDrive_Path_Options.txt")
     if where == "g:\\ /S":
-        driveLU = DriveLookup("Test", "a:\\East Kingdom Exchequer Test\\")
+        driveLU = DriveLookup("Test", "a:\\East Kingdom Exchequer Test\\", process_specific)
     else:
-        driveLU = DriveLookup("GoogleDrive", "g:\\My Drive\\")
+        driveLU = DriveLookup("GoogleDrive", "g:\\My Drive\\", process_specific)
 
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
-    get_drive_lookup()
-
-    last_year_dirs = driveLU.get_last_year_dirs()
-    if PROCESS_SPECIFIC:
-        result = []
-        for folder in last_year_dirs:
-            group_dir, group_name, full_group_name = driveLU.get_group_dir_name_full(folder)
-            if group_name in PROCESS_SPECIFIC:
-                result.append(folder)
-        last_year_dirs = result
+    get_drive_lookup(PROCESS_SPECIFIC)
 
     if DELETE_ALL_Q1 or DELETE_ALL_Q1_DATA:
-        this_year_dirs = driveLU.get_this_year_dirs(last_year_dirs)
-        driveLU.delete_all_q1_test_workbooks(this_year_dirs, DELETE_ALL_Q1, DELETE_ALL_Q1_DATA)
+        driveLU.delete_all_q1_test_workbooks(DELETE_ALL_Q1, DELETE_ALL_Q1_DATA)
 
     group_status_file_path = driveLU.delete_old_status_report()
     if group_status_file_path is not None:
-        all, q4s, missing, todos = driveLU.find_all_q4s_missing_todos(last_year_dirs)
+        all, q4s, missing, todos = driveLU.find_all_q4s_missing_todos()
         if COPY_G_TO_A:
             driveLU.copy_g_to_a(all, q4s)
         if SAVE_TODOS:

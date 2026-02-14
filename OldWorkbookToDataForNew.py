@@ -54,8 +54,7 @@ class OldWorkbookToDataForNew:
         try:
             self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
         except Exception as e:
-            print(
-                Fore.RED + f'Error opening workbook: {self.old_workbook_file_path} due to\n{e.args}' + Style.RESET_ALL)
+            print_red(f'Error opening workbook: {self.old_workbook_file_path} due to\n{e.args}')
             self.error = e
             self.old_workbook = None
 
@@ -74,7 +73,7 @@ class OldWorkbookToDataForNew:
                 ws_old_negative_report = self.old_workbook["NEGATIVE REPORT FORM"]
                 is_negative = True
             except Exception as e:
-                print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+                print_red(f"EXCEPTION:{e}")
         return is_balanced, is_negative
 
     def append_data(self, worksheet_name, cell_name, value, as_string=True, locked=False):
@@ -88,13 +87,19 @@ class OldWorkbookToDataForNew:
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
-        self.name_of_branch, self.full_name_of_branch, self.group_type, self.region = self.lookup_group_full_name_type_region(
+        self.name_of_branch, self.full_name_of_branch, group_type, self.region = self.lookup_group_full_name_type_region(
             name_of_branch,
+            self.output_file_path,
             self.name_of_branch)
+        # if group_type is None:
+        #    group_type = TODO
         # print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        print(f"Region = {self.region}, Branch name = {name_of_branch}")
+        print(f"Region = {self.region}, Branch name = {self.name_of_branch}")
         self.append_data("Summary", "D6", self.group_type)
-        self.append_data("Summary", "D7", self.KINGDOM)
+        if self.region == "Other":
+            self.append_data("Summary", "D7", "Other")
+        else:
+            self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
         self.state = state
         self.append_data("Summary", "D8", state)
@@ -185,7 +190,6 @@ class OldWorkbookToDataForNew:
         self.append_data("Exchequers", "H28", personal_email)
 
     def save_financial_committee(self):
-
         ws_old_contents = self.old_workbook["Contents"]
         seneshal_name = ws_old_contents["C9"].value
         self.append_data("FinancialCommittee", "C11", seneshal_name)
@@ -209,18 +213,17 @@ class OldWorkbookToDataForNew:
             for i in range(17):
                 old_row = 21 + i * 2
                 modern_name = ws_old_financial_committee[f"D{old_row}"].value
-                if not modern_name:
-                    break
-                title = ws_old_financial_committee[f"C{old_row}"].value
-                sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
-                membership_no = ws_old_financial_committee[f"E{old_row}"].value
-                expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
+                if modern_name:
+                    title = ws_old_financial_committee[f"C{old_row}"].value
+                    sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
+                    membership_no = ws_old_financial_committee[f"E{old_row}"].value
+                    expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
 
-                self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
-                self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
-                self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
-                self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
-                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
+                    self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
+                    self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
+                    self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
+                    self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
+                    self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
 
     def save_primary_account(self):
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
@@ -252,19 +255,18 @@ class OldWorkbookToDataForNew:
         for i in range(6):
             row = 42 + i * 2
             signatory_name = ws_old_primary_account[f"E{row}"].value
-            if not signatory_name:
-                break
-            signatory_member_number = ws_old_primary_account[f"H{row}"].value
-            signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{row + 1}"].value)
+            if signatory_name:
+                signatory_member_number = ws_old_primary_account[f"H{row}"].value
+                signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{row + 1}"].value)
 
-            new_row = 16 + i
-            new_cols = "EIJ"
-            if i >= 4:
-                new_row -= 4
-                new_cols = "LPQ"
-            self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
-            self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-            self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
+                new_row = 16 + i
+                new_cols = "EIJ"
+                if i >= 4:
+                    new_row -= 4
+                    new_cols = "LPQ"
+                self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
+                self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
+                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
@@ -275,49 +277,46 @@ class OldWorkbookToDataForNew:
             new_summary_row = 20
             new_row_start = account * 15 + 22
             bank_name = ws_old_secondary_account[f"{col}13"].value
-            if bank_name is None:
-                return
+            if bank_name:
+                self.append_data("Accounts", f"B{new_row_start + 2}", bank_name)
+                bank_account_type = ws_old_secondary_account[f"{col}16"].value
+                choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
+                bank_account_title = f"{bank_name}, {choice}"
+                self.append_data("Summary", f"B{new_summary_row + account}", bank_account_title)
+                self.append_data("Accounts", f"B{new_row_start + 5}", choice)
 
-            self.append_data("Accounts", f"B{new_row_start + 2}", bank_name)
-            bank_account_type = ws_old_secondary_account[f"{col}16"].value
-            choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
-            bank_account_title = f"{bank_name}, {choice}"
-            self.append_data("Summary", f"B{new_summary_row + account}", bank_account_title)
-            self.append_data("Accounts", f"B{new_row_start + 5}", choice)
+                signature_requirement = ws_old_secondary_account[f"{col}15"].value
+                choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
+                self.append_data("Accounts", f"{col}28", choice)
 
-            signature_requirement = ws_old_secondary_account[f"{col}15"].value
-            choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
-            self.append_data("Accounts", f"{col}28", choice)
+                self.append_data("Summary", "B20", bank_account_type)
+                bank_account_number = ws_old_secondary_account[f"{col}14"].value
+                self.append_data("Accounts", "B26", bank_account_number)
+                balance = ws_old_secondary_account[f"{col}19"].value
+                self.append_data("Accounts", "C31", balance, False, True)
+                ledger_balance = ws_old_secondary_account["D25"].value
+                self.append_data("Accounts", "C32", ledger_balance, False, True)
 
-            self.append_data("Summary", "B20", bank_account_type)
-            bank_account_number = ws_old_secondary_account[f"{col}14"].value
-            self.append_data("Accounts", "B26", bank_account_number)
-            balance = ws_old_secondary_account[f"{col}19"].value
-            self.append_data("Accounts", "C31", balance, False, True)
-            ledger_balance = ws_old_secondary_account["D25"].value
-            self.append_data("Accounts", "C32", ledger_balance, False, True)
+                interest_bearing = ws_old_secondary_account[f"{col}17"].value
+                choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
+                self.append_data("Accounts", "B29", choice)
 
-            interest_bearing = ws_old_secondary_account[f"{col}17"].value
-            choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
-            self.append_data("Accounts", "B29", choice)
+                # signatories
+                for i in range(6):
+                    old_row = 42 + i * 2
+                    signatory_name = ws_old_secondary_account[f"E{old_row}"].value
+                    if signatory_name:
+                        signatory_member_number = ws_old_secondary_account[f"H{old_row}"].value
+                        signatory_expiry_date = self.dmy(ws_old_secondary_account[f"H{old_row + 1}"].value)
 
-            # signatories
-            for i in range(6):
-                old_row = 42 + i * 2
-                signatory_name = ws_old_secondary_account[f"E{old_row}"].value
-                if not signatory_name:
-                    break
-                signatory_member_number = ws_old_secondary_account[f"H{old_row}"].value
-                signatory_expiry_date = self.dmy(ws_old_secondary_account[f"H{old_row + 1}"].value)
-
-                new_row = 16 + i
-                new_cols = "EIJ"
-                if i >= 4:
-                    new_row -= 4
-                    new_cols = "LPQ"
-                self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
-                self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
+                        new_row = 16 + i
+                        new_cols = "EIJ"
+                        if i >= 4:
+                            new_row -= 4
+                            new_cols = "LPQ"
+                        self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
+                        self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
+                        self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
 
     def set_bank_account_type(self, cell, bank_account_type):
         choices = ["Checking", "Savings", "CD/GIC", "Money Market"]
@@ -329,17 +328,15 @@ class OldWorkbookToDataForNew:
         old_cols = "DEF"
         new_cols = "BDG"
 
-        # General Fund
-        value = ws_old_funds["F14"].value
-        self.append_data("Summary", "G59", value, False)
-
         # Named Funds
         to_row = 60
         from_row_start = 15
         from_row_end = 55
+        has_no_funds = True
         for from_row in range(from_row_start, from_row_end + 1):
             value = ws_old_funds[f"F{from_row}"].value
             if value:
+                has_no_funds = False
                 name_of_fund = ws_old_funds[f"D{from_row}"].value
                 purpose_of_fund = ws_old_funds[f"E{from_row}"].value
 
@@ -347,6 +344,13 @@ class OldWorkbookToDataForNew:
                 self.append_data("Summary", f"D{to_row}", purpose_of_fund)
                 self.append_data("Summary", f"G{to_row}", value, False)
                 to_row = to_row + 1
+
+        # General Fund
+        general_fund_value = ws_old_funds["F14"].value
+        if general_fund_value is None and has_no_funds:
+            general_fund_value = ws_old_funds["F11"].value
+        self.append_data("Summary", "G59", general_fund_value, False)
+        #TODO figure out what should be included to this, should it be a formula?
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve
@@ -362,7 +366,10 @@ class OldWorkbookToDataForNew:
 
         # ASSET_DTL_5a Undeposited +ve
         ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
-        for from_row in range(15, 19):
+        from_row_start = 15
+        from_row_end = 18
+        # TODO there are 2 columns
+        for from_row in range(from_row_start, from_row_end + 1):
             sending_branch_or_reason = ws_old_asset_dtl_5a[f"C{from_row}"].value
             amount = ws_old_asset_dtl_5a[f"D{from_row}"].value
             self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
@@ -370,7 +377,7 @@ class OldWorkbookToDataForNew:
             self.append_data("Outstanding", f"J{to_row}", "Undeposited Funds")
             to_row = to_row + 1
             if to_row > 33:
-                print(f"No more room for Outstanding")
+                print_red(f"No more room for Outstanding")
                 self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
                 break
 
@@ -379,15 +386,14 @@ class OldWorkbookToDataForNew:
                                   from_cols) -> int | Any:
         for from_row in range(from_row_start, from_row_end + 1):
             check_no = ws_old_primary_account[f"{from_cols[0]}{from_row}"].value
-            if check_no is None:
-                break
-            date = self.dmy(ws_old_primary_account[f"{from_cols[1]}{from_row}"].value)
-            amount = ws_old_primary_account[f"{from_cols[2]}{from_row}"].value
-            self.append_data("Outstanding", f"E{to_row}", check_no)
-            self.append_data("Outstanding", f"C{to_row}", date)
-            if amount:
-                self.append_data("Outstanding", f"K{to_row}", -amount, False)
-            to_row = to_row + 1
+            if check_no:
+                date = self.dmy(ws_old_primary_account[f"{from_cols[1]}{from_row}"].value)
+                amount = ws_old_primary_account[f"{from_cols[2]}{from_row}"].value
+                self.append_data("Outstanding", f"E{to_row}", check_no)
+                self.append_data("Outstanding", f"C{to_row}", date)
+                if amount:
+                    self.append_data("Outstanding", f"K{to_row}", -amount, False)
+                to_row = to_row + 1
         return to_row
 
     def save_liabilities(self):
@@ -398,118 +404,96 @@ class OldWorkbookToDataForNew:
         to_row = 12
         from_row_start = 16
         from_row_end = 30
-        from_cols = "CF"
         for from_row in range(from_row_start, from_row_end + 1):
-            event = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
-            if event is None:
-                break
-            current_amount = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
-            self.append_data("LiabilityDetails", f"F{to_row}", event)
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            reason = ws_old_liability_dtl_5b[f"C{from_row}"].value
+            current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+            if current_amount:
+                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                to_row = to_row + 1
 
         # Payables
-        to_row = 38
         from_row_start = 37
         from_row_end = 43
-        from_cols = "CDF"
+        to_row = 38
         for from_row in range(from_row_start, from_row_end + 1):
-            owed_to = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
-            if owed_to is None:
-                break
-            reason = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
-            # ignore prior_amount
-            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
-            self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
-            self.append_data("LiabilityDetails", f"D{to_row}", reason)
-            # ignore prior_amount
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
+            reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
+            current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+            if current_amount:
+                self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
+                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                # ignore prior_amount
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                to_row = to_row + 1
 
         # Other Liabilities
-        to_row = 54
         from_row_start = 49
         from_row_end = 55
-        from_cols = "CDF"
+        to_row = 54
         for from_row in range(from_row_start, from_row_end + 1):
-            owed_to = ws_old_liability_dtl_5b[f"{from_cols[0]}{from_row}"].value
-            if owed_to is None:
-                break
-            reason = ws_old_liability_dtl_5b[f"{from_cols[1]}{from_row}"].value
-            current_amount = ws_old_liability_dtl_5b[f"{from_cols[2]}{from_row}"].value
-            self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
-            self.append_data("LiabilityDetails", f"D{to_row}", reason)
-            # ignore prior_amount
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
+            if owed_to:
+                reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
+                current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+                self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
+                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                # ignore prior_amount
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                to_row = to_row + 1
 
     def save_assets(self):
         # from ASSET_DTL_5a to Undeposited Funds, Receivables, AssetDetails Prepaid Expenses, Other Assets,
 
         ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
 
-        # Undeposited Funds
-        to_row = 12
-        from_row_start = 15
-        from_row_end = 18
-        from_col_count = 2
-        from_cols = "CD EG"
-        for from_col in range(from_col_count):
-            for from_row in range(from_row_start, from_row_end + 1):
-                from_col_char = from_cols[from_col * 3]
-                reason = ws_old_asset_dtl_5a[f"{from_col_char}{from_row}"].value
-                from_col_char = from_cols[from_col * 3 + 1]
-                current_amount = ws_old_asset_dtl_5a[f"{from_col_char}{from_row}"].value
-                self.append_data("LiabilityDetails", f"D{to_row}", reason)
-                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-                to_row = to_row + 1
-
         # Receivables only if Current Amount != 0
         # if prior amount != 0 then year = 2024 otherwise 2025
         from_row_start = 24
         from_row_end = 34
+        to_row = 14
         for from_row in range(from_row_start, from_row_end + 1):
             owed_from = ws_old_asset_dtl_5a[f"C{from_row}"].value
             reason = ws_old_asset_dtl_5a[f"D{from_row}"].value
-            if reason is None:
-                break
-            prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
-            year = LAST_YEAR
-            if prior_amount:
-                year -= 1
-            current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
-            self.append_data("LiabilityDetails", f"B{to_row}", owed_from)
-            self.append_data("LiabilityDetails", f"C{to_row}", year)
-            self.append_data("LiabilityDetails", f"D{to_row}", reason)
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            if reason:
+                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
+                year = LAST_YEAR
+                if prior_amount:
+                    year -= 1
+                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                if current_amount:
+                    self.append_data("AssetDetails", f"B{to_row}", owed_from)
+                    self.append_data("AssetDetails", f"C{to_row}", year)
+                    self.append_data("AssetDetails", f"D{to_row}", reason)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    to_row = to_row + 1
 
         # Prepaid Expenses
-        from_row_start = 31
-        from_row_end = 51
+        from_row_start = 41
+        from_row_end = 47
+        to_row = 31
         for from_row in range(from_row_start, from_row_end + 1):
-            event = ws_old_asset_dtl_5a[f"C{from_row}"].value
-            if event is None:
-                break
-            reason = ws_old_asset_dtl_5a[f"E{from_row}"].value
-            current_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
-            self.append_data("LiabilityDetails", f"F{to_row}", event)
-            self.append_data("LiabilityDetails", f"D{to_row}", reason)
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            description = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            if description:
+                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                if current_amount:
+                    self.append_data("AssetDetails", f"D{to_row}", description)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    to_row = to_row + 1
 
         # Other Assets
         from_row_start = 54
         from_row_end = 61
+        to_row = 59
         for from_row in range(from_row_start, from_row_end + 1):
             description = ws_old_asset_dtl_5a[f"C{from_row}"].value
-            if description is None:
-                break
-            prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
-            current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
-            self.append_data("LiabilityDetails", f"D{to_row}", description)
-            self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
-            to_row = to_row + 1
+            if description:
+                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
+                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                if current_amount:
+                    self.append_data("AssetDetails", f"D{to_row}", description)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    to_row = to_row + 1
 
     def save_depreciation_and_inventory(self):
         sheet_name = "DEPR_DTL_8"
@@ -523,39 +507,37 @@ class OldWorkbookToDataForNew:
             from_row_end = 23
             for from_row in range(from_row_start, from_row_end + 1):
                 oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
-                if oa_ar_fr is None:
-                    break
-                item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
-                quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
-                purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
-                current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
-                self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                self.append_data(to_ws, f"C{to_row}", item_description)
-                self.append_data(to_ws, f"D{to_row}", quantity)
-                self.append_data(to_ws, f"B{to_row}", purchase_year)
-                self.append_data(to_ws, f"E{to_row}", current_amount, False)
-                self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
-                to_row = to_row + 1
+                if oa_ar_fr:
+                    item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
+                    quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
+                    purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
+                    current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
+                    self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
+                    self.append_data(to_ws, f"C{to_row}", item_description)
+                    self.append_data(to_ws, f"D{to_row}", quantity)
+                    self.append_data(to_ws, f"B{to_row}", purchase_year)
+                    self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                    self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
+                    to_row = to_row + 1
 
             # 7 Year Depreciation
             from_row_start = 32
             from_row_end = 41
             for from_row in range(from_row_start, from_row_end + 1):
                 oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
-                if oa_ar_fr is None:
-                    break
-                item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
-                quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
-                purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
-                current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
-                self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                self.append_data(to_ws, f"C{to_row}", item_description)
-                self.append_data(to_ws, f"D{to_row}", quantity)
-                self.append_data(to_ws, f"B{to_row}", purchase_year)
-                self.append_data(to_ws, f"E{to_row}", current_amount, False)
-                self.append_data(to_ws, f"I{to_row}", "7-Year Depreciable Assets")
+                if oa_ar_fr:
+                    item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
+                    quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
+                    purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
+                    current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
+                    self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
+                    self.append_data(to_ws, f"C{to_row}", item_description)
+                    self.append_data(to_ws, f"D{to_row}", quantity)
+                    self.append_data(to_ws, f"B{to_row}", purchase_year)
+                    self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                    self.append_data(to_ws, f"I{to_row}", "7-Year Depreciable Assets")
 
-                to_row = to_row + 1
+                    to_row = to_row + 1
 
         # from INVENTORY_DTL_6 to Assets&Inventory
         sheet_name = "INVENTORY_DTL_6"
@@ -566,25 +548,23 @@ class OldWorkbookToDataForNew:
             for from_col_index in range(from_col_start, from_col_end + 1):
                 from_col = get_column_letter(from_col_index)
                 description_and_year_purchaced = ws_old_inventory_dtl_6[f"{from_col}{13}"].value
-                if description_and_year_purchaced is None:
-                    break
-                suggested_selling_price = ws_old_inventory_dtl_6[f"{from_col}{14}"].value
-                existing_lot_quantity = ws_old_inventory_dtl_6[f"{from_col}{16}"].value
-                existing_lot_extended_cost = ws_old_inventory_dtl_6[f"{from_col}{17}"].value
-                new_lot_purchase_quantity = ws_old_inventory_dtl_6[f"{from_col}{19}"].value
-                new_lot_purchase_cost = ws_old_inventory_dtl_6[f"{from_col}{20}"].value
-                quantity_sold_at_any_price = ws_old_inventory_dtl_6[f"{from_col}{24}"].value
-                quantity_removed_or_discarded = ws_old_inventory_dtl_6[f"{from_col}{25}"].value
-                actual_gross_income_from_inventory_sales = ws_old_inventory_dtl_6[f"{from_col}{30}"].value
+                if description_and_year_purchaced:
+                    suggested_selling_price = ws_old_inventory_dtl_6[f"{from_col}{14}"].value
+                    existing_lot_quantity = ws_old_inventory_dtl_6[f"{from_col}{16}"].value
+                    existing_lot_extended_cost = ws_old_inventory_dtl_6[f"{from_col}{17}"].value
+                    new_lot_purchase_quantity = ws_old_inventory_dtl_6[f"{from_col}{19}"].value
+                    new_lot_purchase_cost = ws_old_inventory_dtl_6[f"{from_col}{20}"].value
+                    quantity_sold_at_any_price = ws_old_inventory_dtl_6[f"{from_col}{24}"].value
+                    quantity_removed_or_discarded = ws_old_inventory_dtl_6[f"{from_col}{25}"].value
+                    actual_gross_income_from_inventory_sales = ws_old_inventory_dtl_6[f"{from_col}{30}"].value
 
-                self.append_data(to_ws, f"C{to_row}", description_and_year_purchaced)
-                self.append_data(to_ws, f"D{to_row}", existing_lot_quantity)
-                self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, False)
-                self.append_data(to_ws, f"I{to_row}", "Inventory")
-                self.append_data(to_ws, f"T{to_row}", quantity_removed_or_discarded)
+                    self.append_data(to_ws, f"C{to_row}", description_and_year_purchaced)
+                    self.append_data(to_ws, f"D{to_row}", existing_lot_quantity)
+                    self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, False)
+                    self.append_data(to_ws, f"I{to_row}", "Inventory")
+                    self.append_data(to_ws, f"T{to_row}", quantity_removed_or_discarded)
 
-                to_row = to_row + 1
-        pass
+                    to_row = to_row + 1
 
     def save_income(self):
         # from INCOME_DTL_11a, INCOME_DTL_11b, INCOME_DTL_11c
@@ -642,7 +622,7 @@ class OldWorkbookToDataForNew:
             return None
         except Exception as e:
             error = f"EXCEPTION:{self.name_of_branch} {e}"
-            print(Fore.RED + error + Style.RESET_ALL)
+            print_red(error)
             return error
 
     def save_new_workbook(self):
@@ -670,7 +650,7 @@ class OldWorkbookToDataForNew:
             dmy = dt.strftime("%m/%d/%Y")
             return dmy
         except Exception as e:
-            print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+            print_red(f"EXCEPTION:{e}")
             return None
 
     def set_new_data(self, new_data):
@@ -680,40 +660,24 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     @classmethod
-    def lookup_group_full_name_type_region(cls, name_of_branch, hint=None):
+    def lookup_group_full_name_type_region(cls, name_of_branch, q1_file_path, hint=None):
         name_of_branch = cls.substitute_group_name(name_of_branch)
+        full_name_of_branch = name_of_branch
+        group_type = None
         group_name_data = None
+        region = q1_file_path.split("/")[2]
         try:
             group_name_data = cls.group_data[name_of_branch]
         except KeyError as e:
-            if " of the " in name_of_branch:
-                group_split = name_of_branch.split(" of the ")
-                name_of_branch = group_split[1].strip()
-                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(
-                    name_of_branch, hint)
-                assert group_type is not None
-                assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type, region
-            elif " of " in name_of_branch:
-                group_split = name_of_branch.split(" of ")
-                name_of_branch = group_split[1].strip()
-                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(
-                    name_of_branch, hint)
-                assert group_type is not None
-                assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type, region
-            elif hint and hint in name_of_branch:
-                name_of_branch, full_name_of_branch, group_type, region = cls.lookup_group_full_name_type_region(hint)
-                assert group_type is not None
-                assert full_name_of_branch is not None
-                return name_of_branch, full_name_of_branch, group_type, region
-
-        if group_name_data is None:
-            return name_of_branch, None, None, None
-
-        full_name_of_branch = group_name_data[0]
-        group_type = group_name_data[1]
-        region = f"{group_name_data[5]} / {group_name_data[3]}"
+            if hint:
+                try:
+                    group_name_data = cls.group_data[hint]
+                except KeyError as e:
+                    pass
+        if group_name_data:
+            full_name_of_branch = group_name_data[0]
+            group_type = group_name_data[1]
+            region = f"{group_name_data[5]} / {group_name_data[3]}"
 
         return name_of_branch, full_name_of_branch, group_type, region
 
@@ -740,9 +704,12 @@ class OldWorkbookToDataForNew:
             return worksheet
         except Exception as e:
             if print_exception:
-                print(Fore.RED + f"EXCEPTION:{e}" + Style.RESET_ALL)
+                self.print_red(f"EXCEPTION:{e}")
         return None
 
+
+def print_red(error: str):
+    print(Fore.RED + error + Style.RESET_ALL)
 
 def main():
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
