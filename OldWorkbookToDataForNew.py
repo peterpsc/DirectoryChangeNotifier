@@ -92,7 +92,7 @@ class OldWorkbookToDataForNew:
             self.output_file_path,
             self.name_of_branch)
         # if group_type is None:
-        #    group_type = TODO
+        #    group_type = # TODO
         # print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
         print(f"Region = {self.region}, Branch name = {self.name_of_branch}")
         self.append_data("Summary", "D6", self.group_type)
@@ -366,20 +366,23 @@ class OldWorkbookToDataForNew:
 
         # ASSET_DTL_5a Undeposited +ve
         ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
-        from_row_start = 15
-        from_row_end = 18
-        # TODO there are 2 columns
-        for from_row in range(from_row_start, from_row_end + 1):
-            sending_branch_or_reason = ws_old_asset_dtl_5a[f"C{from_row}"].value
-            amount = ws_old_asset_dtl_5a[f"D{from_row}"].value
-            self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
-            self.append_data("Outstanding", f"K{to_row}", amount, False)
-            self.append_data("Outstanding", f"J{to_row}", "Undeposited Funds")
-            to_row = to_row + 1
-            if to_row > 33:
-                print_red(f"No more room for Outstanding")
-                self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
-                break
+        from_cols = ["CD", "EG"]
+        for from_col in range(2):  # there are 2 columns
+            from_row_start = 15
+            from_row_end = 18
+            from_columns = from_cols[from_col]
+            for from_row in range(from_row_start, from_row_end + 1):
+                sending_branch_or_reason = ws_old_asset_dtl_5a[f"{from_columns[0]}{from_row}"].value
+                amount = ws_old_asset_dtl_5a[f"{from_columns[1]}{from_row}"].value
+                if amount:
+                    self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
+                    self.append_data("Outstanding", f"K{to_row}", amount, False)
+                    self.append_data("Outstanding", f"J{to_row}", "Undeposited Funds")
+                    to_row = to_row + 1
+                if to_row > 33:
+                    print_red(f"No more room for Outstanding")
+                    self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
+                    break
 
     def gather_outstanding_checks(self, ws_old_primary_account, from_row_end: int, from_row_start: int,
                                   to_row: int | Any,

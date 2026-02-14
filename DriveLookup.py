@@ -17,14 +17,13 @@ COPY_G_TO_A = False
 PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
 PROCESS_SPECIFIC = ["An Dubhaigeainn"]
 PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
-PROCESS_SPECIFIC = ["Stonemarche"]
+PROCESS_SPECIFIC = ["Carolingia"]
 PROCESS_SPECIFIC = None
 DELETE_ALL_Q1 = False
 DELETE_ALL_Q1_DATA = False
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
-
 
 # Creates:
 # Group Status.csv
