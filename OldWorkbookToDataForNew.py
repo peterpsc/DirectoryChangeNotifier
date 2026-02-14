@@ -45,7 +45,8 @@ class OldWorkbookToDataForNew:
         self.region = None
         self.group_type = None
         split_path = output_file_path.split("/")
-        self.name_of_branch = split_path[-4]
+        name_of_branch = split_path[-4]
+        self.name_of_branch = OldWorkbookToDataForNew.substitute_group_name(name_of_branch)
         self.full_name_of_branch = self.name_of_branch
         self.old_workbook_file_path = old_workbook_file_path
         self.master_data_file_path = master_data_file_path

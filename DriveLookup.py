@@ -21,6 +21,7 @@ PROCESS_SPECIFIC = ["Carolingia"]
 PROCESS_SPECIFIC = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
                     "Ynys y Gwaun"]
 PROCESS_SPECIFIC = ["Another Group"]
+PROCESS_SPECIFIC = ["Northpass", "Panthervale"]
 PROCESS_SPECIFIC = None
 
 DELETE_ALL_Q1 = False
@@ -54,10 +55,15 @@ class DriveLookup:
         last_year_dirs = self.remove_extra_directories(filtered_directories)
 
         if self.process_specific:
+            substituted_group_names = []
+            for group_name in self.process_specific:
+                substituted_group_name = OldWorkbookToDataForNew.substitute_group_name(group_name)
+                substituted_group_names.append(substituted_group_name)
+
             result = []
             for folder in last_year_dirs:
                 group_dir, group_name, full_group_name, branch = self.get_group_dir_name_full_region(folder)
-                if group_name in self.process_specific:
+                if group_name in substituted_group_names:
                     result.append(folder)
             last_year_dirs = result
         return last_year_dirs
@@ -317,10 +323,7 @@ class DriveLookup:
     def create_status_row(self, regions, bugs, group, negative_reports, out_of_balance):
         group_last_dir, group_name, full_group_name, region = self.get_group_dir_name_full_region(group)
         q4_file_name = self.find_q4_file_name(group)
-        if full_group_name:
-            new_data_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.csv"
-        else:
-            new_data_file_name = f"{THIS_YEAR_PREFIX}{group_name}.csv"
+        new_data_file_name = f"{THIS_YEAR_PREFIX}{group_name}.csv"
         q4_path = None
         if q4_file_name is not None:
             q4_path = self.fix_slashes(group + "\\" + q4_file_name)
@@ -363,10 +366,7 @@ class DriveLookup:
         hyperlink_q1_dir = Persistence.create_hyperlink(to_dir, f"{THIS_YEAR} Q1 dir")
         formatted_row.append(hyperlink_q1_dir)
 
-        if full_group_name:
-            q1_file_name = f"{THIS_YEAR_PREFIX}{full_group_name}.xlsx"
-        else:
-            q1_file_name = f"{THIS_YEAR_PREFIX}{group_name}.xlsx"
+        q1_file_name = f"{THIS_YEAR_PREFIX}{group_name}.xlsx"
         q1_path = f"{to_dir}{q1_file_name}"
         q1_data_path = f"{to_dir}{new_data_file_name}"
         hyperlink_status = None
