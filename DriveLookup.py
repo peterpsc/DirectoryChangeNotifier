@@ -13,7 +13,6 @@ from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
                                      THIS_YEAR_PREFIX)
 
-COPY_G_TO_A = False
 PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
 PROCESS_SPECIFIC = ["An Dubhaigeainn"]
 PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
@@ -22,8 +21,10 @@ PROCESS_SPECIFIC = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "
                     "Ynys y Gwaun"]
 PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = ["Northpass", "Panthervale"]
+PROCESS_SPECIFIC = ["Endewearde"]
 PROCESS_SPECIFIC = None
 
+COPY_G_TO_A = False
 DELETE_ALL_Q1 = False
 DELETE_ALL_Q1_DATA = False
 DEBUG = False
