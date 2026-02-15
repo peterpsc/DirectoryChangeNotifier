@@ -1,4 +1,4 @@
-Sub UpdateTodos
+Sub ConvertAllQ1s
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
     Dim iRow As Integer, convertedCount As Integer
@@ -167,10 +167,14 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
             oSheet = oTargetDoc.Sheets.getByName(sWorksheet)
             oCell = oSheet.getCellRangeByName(sCoord)
             if asString then
-            	oCell.String = sText
+                If Left(sText, 1) = "=" Then
+                    oCell.Formula = sText
+                Else
+                    oCell.String = sText
+                End If
             else
             	oCell.Value = Val(sText)
-            endif
+            End if
        '     if locked Then
        '     	oProtection.IsLocked = True
     '			oCell.CellProtection = oProtection

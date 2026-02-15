@@ -350,7 +350,7 @@ class OldWorkbookToDataForNew:
         general_fund_value = ws_old_funds["F14"].value
         if general_fund_value is None and has_no_funds:
             general_fund_value = ws_old_funds["F11"].value
-        self.append_data("Summary", "G59", general_fund_value, False)
+        self.append_data("Summary", "G59", f"={general_fund_value}+G35-G45")
         #TODO figure out what should be included to this, should it be a formula?
 
     def save_outstanding(self):
