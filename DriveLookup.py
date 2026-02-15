@@ -26,7 +26,7 @@ PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = False
 DELETE_ALL_Q1 = False
-DELETE_ALL_Q1_DATA = False
+DELETE_ALL_Q1_DATA = True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
@@ -317,7 +317,6 @@ class DriveLookup:
     def create_region_status(self, formatted_rows: list[Any], region, regions: dict[Any, Any]):
         title = [""]
         formatted_rows.append(title)
-        formatted_rows.append([f"{region}:"])
         for formatted_row in regions[region]:
             formatted_rows.append(formatted_row)
 
