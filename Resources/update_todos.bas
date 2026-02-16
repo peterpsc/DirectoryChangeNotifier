@@ -306,15 +306,7 @@ Function GetPythonDir()
 End Function
 
 Function GetGroupDataDir()
-    where = "g:\\ /S" ' local computer
-    'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
-
-    GetGroupDataDir = None
-    if where = "g:\\ /S" then
-        GetGroupDataDir = "A:/East Kingdom Exchequer Test/"	' local Computer
-    else
-    	GetGroupDataDir = "G:/My Drive/" 					' Remote Computer
-    end if
+    GetGroupDataDir = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
 End Function
 
 Sub OpenGroupStatusReport()
