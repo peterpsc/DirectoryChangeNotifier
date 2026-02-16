@@ -11,23 +11,27 @@ import PlaySound
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
-                                     THIS_YEAR_PREFIX, MASTER_WORKBOOK_PATH)
+                                     THIS_YEAR_PREFIX)
 
 TIR_MARA = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
             "Ynys y Gwaun"]
-NORTHERN = ["Endewearde", "Hadchester", "Malagentia", "Giggleswick", "Ravensbridge", "Stonemarche", "Coldwood",
-            "Glenn Linn", "Northern Outpost", "Panther Vale"]
-CENTRAL = ["Beyond the Mountain", "Dragonship Haven", "Bergental", "Carolingia", "Towers", "Quintavia", "Smoking Rocks",
-           "Anglespur", "Concordia of the Snows", "Nordenhal", "Bridge"]
-SOUTHERN = ["An Dubhaigeainn", "Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Old Stonebridges",
-            "Lion's End", "North Pass", "Bhakail", "Ivyeinrust", "Blak Rose", "Buckland Cross", "Eisental",
-            "Hartshorn-dale", "Known World Players", "Montevale", "Owlsherst"]
+NORTHERN = ["Endewearde", "Hadchester", "Malagentia", "Giggleswick", "Ravensbridge", "Stonemarche", "Panther Vale"]
+CENTRAL = ["Anglespur", "Concordia of the Snows", "Nordenhal", "Coldwood", "Glenn Linn", "Northern Outpost"]
+SOUTHERN = ["Iron Bog", "Settmour Swamp", "Gryphonwald", "Barren Sands", "Rusted Woodlands", "Carillion",
+            "Keep by the Endless Sea", "An Dubhaigeainn", "Østgarðr", "Midland Vale", "Old Stonebridges",
+            "Lion's End", ]
 
-
+WESTERN = []
+NORTHEAST = ["Bergental", "Carolingia", "Towers", "Smoking Rocks", "Quintavia", "Dragonship Haven",
+             "Beyond the Mountain", "Bridge"]
+OTHER = ["Hawke's Reache", "Appleholm",
+         "North Pass", "Bhakail", "Ivyeinrust", "Blak Rose", "Buckland Cross", "Eisental",
+         "Hartshorn-dale", "Known World Players", "Montevale", "Owlsherst", ]
 PROCESS_SPECIFIC = ["Another Group"]
+PROCESS_SPECIFIC = ["Havre des Glaces"]
 
 PROCESS_SPECIFIC = None
-PROCESS_SPECIFIC = ["Havre des Glaces"]
+PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = TIR_MARA
 
 COPY_G_TO_A = False
@@ -256,6 +260,34 @@ class DriveLookup:
         from_file_path = 'g:\\Shared drives'
         l = len(from_file_path)
         to_file_path = 'a:\\East Kingdom Exchequer Test'
+        for from_group_path in all:
+            to_group_path = f"{to_file_path}{from_group_path[l:]}"
+            os.makedirs(to_group_path, exist_ok=True)
+            to_new_group_path = to_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
+            to_new_group_path = to_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
+            os.makedirs(to_new_group_path, exist_ok=True)
+        for from_q4_path in q4s:
+            to_q4_path = f"{to_file_path}{from_q4_path[l:]}"
+            try:
+                # This will overwrite the destination file if it already exists
+                shutil.copy2(from_q4_path, to_q4_path)
+                print(f"File '{to_q4_path}' copied to '{to_q4_path}' successfully.")
+            except FileNotFoundError:
+                print("The source or destination file was not found.")
+            except PermissionError:
+                print("You don't have permission to access the source or destination file.")
+            except shutil.SameFileError:
+                print("Source and destination represent the same file.")
+            except IsADirectoryError:
+                print("The destination path is a directory but was expected to be a file path.")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
+
+    @staticmethod
+    def copy_a_to_g(all, q4s):
+        from_file_path = 'a:\\East Kingdom Exchequer Test'
+        l = len(from_file_path)
+        to_file_path = 'g:\\Shared drives'
         for from_group_path in all:
             to_group_path = f"{to_file_path}{from_group_path[l:]}"
             os.makedirs(to_group_path, exist_ok=True)

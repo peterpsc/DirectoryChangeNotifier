@@ -206,10 +206,14 @@ class OldWorkbookToDataForNew:
         # add Choices 2 or 3
         choice_2 = ws_old_financial_committee["C12"].value
         choice_3 = ws_old_financial_committee["C13"].value
-        if choice_2:
+        if choice_2:  # default
             choice = 2
+            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
+            self.append_data("FinancialCommittee", "B7", choice_2)
         else:
             choice = 3
+            choice_3 = "The Financial Committee consists of the Seneschal, Exchequer, and other officers specified below."
+            self.append_data("FinancialCommittee", "B7", choice_3)
 
         seneshal_sca_name = ws_old_financial_committee["D18"].value
         self.append_data("FinancialCommittee", "C12", seneshal_sca_name)
@@ -422,10 +426,15 @@ class OldWorkbookToDataForNew:
         from_row_end = 30
         for from_row in range(from_row_start, from_row_end + 1):
             reason = ws_old_liability_dtl_5b[f"C{from_row}"].value
+            prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
             current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
             if current_amount:
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
+                year = LAST_YEAR
+                if prior_amount:
+                    year -= 1
+                self.append_data("LiabilityDetails", f"C{to_row}", year)
                 to_row = to_row + 1
 
         # Payables
@@ -435,11 +444,15 @@ class OldWorkbookToDataForNew:
         for from_row in range(from_row_start, from_row_end + 1):
             owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
             reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
+            prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
             current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
             if current_amount:
                 self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
-                # ignore prior_amount
+                year = LAST_YEAR
+                if prior_amount:
+                    year -= 1
+                self.append_data("LiabilityDetails", f"C{to_row}", year)
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
@@ -451,10 +464,14 @@ class OldWorkbookToDataForNew:
             owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
             if owed_to:
                 reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
+                prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
                 current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
                 self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
-                # ignore prior_amount
+                year = LAST_YEAR
+                if prior_amount:
+                    year -= 1
+                self.append_data("LiabilityDetails", f"C{to_row}", year)
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
@@ -491,10 +508,15 @@ class OldWorkbookToDataForNew:
         for from_row in range(from_row_start, from_row_end + 1):
             description = ws_old_asset_dtl_5a[f"C{from_row}"].value
             if description:
+                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
                 current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
+                    year = LAST_YEAR
+                    if prior_amount:
+                        year -= 1
+                    self.append_data("AssetDetails", f"C{to_row}", year)
                     to_row = to_row + 1
 
         # Other Assets
@@ -509,6 +531,10 @@ class OldWorkbookToDataForNew:
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
+                    year = LAST_YEAR
+                    if prior_amount:
+                        year -= 1
+                    self.append_data("AssetDetails", f"C{to_row}", year)
                     to_row = to_row + 1
 
     def save_depreciation_and_inventory(self):
