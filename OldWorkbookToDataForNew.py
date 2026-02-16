@@ -358,7 +358,7 @@ class OldWorkbookToDataForNew:
         general_fund_value = ws_old_funds["F14"].value
         if general_fund_value is None and has_no_funds:
             general_fund_value = ws_old_funds["F11"].value
-        calc_general_funds = f'={general_fund_value}+G35-G45'  # a formula
+        calc_general_funds = f'={general_fund_value}+G35-G48'  # a formula
         self.append_formula(calc_general_funds)
 
     def append_formula(self, calc_general_funds: str):
