@@ -307,6 +307,8 @@ End Function
 
 Function GetGroupDataDir()
     GetGroupDataDir = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
+    ' A:/East Kingdom Exchequer Test/
+    ' G:/My Drive/
 End Function
 
 Sub OpenGroupStatusReport()

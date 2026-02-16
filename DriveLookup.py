@@ -34,8 +34,8 @@ PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = TIR_MARA
 
-COPY_G_TO_A = False
-DELETE_ALL_Q1 = False  # Should mostly be False
+COPY_G_TO_A = True
+DELETE_ALL_Q1 = True  # Should mostly be False
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
