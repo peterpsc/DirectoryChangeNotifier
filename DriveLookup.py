@@ -11,25 +11,32 @@ import PlaySound
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
-                                     THIS_YEAR_PREFIX)
+                                     THIS_YEAR_PREFIX, MASTER_WORKBOOK_PATH)
 
-PROCESS_SPECIFIC = ["Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Northpass", "Hartshorn-dale"]
-PROCESS_SPECIFIC = ["An Dubhaigeainn"]
-PROCESS_SPECIFIC = ["Stonemarche", "L'Ile du Dragon Dormant"]
-PROCESS_SPECIFIC = ["Carolingia"]
-PROCESS_SPECIFIC = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
-                    "Ynys y Gwaun"]
+TIR_MARA = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
+            "Ynys y Gwaun"]
+NORTHERN = ["Endewearde", "Hadchester", "Malagentia", "Giggleswick", "Ravensbridge", "Stonemarche", "Coldwood",
+            "Glenn Linn", "Northern Outpost", "Panther Vale"]
+CENTRAL = ["Beyond the Mountain", "Dragonship Haven", "Bergental", "Carolingia", "Towers", "Quintavia", "Smoking Rocks",
+           "Anglespur", "Concordia of the Snows", "Nordenhal", "Bridge"]
+SOUTHERN = ["An Dubhaigeainn", "Hawke's Reache", "Østgarðr", "Appleholm", "Midland Vale", "Old Stonebridges",
+            "Lion's End", "North Pass", "Bhakail", "Ivyeinrust", "Blak Rose", "Buckland Cross", "Eisental",
+            "Hartshorn-dale", "Known World Players", "Montevale", "Owlsherst"]
+
+
 PROCESS_SPECIFIC = ["Another Group"]
-PROCESS_SPECIFIC = ["Northpass", "Panthervale"]
-PROCESS_SPECIFIC = ["Endewearde"]
+
 PROCESS_SPECIFIC = None
+PROCESS_SPECIFIC = ["Havre des Glaces"]
+PROCESS_SPECIFIC = TIR_MARA
 
 COPY_G_TO_A = False
-DELETE_ALL_Q1 = False
-DELETE_ALL_Q1_DATA = True
+DELETE_ALL_Q1 = False  # Should mostly be False
+DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
+COPY_A_TO_G = False  # TODO
 
 # Creates:
 # Group Status.csv

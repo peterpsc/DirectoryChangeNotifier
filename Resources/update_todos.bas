@@ -1,4 +1,4 @@
-Sub ConvertAllQ1s
+Sub ConvertAllQ1s()
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
     Dim iRow As Integer, convertedCount As Integer
@@ -50,7 +50,6 @@ Sub ConvertAllQ1s
 
     MsgBox "Converted " + convertedCount, 64, "Success"
 
-    RefreshGroupStatus()
 End Sub
 
 Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
@@ -75,7 +74,7 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 	  	oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(sMasterPath), "_blank", 0, Array())
 
 	    ' 2. Save as the destination file
-	    SaveWorkbook(oDoc, sOutputURL)
+	    'SaveWorkbook(oDoc, sOutputURL)
 
 	    ' 3. Delegate CSV handling entirely to the data sub
 	    success = ImportAndProcessCSV(oDoc, sDataPath)
@@ -141,6 +140,10 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
 End Function
 
 Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
+	TYPE_STRING = "string"
+	TYPE_FORMULA = "formula"
+	TYPE_CURRENCY = "currency"
+
     ProcessCSV = False
     Dim oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim iRow As Integer
@@ -156,24 +159,28 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
         sWorksheet = oCSVSheet.getCellByPosition(0, iRow).String
         sCoord     = oCSVSheet.getCellByPosition(1, iRow).String
         sText      = oCSVSheet.getCellByPosition(2, iRow).String
-        sAsString  = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
+        sType	   = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
         sLocked	   = LCase(oCSVSheet.getCellByPosition(4, iRow).String)
-        asString = False
-        If sAsString = "true" then asString = True
         locked = False
+
         If sLocked = "true" Then locked = True
 
         If oTargetDoc.Sheets.hasByName(sWorksheet) Then
             oSheet = oTargetDoc.Sheets.getByName(sWorksheet)
             oCell = oSheet.getCellRangeByName(sCoord)
-            if asString then
-                If Left(sText, 1) = "=" Then
+            if sType = TYPE_STRING then
+                oCell.String = sText
+            else
+                If sType = TYPE_FORMULA Then
+                   	sText = RemoveOuterQuotes(sText)
                     oCell.Formula = sText
                 Else
-                    oCell.String = sText
+                	if sType = TYPE_CURRENCY Then
+            			oCell.Value = Val(sText)
+            		Else
+            			print("Invalid Type: " + sType)
+            		End If
                 End If
-            else
-            	oCell.Value = Val(sText)
             End if
        '     if locked Then
        '     	oProtection.IsLocked = True
@@ -194,6 +201,17 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
 
     ProcessCSV = True
 
+End Function
+
+Function RemoveOuterQuotes(ByVal txt As String) As String
+    Dim quote As String
+    quote = Chr(34) ' Character code for double quote "
+
+    If Left(txt, 1) = quote And Right(txt, 1) = quote Then
+        RemoveOuterQuotes = Mid(txt, 2, Len(txt) - 2)
+    Else
+        RemoveOuterQuotes = txt
+    End If
 End Function
 
 Function ReadStringFromFile(filePath As String) As String
@@ -229,13 +247,13 @@ Function ReadStringFromFile(filePath As String) As String
     End If
 End Function
 
-Sub RefreshGroupStatus
+Sub RefreshGroupStatus()
     CloseGroupStatusReport()
     RunDriveLookup()
     OpenGroupStatusReport()
  End Sub
 
-Sub CloseGroupStatusReport
+Sub CloseGroupStatusReport()
     Dim oComponents As Object
     Dim oEnum As Object
     Dim oComp As Object
@@ -261,7 +279,7 @@ Sub CloseGroupStatusReport
     Loop
 End Sub
 
-Sub RunDriveLookup
+Sub RunDriveLookup()
     ' Path to the executable
     Dim sExePath As String
     dir = GetPythonDir()
@@ -275,19 +293,19 @@ Sub RunDriveLookup
     Shell(sExePath, 1, sArgs, True)
 End Sub
 
-Function GetPythonDir
+Function GetPythonDir()
     where = "g:\\ /S"
     'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
 
     GetPythonDir = None
     if where = "g:\\ /S" then
-        GetPythonDir = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\\"
+        GetPythonDir = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\"
     else
-        GetPythonDir = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\\"
+        GetPythonDir = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\"
     end if
 End Function
 
-Function GetGroupDataDir
+Function GetGroupDataDir()
     where = "g:\\ /S" ' local computer
     'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
 
@@ -299,43 +317,24 @@ Function GetGroupDataDir
     end if
 End Function
 
-Sub OpenGroupStatusReport
+Sub OpenGroupStatusReport()
     sReportPath = GetGroupDataDir()
     sTargetTitle = "Group Status.csv"
     sStatusReportFilePath = sReportPath + sTargetTitle
-
 End Sub
 
-Sub RefreshGroupStatus2
-    Dim sFileUrl As String
-    Dim oDoc As Object
-    Dim sBatchPath As String
+Sub ConvertAllQ4sToQ1s()
+    ConvertAllQ1s()
 
-    ' 1. Define the CSV File URL and Batch File Path
-    ' Change "C:\path\to\" to the actual folder path
-    sFileUrl = ConvertToURL("C:\path\to\Group Status.csv")
-    sBatchPath = "C:\path\to\Update Group Status.bat"
+    Dim sExePath As String
+    exeDir = GetPythonDir()
+    sExePath = exeDir +"Update Group Status.bat"
 
-    oDoc = ThisComponent
+    Wait 500
+    ThisComponent.close(True)
 
-    ' 2. Close the CSV File
-    If HasUnoInterfaces(oDoc, "com.sun.star.util.XCloseable") Then
-        oDoc.close(True)
-    Else
-        oDoc.dispose()
-    End If
+    Dim sCommand As String
+    sCommand = "cmd /c start """" """ & sExePath & """"
+    Shell(sCommand, 0)
 
-    ' Optional: Wait for file handle to release
-    Wait 1000
-
-    ' 3. Execute the Batch File
-    ' 1 = Normal window, True/False = Wait for it to finish
-    Shell(sBatchPath, 1, sArgs, True)
-
-    ' 4. Open the CSV file again
-    Dim mArgs(0) As New com.sun.star.beans.PropertyValue
-    mArgs(0).Name = "Hidden"
-    mArgs(0).Value = False
-
-    StarDesktop.loadComponentFromURL(sFileUrl, "_blank", 0, mArgs())
 End Sub

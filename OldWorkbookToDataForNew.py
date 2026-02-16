@@ -25,7 +25,13 @@ THIS_YEAR_DIR = f"\\{THIS_YEAR}\\"
 THIS_YEAR_PREFIX = f"{PREFIX}{THIS_YEAR} Q1 "
 LAST_YEAR = datetime.now().year - 1
 LAST_YEAR_DIR = f"\\{LAST_YEAR}\\"
-
+MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03.xlsx", Persistence.RESOURCE_PATH)
+# Types:
+TYPE = "Type"
+STRING = "String"
+CURRENCY = "Currency"
+FORMULA = "Formula"
+TYPES = [TYPE, STRING, CURRENCY, FORMULA]
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
 
@@ -39,7 +45,7 @@ class OldWorkbookToDataForNew:
 
     def __init__(self, old_workbook_file_path,
                  output_file_path,
-                 master_data_file_path="Resources\\SCA Exchequer Report - 2026-03.xlsx",
+                 master_data_file_path=MASTER_WORKBOOK_PATH,
                  ):
         self.state = None
         self.region = None
@@ -60,7 +66,7 @@ class OldWorkbookToDataForNew:
             self.old_workbook = None
 
         self.new_data = []
-        self.append_data("Sheet", "Coord", "Value", "As String", "Locked")
+        self.append_data("Sheet", "Coord", "Value", "Type", "Locked")
 
     def is_balanced_or_negative(self):
         is_balanced = False
@@ -77,9 +83,11 @@ class OldWorkbookToDataForNew:
                 print_red(f"EXCEPTION:{e}")
         return is_balanced, is_negative
 
-    def append_data(self, worksheet_name, cell_name, value, as_string=True, locked=False):
+    def append_data(self, worksheet_name, cell_name, value, type=STRING, locked=False):
         if value:
-            self.new_data.append([worksheet_name, cell_name, value, as_string, locked])
+            if type != STRING:
+                assert type in TYPES, f"Type {type} not supported"
+            self.new_data.append([worksheet_name, cell_name, value, type, locked])
 
     def save_notes(self):
         self.append_data("Notes", "A1", self.state)
@@ -245,9 +253,9 @@ class OldWorkbookToDataForNew:
         bank_account_number = ws_old_primary_account["E16"].value
         self.append_data("Accounts", "B11", bank_account_number)
         balance = ws_old_primary_account["H19"].value
-        self.append_data("Accounts", "C16", balance, False, True)
+        self.append_data("Accounts", "C16", balance, CURRENCY, True)
         ledger_balance = ws_old_primary_account["H37"].value
-        self.append_data("Accounts", "C17", ledger_balance, False, True)
+        self.append_data("Accounts", "C17", ledger_balance, CURRENCY, True)
         interest_bearing = ws_old_primary_account["F38"].value
         choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
         self.append_data("Accounts", "B14", choice)
@@ -294,9 +302,9 @@ class OldWorkbookToDataForNew:
                 bank_account_number = ws_old_secondary_account[f"{col}14"].value
                 self.append_data("Accounts", "B26", bank_account_number)
                 balance = ws_old_secondary_account[f"{col}19"].value
-                self.append_data("Accounts", "C31", balance, False, True)
+                self.append_data("Accounts", "C31", balance, CURRENCY, True)
                 ledger_balance = ws_old_secondary_account["D25"].value
-                self.append_data("Accounts", "C32", ledger_balance, False, True)
+                self.append_data("Accounts", "C32", ledger_balance, CURRENCY, True)
 
                 interest_bearing = ws_old_secondary_account[f"{col}17"].value
                 choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
@@ -343,15 +351,19 @@ class OldWorkbookToDataForNew:
 
                 self.append_data("Summary", f"B{to_row}", name_of_fund)
                 self.append_data("Summary", f"D{to_row}", purpose_of_fund)
-                self.append_data("Summary", f"G{to_row}", value, False)
+                self.append_data("Summary", f"G{to_row}", value, CURRENCY)
                 to_row = to_row + 1
 
         # General Fund
         general_fund_value = ws_old_funds["F14"].value
         if general_fund_value is None and has_no_funds:
             general_fund_value = ws_old_funds["F11"].value
-        self.append_data("Summary", "G59", f"={general_fund_value}+G35-G45")
-        #TODO figure out what should be included to this, should it be a formula?
+        calc_general_funds = f'={general_fund_value}+G35-G45'  # a formula
+        self.append_formula(calc_general_funds)
+
+    def append_formula(self, calc_general_funds: str):
+        formula = f'"{calc_general_funds}""'  # it seems imbalanced, but it works
+        self.append_data("Summary", "G59", formula, FORMULA)
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve
@@ -377,7 +389,7 @@ class OldWorkbookToDataForNew:
                 amount = ws_old_asset_dtl_5a[f"{from_columns[1]}{from_row}"].value
                 if amount:
                     self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
-                    self.append_data("Outstanding", f"K{to_row}", amount, False)
+                    self.append_data("Outstanding", f"K{to_row}", amount, CURRENCY)
                     self.append_data("Outstanding", f"J{to_row}", "Undeposited Funds")
                     to_row = to_row + 1
                 if to_row > 33:
@@ -396,7 +408,7 @@ class OldWorkbookToDataForNew:
                 self.append_data("Outstanding", f"E{to_row}", check_no)
                 self.append_data("Outstanding", f"C{to_row}", date)
                 if amount:
-                    self.append_data("Outstanding", f"K{to_row}", -amount, False)
+                    self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
                 to_row = to_row + 1
         return to_row
 
@@ -413,7 +425,7 @@ class OldWorkbookToDataForNew:
             current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
             if current_amount:
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
-                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
         # Payables
@@ -428,7 +440,7 @@ class OldWorkbookToDataForNew:
                 self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
                 # ignore prior_amount
-                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
         # Other Liabilities
@@ -443,7 +455,7 @@ class OldWorkbookToDataForNew:
                 self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
                 # ignore prior_amount
-                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, False)
+                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
     def save_assets(self):
@@ -469,7 +481,7 @@ class OldWorkbookToDataForNew:
                     self.append_data("AssetDetails", f"B{to_row}", owed_from)
                     self.append_data("AssetDetails", f"C{to_row}", year)
                     self.append_data("AssetDetails", f"D{to_row}", reason)
-                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
                     to_row = to_row + 1
 
         # Prepaid Expenses
@@ -482,7 +494,7 @@ class OldWorkbookToDataForNew:
                 current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
-                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
                     to_row = to_row + 1
 
         # Other Assets
@@ -496,7 +508,7 @@ class OldWorkbookToDataForNew:
                 current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
-                    self.append_data("AssetDetails", f"H{to_row}", current_amount, False)
+                    self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
                     to_row = to_row + 1
 
     def save_depreciation_and_inventory(self):
@@ -520,7 +532,7 @@ class OldWorkbookToDataForNew:
                     self.append_data(to_ws, f"C{to_row}", item_description)
                     self.append_data(to_ws, f"D{to_row}", quantity)
                     self.append_data(to_ws, f"B{to_row}", purchase_year)
-                    self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                    self.append_data(to_ws, f"E{to_row}", current_amount, CURRENCY)
                     self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
                     to_row = to_row + 1
 
@@ -538,7 +550,7 @@ class OldWorkbookToDataForNew:
                     self.append_data(to_ws, f"C{to_row}", item_description)
                     self.append_data(to_ws, f"D{to_row}", quantity)
                     self.append_data(to_ws, f"B{to_row}", purchase_year)
-                    self.append_data(to_ws, f"E{to_row}", current_amount, False)
+                    self.append_data(to_ws, f"E{to_row}", current_amount, CURRENCY)
                     self.append_data(to_ws, f"I{to_row}", "7-Year Depreciable Assets")
 
                     to_row = to_row + 1
@@ -564,7 +576,7 @@ class OldWorkbookToDataForNew:
 
                     self.append_data(to_ws, f"C{to_row}", description_and_year_purchaced)
                     self.append_data(to_ws, f"D{to_row}", existing_lot_quantity)
-                    self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, False)
+                    self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, CURRENCY)
                     self.append_data(to_ws, f"I{to_row}", "Inventory")
                     self.append_data(to_ws, f"T{to_row}", quantity_removed_or_discarded)
 
