@@ -203,17 +203,13 @@ class OldWorkbookToDataForNew:
         seneshal_name = ws_old_contents["C9"].value
         self.append_data("FinancialCommittee", "C11", seneshal_name)
         ws_old_financial_committee = self.old_workbook["FINANCE_COMM_13"]
-        # add Choices 2 or 3
-        choice_2 = ws_old_financial_committee["C12"].value
         choice_3 = ws_old_financial_committee["C13"].value
-        if choice_2:  # default
-            choice = 2
-            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
-            self.append_data("FinancialCommittee", "B7", choice_2)
-        else:
-            choice = 3
+        if choice_3:
             choice_3 = "The Financial Committee consists of the Seneschal, Exchequer, and other officers specified below."
             self.append_data("FinancialCommittee", "B7", choice_3)
+        else:  # default
+            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
+            self.append_data("FinancialCommittee", "B7", choice_2)
 
         seneshal_sca_name = ws_old_financial_committee["D18"].value
         self.append_data("FinancialCommittee", "C12", seneshal_sca_name)
@@ -222,7 +218,7 @@ class OldWorkbookToDataForNew:
         seneshal_expiry_date = self.dmy(ws_old_financial_committee["F17"].value)
         self.append_data("FinancialCommittee", "E11", seneshal_expiry_date)
 
-        if choice == 3:
+        if choice_3:
             for i in range(17):
                 old_row = 21 + i * 2
                 modern_name = ws_old_financial_committee[f"D{old_row}"].value
