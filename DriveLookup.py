@@ -35,12 +35,12 @@ PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = TIR_MARA
 
 COPY_G_TO_A = True
-DELETE_ALL_Q1 = True  # Should mostly be False
+DELETE_ALL_Q1 = False  # Should mostly be False
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
-COPY_A_TO_G = True
+COPY_A_TO_G = False  # True when it is ready
 
 # Creates:
 # Group Status.csv
@@ -256,51 +256,53 @@ class DriveLookup:
 
     @staticmethod
     def copy_g_to_a(all, q4s):
-        # from_file_path = 'g:\\My Drive\\East Kingdom Exchequer'
-        from_file_path = 'g:\\Shared drives'
-        l = len(from_file_path)
-        to_file_path = 'a:\\East Kingdom Exchequer Test'
-        for from_group_path in all:
-            to_group_path = f"{to_file_path}{from_group_path[l:]}"
-            os.makedirs(to_group_path, exist_ok=True)
-            to_new_group_path = to_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
-            to_new_group_path = to_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
-            os.makedirs(to_new_group_path, exist_ok=True)
-        for from_q4_path in q4s:
-            to_q4_path = f"{to_file_path}{from_q4_path[l:]}"
-            try:
-                # This will overwrite the destination file if it already exists
-                shutil.copy2(from_q4_path, to_q4_path)
-                print(f"File '{to_q4_path}' copied to '{to_q4_path}' successfully.")
-            except FileNotFoundError:
-                print("The source or destination file was not found.")
-            except PermissionError:
-                print("You don't have permission to access the source or destination file.")
-            except shutil.SameFileError:
-                print("Source and destination represent the same file.")
-            except IsADirectoryError:
-                print("The destination path is a directory but was expected to be a file path.")
-            except Exception as e:
-                print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
+        groupDataDir = Persistence.get_line("G:/My Drive/East Kingdom Exchequer Drive.txt", Persistence.FILE_PATH)
+        if groupDataDir.startswith("G:"):
+            from_file_path = 'G:\\Shared drives'
+            l = len(from_file_path)
+            to_file_path = 'A:\\East Kingdom Exchequer Test'
+            for from_group_path in all:
+                to_group_path = f"{to_file_path}\\{from_group_path[l:]}"
+                os.makedirs(to_group_path, exist_ok=True)
+                to_new_group_path = to_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
+                to_new_group_path = to_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
+                os.makedirs(to_new_group_path, exist_ok=True)
+            for from_q4_path in q4s:
+                if exists(from_q4_path):
+                    to_q4_path = f"{to_file_path}{from_q4_path[l:]}"
+                    try:
+                        # This will overwrite the destination file if it already exists
+                        shutil.copy2(from_q4_path, to_q4_path)
+                        print(f"From File: '{from_q4_path}'\r\n  To File: '{to_q4_path}'")
+                    except FileNotFoundError:
+                        print("The source or destination file was not found.")
+                    except PermissionError:
+                        print("You don't have permission to access the source or destination file.")
+                    except shutil.SameFileError:
+                        print("Source and destination represent the same file.")
+                    except IsADirectoryError:
+                        print("The destination path is a directory but was expected to be a file path.")
+                    except Exception as e:
+                        print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
 
     def copy_a_to_g(self, all, q4s):
         groupDataDir = Persistence.get_line("G:/My Drive/East Kingdom Exchequer Drive.txt", Persistence.FILE_PATH)
-        if groupDataDir.startswith("g:"):
-            a_file_path = 'a:\\East Kingdom Exchequer Test'
+        if groupDataDir.startswith("G:"):
+            a_file_path = 'A:/East Kingdom Exchequer Test/'
             la = len(a_file_path)
-            g_file_path = 'g:\\Shared drives'
+            g_file_path = 'G:/Shared drives/'
             lg = len(g_file_path)
             for a_group_path in all:
                 g_group_path = f"{g_file_path}{a_group_path[la:]}"
                 g_new_group_path = g_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
                 g_new_group_path = g_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
-                a_new_group_path = f"{a_file_path}{g_new_group_path[lg:]}"
+                a_new_group_path = f"{a_file_path}{g_new_group_path[lg:]}".replace("\\", "/")
                 file_name = self.find_q4_file_name(a_group_path)
                 old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(a_group_path, file_name)
-                a_q1_path = f"{a_new_group_path}\\{new_file_name}.xlsx"
-                g_q1_path = f"{g_new_group_path}\\{new_file_name}.xlsx"
+                a_q1_path = f"{a_new_group_path}/{new_file_name}.xlsx"
+                g_q1_path = f"{g_new_group_path}/{new_file_name}.xlsx"
                 try:
-                    if exists(a_q1_path):
+                    if exists(a_q1_path) and exists(g_new_group_path):
                         shutil.copy2(a_q1_path,
                                      g_q1_path)  # This will overwrite the destination file if it already exists
                         print(f"From File: '{a_q1_path}'\r\n  To File: '{g_q1_path}'")
