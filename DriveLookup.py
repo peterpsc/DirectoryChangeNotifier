@@ -40,7 +40,7 @@ DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
-COPY_A_TO_G = False  # True when it is ready
+COPY_A_TO_G = True  # True when it is ready
 
 # Creates:
 # Group Status.csv
@@ -288,19 +288,18 @@ class DriveLookup:
     def copy_a_to_g(self, all, q4s):
         groupDataDir = Persistence.get_line("G:/My Drive/East Kingdom Exchequer Drive.txt", Persistence.FILE_PATH)
         if groupDataDir.startswith("G:"):
-            a_file_path = 'A:/East Kingdom Exchequer Test/'
+            a_file_path = 'A:\\East Kingdom Exchequer Test\\'
             la = len(a_file_path)
-            g_file_path = 'G:/Shared drives/'
+            g_file_path = 'G:\\Shared drives\\'
             lg = len(g_file_path)
-            for a_group_path in all:
-                g_group_path = f"{g_file_path}{a_group_path[la:]}"
+            for g_group_path in all:
                 g_new_group_path = g_group_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
                 g_new_group_path = g_new_group_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
-                a_new_group_path = f"{a_file_path}{g_new_group_path[lg:]}".replace("\\", "/")
-                file_name = self.find_q4_file_name(a_group_path)
-                old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(a_group_path, file_name)
-                a_q1_path = f"{a_new_group_path}/{new_file_name}.xlsx"
-                g_q1_path = f"{g_new_group_path}/{new_file_name}.xlsx"
+                a_new_group_path = f"{a_file_path}{g_new_group_path[lg:]}"
+                file_name = self.find_q4_file_name(g_group_path)
+                old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(g_group_path, file_name)
+                a_q1_path = f"{a_new_group_path}\\{new_file_name}.xlsx"
+                g_q1_path = f"{g_new_group_path}\\{new_file_name}.xlsx"
                 try:
                     if exists(a_q1_path) and exists(g_new_group_path):
                         shutil.copy2(a_q1_path,
