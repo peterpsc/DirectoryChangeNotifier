@@ -30,8 +30,8 @@ OTHER = ["Hawke's Reache", "Appleholm",
 PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 
-PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = ["Carillion"]
+PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = TIR_MARA
 
 COPY_G_TO_A = True

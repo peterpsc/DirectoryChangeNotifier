@@ -218,21 +218,20 @@ class OldWorkbookToDataForNew:
         seneshal_expiry_date = self.dmy(ws_old_financial_committee["F17"].value)
         self.append_data("FinancialCommittee", "E11", seneshal_expiry_date)
 
-        if choice_3:
-            for i in range(17):
-                old_row = 21 + i * 2
-                modern_name = ws_old_financial_committee[f"D{old_row}"].value
-                if modern_name:
-                    title = ws_old_financial_committee[f"C{old_row}"].value
-                    sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
-                    membership_no = ws_old_financial_committee[f"E{old_row}"].value
-                    expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
+        for i in range(17):
+            old_row = 21 + i * 2
+            modern_name = ws_old_financial_committee[f"D{old_row}"].value
+            if modern_name:
+                title = ws_old_financial_committee[f"C{old_row}"].value
+                sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
+                membership_no = ws_old_financial_committee[f"E{old_row}"].value
+                expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
 
-                    self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
-                    self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
-                    self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
-                    self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
-                    self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
+                self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
+                self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
+                self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
+                self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
+                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
 
     def save_primary_account(self):
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
