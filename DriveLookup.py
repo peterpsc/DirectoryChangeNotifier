@@ -31,8 +31,8 @@ PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 
 PROCESS_SPECIFIC = ["Carillion"]
-PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = TIR_MARA
+PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False
@@ -40,7 +40,7 @@ DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
-COPY_A_TO_G = True  # True when it is ready
+COPY_A_TO_G = False  # True when it is ready
 
 # Creates:
 # Group Status.csv
@@ -50,14 +50,13 @@ class DriveLookup:
         self.notification_name = notification_name
         self.report_path = report_path
         self.process_specific = process_specific
-        notification_names = Persistence.get_lines("NotificationNames.txt")
-        self.dcn = DirChangeNotifier(notification_names)
+        self.dcn = DirChangeNotifier(notification_name)
         self.last_year_dirs = self.get_last_year_dirs()
         self.this_year_dirs = self.get_this_year_dirs(self.last_year_dirs)
 
     def get_last_year_dirs(self):
-        path_options = self.dcn.get_dir_change_path_options(self.notification_name)
-        ignore_paths = self.dcn.get_ignore_paths(self.notification_name)
+        path_options = self.dcn.get_dir_change_path_options()
+        ignore_paths = self.dcn.get_ignore_paths()
         all_directories = self.dcn.get_dir_paths(path_options, ignore_paths)
         filtered_directories = []
         for directory in all_directories:
