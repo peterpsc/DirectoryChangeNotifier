@@ -766,7 +766,10 @@ class OldWorkbookToDataForNew:
         return self.states[state]
 
     def fix_state(self, state):
-        if state == self.state or self.state is None:
+        if self.state is None:
+            return state
+
+        elif state == self.state:
             return state
 
         elif state == "Corporate":
@@ -775,7 +778,7 @@ class OldWorkbookToDataForNew:
             fixed_state = self.states[state]
             return fixed_state  # fix the state,  Canada = Non-US
         except KeyError:
-            print_red(f"EXCEPTION:{state} not found")
+            print_red(f"EXCEPTION:{state} not found changed to {self.state}")
             return self.state
 
 def print_red(error: str):
