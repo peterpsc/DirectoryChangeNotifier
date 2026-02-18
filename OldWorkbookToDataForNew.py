@@ -29,9 +29,10 @@ MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03
 # Types:
 TYPE = "Type"
 STRING = "String"
+DATE = "Date"
 CURRENCY = "Currency"
 FORMULA = "Formula"
-TYPES = [TYPE, STRING, CURRENCY, FORMULA]
+TYPES = [TYPE, STRING, CURRENCY, DATE, FORMULA]
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
 
@@ -42,12 +43,15 @@ class OldWorkbookToDataForNew:
     BANK_ACCOUNT_TYPE_CHOICES = ["Checking", "Savings", "CD/GIC", "Money Market"]
     SIGNATORY_CHOICES = ["Single", "Dual"]
     INTEREST_BEARING_CHOICES = ["Yes", "No"]
+    states = Persistence.get_dict("States.csv", Persistence.RESOURCE_PATH)
 
-    def __init__(self, old_workbook_file_path,
+    def __init__(self,
+                 old_workbook_file_path,
                  output_file_path,
                  master_data_file_path=MASTER_WORKBOOK_PATH,
                  ):
-        self.state = None
+
+        self.state = self.get_state_from_path(old_workbook_file_path)
         self.region = None
         self.group_type = None
         split_path = output_file_path.split("/")
@@ -96,7 +100,7 @@ class OldWorkbookToDataForNew:
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
         name_of_branch = ws_old_contents["C8"].value
-        name_of_branch, self.full_name_of_branch, group_type, self.region = self.lookup_group_full_name_type_region(
+        name_of_branch, self.full_name_of_branch, self.group_type, self.region = self.lookup_group_full_name_type_region(
             name_of_branch,
             self.output_file_path,
             self.name_of_branch)
@@ -110,8 +114,8 @@ class OldWorkbookToDataForNew:
         else:
             self.append_data("Summary", "D7", self.KINGDOM)
         state = ws_old_contents["C15"].value
-        self.state = state
-        self.append_data("Summary", "D8", state)
+        self.state = self.fix_state(state)
+        self.append_data("Summary", "D8", self.state)
         self.append_data("Summary", "D9", self.full_name_of_branch)
         currency = ws_old_contents["C14"].value
         self.append_data("Summary", "H8", currency)
@@ -126,7 +130,7 @@ class OldWorkbookToDataForNew:
         membership_no = ws_old_contact_info["H15"].value
         self.append_data("Exchequers", "L8", membership_no)
         expiration_date = self.dmy(ws_old_contact_info["H16"].value)
-        self.append_data("Exchequers", "L9", expiration_date)
+        self.append_data("Exchequers", "L9", expiration_date, DATE)
         home_address = ws_old_contact_info["D12"].value
         self.append_data("Exchequers", "D10", home_address)
         city_town = ws_old_contact_info["D13"].value
@@ -150,6 +154,9 @@ class OldWorkbookToDataForNew:
 
     def save_deputy_exchequer_1(self):
         ws_old_contact_info = self.old_workbook["CONTACT_INFO_1"]
+        deputy_exchequer_title = ws_old_contact_info["E21"].value
+        if deputy_exchequer_title:
+            self.append_data("Exchequers", "G15", "Deputy For " + deputy_exchequer_title)
         deputy_exchequer_name = ws_old_contact_info["D22"].value
         self.append_data("Exchequers", "C16", deputy_exchequer_name)
         deputy_sca_name = ws_old_contact_info["D27"].value
@@ -157,7 +164,7 @@ class OldWorkbookToDataForNew:
         membership_no = ws_old_contact_info["H26"].value
         self.append_data("Exchequers", "L16", membership_no)
         expiration_date = self.dmy(ws_old_contact_info["H27"].value)
-        self.append_data("Exchequers", "L17", expiration_date)
+        self.append_data("Exchequers", "L17", expiration_date, DATE)
         home_address = ws_old_contact_info["D23"].value
         self.append_data("Exchequers", "D18", home_address)
         city_town = ws_old_contact_info["D24"].value
@@ -175,6 +182,9 @@ class OldWorkbookToDataForNew:
 
     def save_deputy_exchequer_2(self):
         ws_old_contact_info = self.old_workbook["CONTACT_INFO_1"]
+        deputy_exchequer_title = ws_old_contact_info["E29"].value
+        if deputy_exchequer_title:
+            self.append_data("Exchequers", "G23", "Deputy For " + deputy_exchequer_title)
         deputy_exchequer_name = ws_old_contact_info["D30"].value
         self.append_data("Exchequers", "C24", deputy_exchequer_name)
         sca_name = ws_old_contact_info["D35"].value
@@ -182,7 +192,7 @@ class OldWorkbookToDataForNew:
         membership_no = ws_old_contact_info["H34"].value
         self.append_data("Exchequers", "L24", membership_no)
         expiration_date = self.dmy(ws_old_contact_info["H35"].value)
-        self.append_data("Exchequers", "L25", expiration_date)
+        self.append_data("Exchequers", "L25", expiration_date, DATE)
         home_address = ws_old_contact_info["D31"].value
         self.append_data("Exchequers", "D26", home_address)
         city_town = ws_old_contact_info["D32"].value
@@ -216,7 +226,7 @@ class OldWorkbookToDataForNew:
         seneshal_member_number = ws_old_financial_committee["E17"].value
         self.append_data("FinancialCommittee", "D11", seneshal_member_number)
         seneshal_expiry_date = self.dmy(ws_old_financial_committee["F17"].value)
-        self.append_data("FinancialCommittee", "E11", seneshal_expiry_date)
+        self.append_data("FinancialCommittee", "E11", seneshal_expiry_date, DATE)
 
         for i in range(17):
             old_row = 21 + i * 2
@@ -231,7 +241,7 @@ class OldWorkbookToDataForNew:
                 self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
                 self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
                 self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
-                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date)
+                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date, DATE)
 
     def save_primary_account(self):
         ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
@@ -274,7 +284,7 @@ class OldWorkbookToDataForNew:
                     new_cols = "LPQ"
                 self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
                 self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
+                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date, DATE)
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
@@ -324,7 +334,7 @@ class OldWorkbookToDataForNew:
                             new_cols = "LPQ"
                         self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
                         self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-                        self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date)
+                        self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date, DATE)
 
     def set_bank_account_type(self, cell, bank_account_type):
         choices = ["Checking", "Savings", "CD/GIC", "Money Market"]
@@ -405,7 +415,7 @@ class OldWorkbookToDataForNew:
                 date = self.dmy(ws_old_primary_account[f"{from_cols[1]}{from_row}"].value)
                 amount = ws_old_primary_account[f"{from_cols[2]}{from_row}"].value
                 self.append_data("Outstanding", f"E{to_row}", check_no)
-                self.append_data("Outstanding", f"C{to_row}", date)
+                self.append_data("Outstanding", f"C{to_row}", date, DATE)
                 if amount:
                     self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
                 to_row = to_row + 1
@@ -744,6 +754,27 @@ class OldWorkbookToDataForNew:
                 self.print_red(f"EXCEPTION:{e}")
         return None
 
+    def get_state_from_path(self, old_workbook_file_path):
+        group_path = old_workbook_file_path.partition(f"/{LAST_YEAR}/Quarterly Reports")[0]
+        group_path_split = group_path.split("/")
+        for path_split in group_path_split:
+            if path_split.endswith(" branches"):
+                state = path_split.split(" ")[0]
+                break
+            elif path_split == "Other":
+                return None
+        return self.states[state]
+
+    def fix_state(self, state):
+        if state == self.state:
+            return state
+        fixed_state = state
+        try:
+            actual_state = self.state
+            fixed_state = self.states[state]  # TODO fix the state, "Corporate" switch to state, Canada = Non-US
+        except KeyError:
+            print_red(f"EXCEPTION:{state} not found")
+        return fixed_state
 
 def print_red(error: str):
     print(Fore.RED + error + Style.RESET_ALL)

@@ -17,7 +17,7 @@ ME = "me.lst"
 
 class DirChangeNotifier:
     regions = {"Central": ["\\NY branches\\Central Region\\"],
-               "North East": ["\\MA branches\\", "\\CT branches\\", "\\RI branches\\"],
+               "Northeast": ["\\MA branches\\", "\\CT branches\\", "\\RI branches\\"],
                "Northern": ["\\ME branches\\", "\\NH branches\\", "\\VT branches\\"],
                "Southern": ["\\NJ branches\\", "\\NY branches\\Southern Region\\"],
                "Tir Mara": ["\\Canada branches\\"],
@@ -136,6 +136,16 @@ class DirChangeNotifier:
             region_dir_path = region_dir.partition(filter)[0]
             region_dir_paths.append(region_dir_path)
         return region_dir_paths
+
+    def get_region_group_names(self, region):
+        group_names = []
+        group_paths = self.get_region_dir_paths(region)
+        for group_path in group_paths:
+            group_name = group_path.split("\\")[-1]
+            group_name = Persistence.remove_surrounding_parens(group_name)
+            group_names.append(group_name)
+        return group_names
+
 
     def append_specific_dir_paths(self, dir_paths, filters):
         for directory in self.all_directories:
@@ -315,10 +325,10 @@ class DirChangeNotifier:
 
     def check_for_this_year_directories(self):
         year_directories_filename = "NewYearDirectories.txt"  # Bank Statements, Quarterly Reports, Event Reports
-            year_directories_file_path = Persistence.get_file_path(year_directories_filename)
-            if exists(year_directories_file_path):
-                year_directory_names = Persistence.get_lines(year_directories_filename)
-                self.make_this_year_directories(year_directory_names)
+        year_directories_file_path = Persistence.get_file_path(year_directories_filename)
+        if exists(year_directories_file_path):
+            year_directory_names = Persistence.get_lines(year_directories_filename)
+            self.make_this_year_directories(year_directory_names)
 
     def make_this_year_directories(self, year_directory_names):
         current_year = datetime.now().strftime("%Y")
@@ -351,6 +361,17 @@ class DirChangeNotifier:
             if filter_path in file_path:
                 return True
         return False
+
+    @staticmethod
+    def append_group_names(group_names, group_names_to_append):
+        result = []
+        for group_name in group_names:
+            result.append(group_name)
+        for group_name in group_names_to_append:
+            if group_name not in result:  # avoid duplication
+                result.append(group_name)
+        return result
+
 
 def get_last_modified_timestamp(file_path):
     m_t_obj = get_last_modified_time_obj(file_path)

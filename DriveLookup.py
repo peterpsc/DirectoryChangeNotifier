@@ -13,25 +13,22 @@ from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
                                      THIS_YEAR_PREFIX)
 
-TIR_MARA = ["Avonmore", "Havre des Glaces", "L'Ile du Dragon Dormant", "Lyndhaven", "Ruantallan", "Seashire",
-            "Ynys y Gwaun"]
-NORTHERN = ["Endewearde", "Hadchester", "Malagentia", "Giggleswick", "Ravensbridge", "Stonemarche", "Panther Vale"]
-CENTRAL = ["Anglespur", "Concordia of the Snows", "Nordenhal", "Coldwood", "Glenn Linn", "Northern Outpost"]
-SOUTHERN = ["Iron Bog", "Settmour Swamp", "Gryphonwald", "Barren Sands", "Rusted Woodlands", "Carillion",
-            "Keep by the Endless Sea", "An Dubhaigeainn", "Østgarðr", "Midland Vale", "Old Stonebridges",
-            "Lion's End", ]
+dcn = DirChangeNotifier("Test")
 
-WESTERN = []
-NORTHEAST = ["Bergental", "Carolingia", "Towers", "Smoking Rocks", "Quintavia", "Dragonship Haven",
-             "Beyond the Mountain", "Bridge"]
-OTHER = ["Hawke's Reache", "Appleholm",
-         "North Pass", "Bhakail", "Ivyeinrust", "Blak Rose", "Buckland Cross", "Eisental",
-         "Hartshorn-dale", "Known World Players", "Montevale", "Owlsherst", ]
+TIR_MARA = dcn.get_region_group_names("Tir Mara")
+NORTHERN = dcn.get_region_group_names("Northern")
+CENTRAL = dcn.get_region_group_names("Central")
+SOUTHERN = dcn.get_region_group_names("Southern")
+WESTERN = dcn.get_region_group_names("Western")
+NORTHEAST = dcn.get_region_group_names("Northeast")
+OTHER = dcn.get_region_group_names("Other")
+
 PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 
 PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = TIR_MARA
+PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
 PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = True
@@ -208,8 +205,7 @@ class DriveLookup:
             from_file_path = todo[0]
             to_q1_path = todo[1]
 
-            wbs = OldWorkbookToDataForNew(from_file_path,
-                                          to_q1_path)
+            wbs = OldWorkbookToDataForNew(from_file_path, to_q1_path)
             if wbs.error:
                 bugs.append(from_file_path)
             else:
@@ -453,9 +449,9 @@ def get_drive_lookup(process_specific: list = None):
     global driveLU
     where = Persistence.get_line("GoogleDrive_Path_Options.txt")
     if where == "g:\\ /S":
-        driveLU = DriveLookup("Test", "a:\\East Kingdom Exchequer Test\\", process_specific)
+        driveLU = DriveLookup("Test", "A:\\East Kingdom Exchequer Test\\", process_specific)
     else:
-        driveLU = DriveLookup("GoogleDrive", "g:\\My Drive\\", process_specific)
+        driveLU = DriveLookup("GoogleDrive", "G:\\My Drive\\", process_specific)
 
 
 if __name__ == '__main__':

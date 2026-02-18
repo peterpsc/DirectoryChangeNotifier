@@ -140,9 +140,10 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
 End Function
 
 Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
-	TYPE_STRING = "string"
-	TYPE_FORMULA = "formula"
+	TYPE_STRING   = "string"
+	TYPE_FORMULA  = "formula"
 	TYPE_CURRENCY = "currency"
+	TYPE_DATE     = "date"
 
     ProcessCSV = False
     Dim oCSVSheet As Object, oSheet As Object, oCell As Object
@@ -174,13 +175,17 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
                 If sType = TYPE_FORMULA Then
                    	sText = RemoveOuterQuotes(sText)
                     oCell.Formula = sText
-                Else
-                	if sType = TYPE_CURRENCY Then
-            			oCell.Value = Val(sText)
-            		Else
-            			print("Invalid Type: " + sType)
-            		End If
-                End If
+                else
+	               	If sType = TYPE_CURRENCY then
+	               		oCell.Value = Val(sText)
+               		else
+		           		if sType = TYPE_DATE Then
+                            oCell.Value = DateValue(sText)
+             		    Else
+         					print("Invalid Type: " + sType)
+              			End If
+               		End If
+               	End If
             End if
        '     if locked Then
        '     	oProtection.IsLocked = True
@@ -307,8 +312,6 @@ End Function
 
 Function GetGroupDataDir()
     GetGroupDataDir = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
-    ' A:/East Kingdom Exchequer Test/
-    ' G:/My Drive/
 End Function
 
 Sub OpenGroupStatusReport()
