@@ -5,7 +5,7 @@ Sub ConvertAllQ1s()
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
 
-    bRedoAll = False
+    bRedoAll = True ' if there is a .csv file, Convert it
     converted_count = 0
 
 
@@ -38,7 +38,7 @@ Sub ConvertAllQ1s()
 	        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
 	        sDataPath = toFileDir + toFileName + ".csv"
 	       	sOutputPath = toFileDir + toFileName +  ".xlsx"
-	        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath)
+	        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
 			convertedCount = convertedCount + success
 	        iRow = iRow + 1
 	    Loop
@@ -67,7 +67,7 @@ Sub ConvertAllQ1s()
     Wait 2000
 End Sub
 
-Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
+Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String, bRedoAll As Boolean) As Integer
 	RunWorkbookUpdate = 0
     Dim sOutputURL as String
     sOutputURL = ConvertToUrl(sOutputPath)
@@ -75,7 +75,7 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 	Dim bOutputExists as Boolean, bDataExists as Boolean
 	bOutputExists =  FileExists(sOutputPath)
 
-	If not bOutputExists then
+	If bRedoAll or not bOutputExists then
 		bDataExists =  FileExists(sDataPath)
 
 		if not bDataExists then
@@ -85,16 +85,10 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 
 	    Dim oDoc As Object
 
-	    ' 1. Load the target XLSX
 	  	oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(sMasterPath), "_blank", 0, Array())
 
-	    ' 2. Save as the destination file
-	    'SaveWorkbook(oDoc, sOutputURL)
-
-	    ' 3. Delegate CSV handling entirely to the data sub
 	    success = ImportAndProcessCSV(oDoc, sDataPath)
 
-	    ' 4. Save as .xlsx
 	    if success then
 	    	RunWorkbookUpdate = 1
 		    SaveWorkbook(oDoc, sOutputURL)
@@ -197,15 +191,20 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
                    	sText = RemoveOuterQuotes(sText)
                     oCell.Formula = sText
                 else
-	               	If sType = TYPE_CURRENCY or sType = TYPE_INTEGER then
+	               	If sType = TYPE_CURRENCY then
 	               		oCell.Value = Val(sText)
                		else
-		           		if sType = TYPE_DATE Then
-                            oCell.String = sText
-                            'oCell.Value = DateValue(sText) ' Problems
-             		    Else
-         					print("Invalid Type: " + sType)
-              			End If
+               			if  sType = TYPE_INTEGER then
+               				Dim nInt As Long
+    						nInt = CLng(sText)
+   							oCell.Value = nInt
+               			else
+			           		if sType = TYPE_DATE Then
+			           		    SetAndFormatInteger(oCell, sText)
+	             		    Else
+	         					print("Invalid Type: " + sType)
+	              			End If
+	              		End If
                		End If
                	End If
             End if
@@ -229,6 +228,30 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
     ProcessCSV = True
 
 End Function
+
+Sub SetAndFormatInteger(oTargetCell As Object, sValue As String)
+    Dim nVal As Long
+    Dim nKey As Long
+    Dim sFormat As String : sFormat = "#,##0"
+    Dim aLocale As New com.sun.star.lang.Locale
+
+    ' 1. Safety Check: Only convert if it's actually a number
+    If IsNumeric(sValue) Then
+        nVal = CLng(sValue)
+        oTargetCell.Value = nVal
+
+        ' 2. Handle the NumberFormat logic
+        nKey = ThisComponent.NumberFormats.queryKey(sFormat, aLocale, True)
+        If nKey = -1 Then
+            nKey = ThisComponent.NumberFormats.addNew(sFormat, aLocale)
+        End If
+
+        oTargetCell.NumberFormat = nKey
+    Else
+        ' If it's not a number, just put the text in the cell
+        oTargetCell.String = sValue
+    End If
+End Sub
 
 Function RemoveOuterQuotes(ByVal txt As String) As String
     Dim quote As String

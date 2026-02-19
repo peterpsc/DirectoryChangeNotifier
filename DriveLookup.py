@@ -29,8 +29,8 @@ PROCESS_SPECIFIC = ["Havre des Glaces"]
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
 PROCESS_SPECIFIC = ["Quintavia"]
 PROCESS_SPECIFIC = TIR_MARA
-PROCESS_SPECIFIC = ["L'Ile du Dragon Dormant"]
 PROCESS_SPECIFIC = None
+PROCESS_SPECIFIC = ["Glenn Linn", "An Dubhaigeainn", "Buckland Cross"]
 
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them all, but if they are open, keep them
@@ -39,7 +39,7 @@ DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
 COPY_A_TO_G = False  # True when it is ready
-
+SKIP_Q1_DATA_IF_Q1_EXISTS = False  # False = Recreate Q1 Data anyway
 
 # TODO create an empty directory structure by state (Abbreviation) ignoring Southern and Central
 # TODO Stop at the Group name
@@ -135,8 +135,10 @@ class DriveLookup:
 
                 new_q1_file_path = f"{new_dir}{new_file_name}.xlsx"
                 if exists(new_q1_file_path):
-                    print(f"File {new_q1_file_path} already exists")
-                    continue
+                    if SKIP_Q1_DATA_IF_Q1_EXISTS:
+                        print(f"File {new_q1_file_path} already exists - Skipping")
+                        continue
+                    print(f"File {new_q1_file_path} already exists - To Convert")
                 todos.append(todo)
             else:
                 missing.append(last_year_dir)
@@ -207,20 +209,20 @@ class DriveLookup:
         to_convert = []
         out_of_balance = []
         negative_reports = []
-        bugs = []
+        bugs = {}
         for todo in todos:
             from_file_path = todo[0]
             to_q1_path = todo[1]
 
             wbs = OldWorkbookToDataForNew(from_file_path, to_q1_path)
             if wbs.error:
-                bugs.append(from_file_path)
+                bugs[from_file_path] = wbs.error
             else:
                 balanced, negative = wbs.is_balanced_or_negative()
                 if balanced:
                     bug = wbs.save_new_data()
                     if bug:
-                        bugs.append(bug)
+                        bugs[todo[0]] = bug
                     else:
                         to_convert.append(todo)
                 elif negative:

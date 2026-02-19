@@ -117,7 +117,7 @@ class OldWorkbookToDataForNew:
     def append_string(self, old_cell, worksheet_name, cell_name, code=STRING):
         value = self.get_text(old_cell)
         if value:
-            value = "'" + value
+            # value = "'" + value
             self.append_data(worksheet_name, cell_name, value, code)
 
     def get_date(self, old_cell):
@@ -140,11 +140,15 @@ class OldWorkbookToDataForNew:
     def append_zip(self, old_cell, worksheet_name, cell_name):
         self.append_string(old_cell, worksheet_name, cell_name, ZIP)
 
-    def get_int_string(self, old_cell):
-        value = old_cell.value
+    @staticmethod
+    def int_str(value):
         if value:
             value = f"{int(value)}"
         return value
+
+    def get_int_string(self, old_cell):
+        value = old_cell.value
+        return self.int_str(value)
 
     def append_integer(self, old_cell, worksheet_name, cell_name):
         value = self.get_int_string(old_cell)
@@ -297,7 +301,7 @@ class OldWorkbookToDataForNew:
             if modern_name:
                 self.append_string(old_sheet[f"C{old_row}"], "FinancialCommittee", f"B{i * 2 + 15}")  # title
                 self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
-                self.append_data(old_sheet[f"D{old_row + 1}"], "FinancialCommittee", f"C{i * 2 + 16}")  # sca_name
+                self.append_string(old_sheet[f"D{old_row + 1}"], "FinancialCommittee", f"C{i * 2 + 16}")  # sca_name
                 self.append_integer(old_sheet[f"E{old_row}"], "FinancialCommittee", f"D{i * 2 + 15}")  # membership_no
                 self.append_exp(old_sheet[f"F{old_row}"], "FinancialCommittee", f"E{i * 2 + 15}")
 
@@ -356,7 +360,7 @@ class OldWorkbookToDataForNew:
             self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory[2], INTEGER)  # member number
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory[3], DATE)  # expiration date
             i += 1
-        print_red(f"Losing address of signatories")
+        # print(f"Losing address of signatories")
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
@@ -439,8 +443,8 @@ class OldWorkbookToDataForNew:
         calc_general_funds = f'={general_fund_value}+G35-G48'  # a formula
         self.append_formula(calc_general_funds)
 
-    def append_formula(self, calc_general_funds: str):
-        formula = f'"{calc_general_funds}""'  # it seems imbalanced, but it works
+    def append_formula(self, formula: str):
+        formula = f'"{formula}""'  # it seems imbalanced, but it works
         self.append_data("Summary", "G59", formula, FORMULA)
 
     def save_outstanding(self):
@@ -507,7 +511,7 @@ class OldWorkbookToDataForNew:
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
-                self.append_data("LiabilityDetails", f"C{to_row}", year)
+                self.append_data("LiabilityDetails", f"C{to_row}", self.int_str(year), INTEGER)
                 to_row = to_row + 1
 
         # Payables
@@ -523,7 +527,7 @@ class OldWorkbookToDataForNew:
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
-                self.append_data("LiabilityDetails", f"C{to_row}", year)
+                self.append_data("LiabilityDetails", f"C{to_row}", self.int_str(year), INTEGER)
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
                 to_row = to_row + 1
 
@@ -540,7 +544,7 @@ class OldWorkbookToDataForNew:
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
-                self.append_data("LiabilityDetails", f"C{to_row}", f"{year}", INTEGER)
+                self.append_data("LiabilityDetails", f"C{to_row}", self.int_str(year), INTEGER)
                 self.append_currency(old_sheet[f"F{from_row}"], "LiabilityDetails", f"H{to_row}")  # current_amount
                 to_row = to_row + 1
 
@@ -564,7 +568,7 @@ class OldWorkbookToDataForNew:
                 current_amount = old_sheet[f"G{from_row}"].value
                 if current_amount:
                     self.append_string(old_sheet[f"C{from_row}"], "AssetDetails", f"B{to_row}")  # owed_from
-                    self.append_data("AssetDetails", f"C{to_row}", year, INTEGER)
+                    self.append_data("AssetDetails", f"C{to_row}", self.int_str(year), INTEGER)
                     self.append_data("AssetDetails", f"D{to_row}", reason)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
                     to_row = to_row + 1
@@ -584,7 +588,7 @@ class OldWorkbookToDataForNew:
                     year = LAST_YEAR
                     if prior_amount:
                         year -= 1
-                    self.append_data("AssetDetails", f"C{to_row}", year)
+                    self.append_data("AssetDetails", f"C{to_row}", self.int_str(year), INTEGER)
                     to_row = to_row + 1
 
         # Other Assets
@@ -602,7 +606,7 @@ class OldWorkbookToDataForNew:
                     year = LAST_YEAR
                     if prior_amount:
                         year -= 1
-                    self.append_data("AssetDetails", f"C{to_row}", year)
+                    self.append_data("AssetDetails", f"C{to_row}", self.int_str(year), INTEGER)
                     to_row = to_row + 1
 
     def save_depreciation_and_inventory(self):
@@ -867,7 +871,6 @@ class OldWorkbookToDataForNew:
         if value:
             value = self.convert_to_last_day(value)
         return value
-
 
 def print_red(error: str):
     print(Fore.RED + error + Style.RESET_ALL)
