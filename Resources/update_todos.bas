@@ -52,6 +52,19 @@ Sub ConvertAllQ1s()
 
     CloseGroupStatusReport()
 
+	Wait 2000
+
+    Dim oShell As Object
+    Set oShell = CreateObject("WScript.Shell")
+    oShell.CurrentDirectory = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier"
+    sBatchPath = """C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\Update Group Status.bat"""
+
+    ' Syntax: .Run(Command, WindowStyle, WaitOnReturn)
+    ' WindowStyle 1 = Normal, 0 = Hidden
+    ' WaitOnReturn False = Don't wait for it to finish
+    oShell.Run "cmd.exe /k " & sBatchPath, 1, False
+
+    Wait 2000
 End Sub
 
 Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
@@ -165,6 +178,9 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
         sWorksheet = oCSVSheet.getCellByPosition(0, iRow).String
         sCoord     = oCSVSheet.getCellByPosition(1, iRow).String
         sText      = oCSVSheet.getCellByPosition(2, iRow).String
+       	if left(sText,1) = "'" then
+        	sText = Mid(sText, 2)
+        end if
         sType	   = LCase(oCSVSheet.getCellByPosition(3, iRow).String)
         sLocked	   = LCase(oCSVSheet.getCellByPosition(4, iRow).String)
         locked = False
@@ -174,17 +190,14 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
         If oTargetDoc.Sheets.hasByName(sWorksheet) Then
             oSheet = oTargetDoc.Sheets.getByName(sWorksheet)
             oCell = oSheet.getCellRangeByName(sCoord)
-            if sType = TYPE_STRING or sType = TYPE_ZIP or sType = TYPE_STATE or sType = TYPE_INTEGER then
-            	if left(sText,1) = "'" then
-            		sText = Mid(sText, 2)
-            	end if
+            if sType = TYPE_STRING or sType = TYPE_ZIP or sType = TYPE_STATE then
                 oCell.String = sText
             else
                 If sType = TYPE_FORMULA Then
                    	sText = RemoveOuterQuotes(sText)
                     oCell.Formula = sText
                 else
-	               	If sType = TYPE_CURRENCY then
+	               	If sType = TYPE_CURRENCY or sType = TYPE_INTEGER then
 	               		oCell.Value = Val(sText)
                		else
 		           		if sType = TYPE_DATE Then

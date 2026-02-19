@@ -11,7 +11,7 @@ import PlaySound
 import PrintHelper
 from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
-                                     THIS_YEAR_PREFIX)
+                                     THIS_YEAR_PREFIX, print_red)
 
 dcn = DirChangeNotifier("Test")
 
@@ -28,11 +28,12 @@ PROCESS_SPECIFIC = ["Havre des Glaces"]
 
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
 PROCESS_SPECIFIC = ["Quintavia"]
-PROCESS_SPECIFIC = None
 PROCESS_SPECIFIC = TIR_MARA
+PROCESS_SPECIFIC = ["L'Ile du Dragon Dormant"]
+PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = True
-DELETE_ALL_Q1 = False  # Should mostly be False
+DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them all, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
@@ -234,12 +235,15 @@ class DriveLookup:
             for file_name in os.listdir(this_year_dir):
                 delete = self.should_delete_file_name(file_name, delete_q1, delete_q1_data)
                 if delete:
-                    file_path = this_year_dir + file_name
-                    print(f"Deleting {file_path}")
-                    Persistence.remove_file(file_path, path_type=Persistence.FILE_PATH)
-                    if self.notification_name == "Test":  # also delete from B:
-                        file_path = "B:" + file_path[2:]
+                    try:
+                        file_path = this_year_dir + file_name
+                        print(f"Deleting {file_path}")
                         Persistence.remove_file(file_path, path_type=Persistence.FILE_PATH)
+                        if self.notification_name == "Test":  # also delete from B:
+                            file_path = "B:" + file_path[2:]
+                            Persistence.remove_file(file_path, path_type=Persistence.FILE_PATH)
+                    except Exception as e:
+                        print_red(f"Error deleting file {file_path}")
 
     def should_delete_file_name(self, file_name: str, delete_q1, delete_q1_data) -> bool:
         delete = False

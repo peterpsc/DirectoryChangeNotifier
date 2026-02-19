@@ -109,6 +109,11 @@ class OldWorkbookToDataForNew:
         value = old_cell.value
         return value
 
+    def append_text(self, old_cell, worksheet_name, cell_name, code=STRING):
+        value = self.get_text(old_cell)
+        if value:
+            self.append_data(worksheet_name, cell_name, value, code)
+
     def append_string(self, old_cell, worksheet_name, cell_name, code=STRING):
         value = self.get_text(old_cell)
         if value:
@@ -147,7 +152,7 @@ class OldWorkbookToDataForNew:
             self.append_data(worksheet_name, cell_name, value, INTEGER)
 
     def append_currency(self, old_cell, worksheet_name, cell_name):
-        self.append_string(old_cell, worksheet_name, cell_name, CURRENCY)
+        self.append_text(old_cell, worksheet_name, cell_name, CURRENCY)
 
     def get_state(self, old_cell):
         value = old_cell.value
@@ -181,9 +186,9 @@ class OldWorkbookToDataForNew:
         else:
             self.append_data("Summary", "D7", self.KINGDOM)
 
-        self.append_state(ws_old_contents["C15"], "Summary", "D8")
+        self.append_state(ws_old_contents["C15"], "Summary", "D8")  # Corporate or Subsidiary
         self.append_data("Summary", "D9", self.full_name_of_branch)
-        self.append_string(ws_old_contents["C14"], "Summary", "H8")
+        self.append_string(ws_old_contents["C14"], "Summary", "H8")  # Currency Type
 
     def save_exchequer(self):
         ws_old_contents = self.old_workbook["Contents"]
