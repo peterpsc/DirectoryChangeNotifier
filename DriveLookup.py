@@ -26,10 +26,10 @@ OTHER = dcn.get_region_group_names("Other")
 PROCESS_SPECIFIC = ["Another Group"]
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 
-PROCESS_SPECIFIC = ["Carillion"]
-PROCESS_SPECIFIC = TIR_MARA
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
+PROCESS_SPECIFIC = ["Quintavia"]
 PROCESS_SPECIFIC = None
+PROCESS_SPECIFIC = TIR_MARA
 
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False
@@ -38,6 +38,12 @@ DEBUG = False
 SAVE_TODOS = False  # False won't save them, True will save "Todos.csv"
 SAVE_STATUS_REPORT = True
 COPY_A_TO_G = False  # True when it is ready
+
+
+# TODO create an empty directory structure by state (Abbreviation) ignoring Southern and Central
+# TODO Stop at the Group name
+# TODO with sub groups at the same level as Baronies
+# TODO to A:/East Kingdom Exchequer Directories/
 
 # Creates:
 # Group Status.csv

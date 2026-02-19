@@ -7,6 +7,7 @@ the new strategy is to use it to gather the data, but not to save the new file
 we will need to write a macro to load the data and save the file, then delete the data file
 This reading of the data file and saving may have to be executed for each file manually
 '''
+import calendar
 from datetime import datetime
 from typing import Any
 
@@ -29,12 +30,17 @@ MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03
 # Types:
 TYPE = "Type"
 STRING = "String"
-DATE = "Date"
+ZIP = "Zip"
 CURRENCY = "Currency"
+STATE = "State"
+INTEGER = "Integer"
 FORMULA = "Formula"
-TYPES = [TYPE, STRING, CURRENCY, DATE, FORMULA]
+DATE = "Date"  # Date is a special case
+TYPES = [TYPE, STRING, ZIP, INTEGER, CURRENCY, STATE, FORMULA, DATE]
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
+
+# TODO Zip Codes have leading 0s
 
 class OldWorkbookToDataForNew:
     substitutions = Persistence.get_dict("Group_Substitutions.csv", Persistence.RESOURCE_PATH)
@@ -87,19 +93,80 @@ class OldWorkbookToDataForNew:
                 print_red(f"EXCEPTION:{e}")
         return is_balanced, is_negative
 
-    def append_data(self, worksheet_name, cell_name, value, type=STRING, locked=False):
+    def append_data(self, worksheet_name, cell_name, value, code=STRING, locked=False):
         if value:
-            if type != STRING:
-                assert type in TYPES, f"Type {type} not supported"
-            self.new_data.append([worksheet_name, cell_name, value, type, locked])
+            assert code in TYPES, f"Type {code} not supported"
+
+            self.new_data.append([worksheet_name, cell_name, value, code, locked])
+
+    def get_text(self, old_cell):
+        value = old_cell.value
+        if value:
+            value = f"{value}".strip()
+        return value
+
+    def get_currency(self, old_cell):
+        value = old_cell.value
+        return value
+
+    def append_string(self, old_cell, worksheet_name, cell_name, code=STRING):
+        value = self.get_text(old_cell)
+        if value:
+            value = "'" + value
+            self.append_data(worksheet_name, cell_name, value, code)
+
+    def get_date(self, old_cell):
+        value = old_cell.value
+        if value:
+            if old_cell.is_date:
+                value = old_cell.value.strftime("%m/%d/%Y")
+        return value
+
+    def append_date(self, old_cell, worksheet_name, cell_name):
+        value = self.get_date(old_cell)
+        if value:
+            self.new_data.append([worksheet_name, cell_name, value, DATE, 'False'])
+
+    def append_exp(self, old_cell, worksheet_name, cell_name):
+        value = self.get_expiration_date_string(old_cell)
+        if value:
+            self.new_data.append([worksheet_name, cell_name, value, DATE, 'False'])
+
+    def append_zip(self, old_cell, worksheet_name, cell_name):
+        self.append_string(old_cell, worksheet_name, cell_name, ZIP)
+
+    def get_int_string(self, old_cell):
+        value = old_cell.value
+        if value:
+            value = f"{int(value)}"
+        return value
+
+    def append_integer(self, old_cell, worksheet_name, cell_name):
+        value = self.get_int_string(old_cell)
+        if value:
+            self.append_data(worksheet_name, cell_name, value, INTEGER)
+
+    def append_currency(self, old_cell, worksheet_name, cell_name):
+        self.append_string(old_cell, worksheet_name, cell_name, CURRENCY)
+
+    def get_state(self, old_cell):
+        value = old_cell.value
+        if value:
+            self.state = self.fix_state(value)
+        return value
+
+    def append_state(self, old_cell, worksheet_name, cell_name):
+        value = self.get_state(old_cell)
+        if value:
+            self.new_data.append([worksheet_name, cell_name, self.state, STATE, 'False'])
 
     def save_notes(self):
-        self.append_data("Notes", "A1", self.state)
+        self.append_data("Notes", "A1", self.state, STATE)
         self.append_data("Notes", "B1", self.output_file_path)
 
     def save_summary(self):
         ws_old_contents = self.old_workbook["Contents"]
-        name_of_branch = ws_old_contents["C8"].value
+        name_of_branch = self.get_text(ws_old_contents["C8"])
         name_of_branch, self.full_name_of_branch, self.group_type, self.region = self.lookup_group_full_name_type_region(
             name_of_branch,
             self.output_file_path,
@@ -113,107 +180,101 @@ class OldWorkbookToDataForNew:
             self.append_data("Summary", "D7", "Other")
         else:
             self.append_data("Summary", "D7", self.KINGDOM)
-        state = ws_old_contents["C15"].value
-        self.state = self.fix_state(state)
-        self.append_data("Summary", "D8", self.state)
+
+        self.append_state(ws_old_contents["C15"], "Summary", "D8")
         self.append_data("Summary", "D9", self.full_name_of_branch)
-        currency = ws_old_contents["C14"].value
-        self.append_data("Summary", "H8", currency)
+        self.append_string(ws_old_contents["C14"], "Summary", "H8")
 
     def save_exchequer(self):
         ws_old_contents = self.old_workbook["Contents"]
-        exchequer_name = ws_old_contents["C10"].value
-        self.append_data("Exchequers", "C8", exchequer_name)
-        ws_old_contact_info = self.old_workbook["CONTACT_INFO_1"]
-        sca_name = ws_old_contact_info["D16"].value
-        self.append_data("Exchequers", "C9", sca_name)
-        membership_no = ws_old_contact_info["H15"].value
-        self.append_data("Exchequers", "L8", membership_no)
-        expiration_date = self.dmy(ws_old_contact_info["H16"].value)
-        self.append_data("Exchequers", "L9", expiration_date, DATE)
-        home_address = ws_old_contact_info["D12"].value
-        self.append_data("Exchequers", "D10", home_address)
-        city_town = ws_old_contact_info["D13"].value
-        self.append_data("Exchequers", "K10", city_town)
-        state_or_province = ws_old_contact_info["F13"].value
-        self.append_data("Exchequers", "C11", state_or_province)
-        zip_code = ws_old_contact_info["H13"].value
-        self.append_data("Exchequers", "G11", zip_code)
-        home_phone = ws_old_contact_info["D14"].value
-        alt_phone = ws_old_contact_info["F14"].value
-        phone = self.get_phone(alt_phone, home_phone)
+        self.append_string(ws_old_contents["C10"], "Exchequers", "C8")  # exchequer_name
+        old_sheet = self.old_workbook["CONTACT_INFO_1"]
+        self.append_string(old_sheet["D16"], "Exchequers", "C9")  # sca name
+        self.append_integer(old_sheet["H15"], "Exchequers", "L8")  # membership
+        self.append_exp(old_sheet["H16"], "Exchequers", "L9")  # expiration
+        self.append_string(old_sheet["D12"], "Exchequers", "D10")  # home address
+        self.append_string(old_sheet["D13"], "Exchequers", "K10")  # city_town
+        self.append_string(old_sheet["F13"], "Exchequers", "C11")  # state_or_province
+        self.append_zip(old_sheet["H13"], "Exchequers", "G11")  # zip_code
+        home_phone = self.get_text(old_sheet["D14"])
+        alt_phone = self.get_text(old_sheet["F14"])
+        phone = self.get_phone(home_phone, alt_phone)
         self.append_data("Exchequers", "C12", phone)
-        personal_email = ws_old_contact_info["D15"].value
-        self.append_data("Exchequers", "H12", personal_email)
+
+        # personal_email or Exchequer email
+        email = self.get_text(old_sheet["D15"])
+        if email:
+            email_to_cell = "F13"  # public
+            if email.endswith("@members.eastkingdom.org") or not email.endswith(".eastkingdom.org"):
+                email_to_cell = "H12"  # personal
+            self.append_data("Exchequers", email_to_cell, email)
 
     def get_phone(self, home_phone, alt_phone):
         if alt_phone and home_phone:
             return home_phone + ", " + alt_phone
-        else:
+        elif home_phone:
             return home_phone
+        else:
+            return alt_phone
 
     def save_deputy_exchequer_1(self):
-        ws_old_contact_info = self.old_workbook["CONTACT_INFO_1"]
-        deputy_exchequer_title = ws_old_contact_info["E21"].value
+        old_sheet = self.old_workbook["CONTACT_INFO_1"]
+        deputy_exchequer_title = self.get_text(old_sheet["E21"])
         if deputy_exchequer_title:
             self.append_data("Exchequers", "G15", "Deputy For " + deputy_exchequer_title)
-        deputy_exchequer_name = ws_old_contact_info["D22"].value
-        self.append_data("Exchequers", "C16", deputy_exchequer_name)
-        deputy_sca_name = ws_old_contact_info["D27"].value
-        self.append_data("Exchequers", "C17", deputy_sca_name)
-        membership_no = ws_old_contact_info["H26"].value
-        self.append_data("Exchequers", "L16", membership_no)
-        expiration_date = self.dmy(ws_old_contact_info["H27"].value)
-        self.append_data("Exchequers", "L17", expiration_date, DATE)
-        home_address = ws_old_contact_info["D23"].value
-        self.append_data("Exchequers", "D18", home_address)
-        city_town = ws_old_contact_info["D24"].value
-        self.append_data("Exchequers", "K18", city_town)
-        state_or_province = ws_old_contact_info["F24"].value
-        self.append_data("Exchequers", "C19", state_or_province)
-        zip_code = ws_old_contact_info["H24"].value
-        self.append_data("Exchequers", "G19", zip_code)
-        home_phone = ws_old_contact_info["D25"].value
-        alt_phone = ws_old_contact_info["F25"].value
-        phone = self.get_phone(home_phone, alt_phone)
-        self.append_data("Exchequers", "C20", phone)
-        personal_email = ws_old_contact_info["D26"].value
-        self.append_data("Exchequers", "H20", personal_email)
+            self.append_string(old_sheet["D22"], "Exchequers", "C16")  # deputy_exchequer_name
+            self.append_string(old_sheet["D27"], "Exchequers", "C17")  # deputy_sca_name
+            self.append_integer(old_sheet["H26"], "Exchequers", "L16")  # membership_no
+            self.append_exp(old_sheet["H27"], "Exchequers", "L17")  # expiration_date
+            self.append_string(old_sheet["D23"], "Exchequers", "D18")  # home_address
+            self.append_string(old_sheet["D24"], "Exchequers", "K18")  # city_town
+            self.append_string(old_sheet["F24"], "Exchequers", "C19")  # state_or_province
+            self.append_zip(old_sheet["H24"], "Exchequers", "G19")  # zip_code
+            home_phone = self.get_text(old_sheet["D25"])
+            alt_phone = self.get_text(old_sheet["F25"])
+            phone = self.get_phone(home_phone, alt_phone)
+            self.append_data("Exchequers", "C20", phone)
+
+            # personal_email or Exchequer email
+            email = self.get_text(old_sheet["D26"])
+            if email:
+                email_to_cell = "G21"  # public
+                if email.endswith("@members.eastkingdom.org") or not email.endswith(".eastkingdom.org"):
+                    email_to_cell = "H20"  # personal
+                self.append_data("Exchequers", email_to_cell, email)
 
     def save_deputy_exchequer_2(self):
-        ws_old_contact_info = self.old_workbook["CONTACT_INFO_1"]
-        deputy_exchequer_title = ws_old_contact_info["E29"].value
+        old_sheet = self.old_workbook["CONTACT_INFO_1"]
+        deputy_exchequer_title = self.get_text(old_sheet["E29"])
         if deputy_exchequer_title:
             self.append_data("Exchequers", "G23", "Deputy For " + deputy_exchequer_title)
-        deputy_exchequer_name = ws_old_contact_info["D30"].value
-        self.append_data("Exchequers", "C24", deputy_exchequer_name)
-        sca_name = ws_old_contact_info["D35"].value
-        self.append_data("Exchequers", "C25", sca_name)
-        membership_no = ws_old_contact_info["H34"].value
-        self.append_data("Exchequers", "L24", membership_no)
-        expiration_date = self.dmy(ws_old_contact_info["H35"].value)
-        self.append_data("Exchequers", "L25", expiration_date, DATE)
-        home_address = ws_old_contact_info["D31"].value
-        self.append_data("Exchequers", "D26", home_address)
-        city_town = ws_old_contact_info["D32"].value
-        self.append_data("Exchequers", "K26", city_town)
-        state_or_province = ws_old_contact_info["F32"].value
-        self.append_data("Exchequers", "C27", state_or_province)
-        zip_code = ws_old_contact_info["H32"].value
-        self.append_data("Exchequers", "G27", zip_code)
-        home_phone = ws_old_contact_info["D33"].value
-        alt_phone = ws_old_contact_info["F33"].value
-        phone = self.get_phone(home_phone, alt_phone)
-        self.append_data("Exchequers", "C28", phone)
-        personal_email = ws_old_contact_info["D34"].value
-        self.append_data("Exchequers", "H28", personal_email)
+            self.append_string(old_sheet["D30"], "Exchequers", "C24")  # deputy_exchequer_name
+            self.append_string(old_sheet["D35"], "Exchequers", "C25")  # sca_name
+            self.append_integer(old_sheet["H34"], "Exchequers", "L24")  # membership_no
+            self.append_exp(old_sheet["H35"], "Exchequers", "L25")  # expiration
+            self.append_string(old_sheet["D31"], "Exchequers", "D26")  # home_address
+            self.append_string(old_sheet["D32"], "Exchequers", "K26")  # city_town
+            self.append_string(old_sheet["F32"], "Exchequers", "C27")  # state_or_province
+            self.append_zip(old_sheet["H32"], "Exchequers", "G27")  # zip_code
+            home_phone = self.get_text(old_sheet["D33"])
+            alt_phone = self.get_text(old_sheet["F33"])
+            phone = self.get_phone(home_phone, alt_phone)
+            self.append_data("Exchequers", "C28", phone)
+            personal_email = self.get_text(old_sheet["D34"])
+
+            # personal_email or Exchequer email
+            email = self.get_text(old_sheet["D34"])
+            if email:
+                email_to_cell = "G29"  # public
+                if email.endswith("@members.eastkingdom.org") or not email.endswith(".eastkingdom.org"):
+                    email_to_cell = "H28"  # personal
+                self.append_data("Exchequers", email_to_cell, email)
 
     def save_financial_committee(self):
         ws_old_contents = self.old_workbook["Contents"]
-        seneshal_name = ws_old_contents["C9"].value
-        self.append_data("FinancialCommittee", "C11", seneshal_name)
-        ws_old_financial_committee = self.old_workbook["FINANCE_COMM_13"]
-        choice_3 = ws_old_financial_committee["C13"].value
+        self.append_string(ws_old_contents["C9"], "FinancialCommittee", "C11")  # seneshal_name
+        old_sheet = self.old_workbook["FINANCE_COMM_13"]
+        choice_3 = self.get_text(old_sheet["C13"])
         if choice_3:
             choice_3 = "The Financial Committee consists of the Seneschal, Exchequer, and other officers specified below."
             self.append_data("FinancialCommittee", "B7", choice_3)
@@ -221,111 +282,114 @@ class OldWorkbookToDataForNew:
             choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
             self.append_data("FinancialCommittee", "B7", choice_2)
 
-        seneshal_sca_name = ws_old_financial_committee["D18"].value
-        self.append_data("FinancialCommittee", "C12", seneshal_sca_name)
-        seneshal_member_number = ws_old_financial_committee["E17"].value
-        self.append_data("FinancialCommittee", "D11", seneshal_member_number)
-        seneshal_expiry_date = self.dmy(ws_old_financial_committee["F17"].value)
-        self.append_data("FinancialCommittee", "E11", seneshal_expiry_date, DATE)
+        self.append_string(old_sheet["D18"], "FinancialCommittee", "C12")  # seneshal_sca_name
+        self.append_integer(old_sheet["E17"], "FinancialCommittee", "D11")  # seneshal_member_number
+        self.append_exp(old_sheet["F17"], "FinancialCommittee", "E11")
 
         for i in range(17):
             old_row = 21 + i * 2
-            modern_name = ws_old_financial_committee[f"D{old_row}"].value
+            modern_name = self.get_text(old_sheet[f"D{old_row}"])
             if modern_name:
-                title = ws_old_financial_committee[f"C{old_row}"].value
-                sca_name = ws_old_financial_committee[f"D{old_row + 1}"].value
-                membership_no = ws_old_financial_committee[f"E{old_row}"].value
-                expiration_date = self.dmy(ws_old_financial_committee[f"F{old_row}"].value)
-
-                self.append_data("FinancialCommittee", f"B{i * 2 + 15}", title)
+                self.append_string(old_sheet[f"C{old_row}"], "FinancialCommittee", f"B{i * 2 + 15}")  # title
                 self.append_data("FinancialCommittee", f"C{i * 2 + 15}", modern_name)
-                self.append_data("FinancialCommittee", f"C{i * 2 + 16}", sca_name)
-                self.append_data("FinancialCommittee", f"D{i * 2 + 15}", membership_no)
-                self.append_data("FinancialCommittee", f"E{i * 2 + 15}", expiration_date, DATE)
+                self.append_data(old_sheet[f"D{old_row + 1}"], "FinancialCommittee", f"C{i * 2 + 16}")  # sca_name
+                self.append_integer(old_sheet[f"E{old_row}"], "FinancialCommittee", f"D{i * 2 + 15}")  # membership_no
+                self.append_exp(old_sheet[f"F{old_row}"], "FinancialCommittee", f"E{i * 2 + 15}")
+
 
     def save_primary_account(self):
-        ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
-        bank_name = ws_old_primary_account["E13"].value
-        self.append_data("Accounts", "B9", bank_name)
-        bank_account_title = ws_old_primary_account["E14"].value
-        self.append_data("Accounts", "B8", bank_account_title)
-        bank_contact = ws_old_primary_account["F17"].value
-        self.append_data("Accounts", "B10", bank_contact)
-        bank_account_type = ws_old_primary_account["E15"].value
+        old_sheet = self.old_workbook["PRIMARY_ACCOUNT_2a"]
+        self.append_string(old_sheet["E13"], "Accounts", "B9")  # bank_name
+        self.append_string(old_sheet["E14"], "Accounts", "B8")  # bank_account_title
+        self.append_string(old_sheet["F17"], "Accounts", "B10")  # bank_contact
+        bank_account_type = self.get_text(old_sheet["E15"])
         choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
         self.append_data("Accounts", "B12", choice)
 
-        signature_requirement = ws_old_primary_account["H15"].value
+        signature_requirement = self.get_text(old_sheet["H15"])
         choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
         self.append_data("Accounts", "B13", choice)
 
-        bank_account_number = ws_old_primary_account["E16"].value
-        self.append_data("Accounts", "B11", bank_account_number)
-        balance = ws_old_primary_account["H19"].value
-        self.append_data("Accounts", "C16", balance, CURRENCY, True)
-        ledger_balance = ws_old_primary_account["H37"].value
-        self.append_data("Accounts", "C17", ledger_balance, CURRENCY, True)
-        interest_bearing = ws_old_primary_account["F38"].value
+        self.append_string(old_sheet["E16"], "Accounts", "B11")  # bank_account_number
+        self.append_currency(old_sheet["H19"], "Accounts", "C16")  # balance
+        self.append_currency(old_sheet["H37"], "Accounts", "C17")  # ledger_balance
+        interest_bearing = self.get_text(old_sheet["F38"])
         choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
         self.append_data("Accounts", "B14", choice)
 
         # signatories
+        row_start = 41
+        # Corporate sheets are off by 1 !!!
+        for i in range(2):
+            title = self.get_text(old_sheet[f"C{row_start + i}"])
+            if title == "Title":
+                row_start += i + 1
+                break
+        signatories = []  # collect the signatory data, then write it out
+        old_row = row_start
         for i in range(6):
-            row = 42 + i * 2
-            signatory_name = ws_old_primary_account[f"E{row}"].value
+            signatory_title = self.get_text(old_sheet[f"C{old_row}"])
+            signatory_name = self.get_text(old_sheet[f"E{old_row}"])
             if signatory_name:
-                signatory_member_number = ws_old_primary_account[f"H{row}"].value
-                signatory_expiry_date = self.dmy(ws_old_primary_account[f"H{row + 1}"].value)
+                signatory_member_number = self.get_int_string(old_sheet[f"H{old_row}"])
+                signatory_expiry_date = self.get_expiration_date_string(old_sheet[f"H{old_row + 1}"])
+                signatory_address = self.get_text(old_sheet[f"F{old_row}"])
+                signatory_city_state_zip = self.get_text(old_sheet[f"F{old_row + 1}"])
+                signatory = [signatory_title, signatory_name, signatory_member_number, signatory_expiry_date,
+                             signatory_address, signatory_city_state_zip]
+                signatories.append(signatory)
+                old_row += 2
 
-                new_row = 16 + i
-                new_cols = "EIJ"
-                if i >= 4:
-                    new_row -= 4
-                    new_cols = "LPQ"
-                self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
-                self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-                self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date, DATE)
+        i = 0
+        for signatory in signatories:
+            new_row = 16 + i
+            new_cols = "EIJ"
+            if i >= 4:
+                new_row -= 4
+                new_cols = "LPQ"
+            self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory[1])  # name
+            self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory[2], INTEGER)  # member number
+            self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory[3], DATE)  # expiration date
+            i += 1
+        print_red(f"Losing address of signatories")
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
-        ws_old_secondary_account = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
+        old_sheet = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
         old_cols = "DEFG"
         for account in range(4):
             col = old_cols[account]
             new_summary_row = 20
             new_row_start = account * 15 + 22
-            bank_name = ws_old_secondary_account[f"{col}13"].value
+            bank_name = self.get_text(old_sheet[f"{col}13"])
             if bank_name:
                 self.append_data("Accounts", f"B{new_row_start + 2}", bank_name)
-                bank_account_type = ws_old_secondary_account[f"{col}16"].value
+                bank_account_type = self.get_text(old_sheet[f"{col}16"])
                 choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
                 bank_account_title = f"{bank_name}, {choice}"
                 self.append_data("Summary", f"B{new_summary_row + account}", bank_account_title)
                 self.append_data("Accounts", f"B{new_row_start + 5}", choice)
 
-                signature_requirement = ws_old_secondary_account[f"{col}15"].value
+                signature_requirement = self.get_text(old_sheet[f"{col}15"])
                 choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
                 self.append_data("Accounts", f"{col}28", choice)
 
                 self.append_data("Summary", "B20", bank_account_type)
-                bank_account_number = ws_old_secondary_account[f"{col}14"].value
-                self.append_data("Accounts", "B26", bank_account_number)
-                balance = ws_old_secondary_account[f"{col}19"].value
-                self.append_data("Accounts", "C31", balance, CURRENCY, True)
-                ledger_balance = ws_old_secondary_account["D25"].value
-                self.append_data("Accounts", "C32", ledger_balance, CURRENCY, True)
+                self.append_string(old_sheet[f"{col}14"], "Accounts", "B26")  # bank_account_number
+                self.append_currency(old_sheet[f"{col}19"], "Accounts", "C31")  # balance
+                self.append_currency(old_sheet["D25"], "Accounts", "C32")  # ledger_balance
 
-                interest_bearing = ws_old_secondary_account[f"{col}17"].value
+                interest_bearing = self.get_text(old_sheet[f"{col}17"])
                 choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
                 self.append_data("Accounts", "B29", choice)
 
                 # signatories
                 for i in range(6):
                     old_row = 42 + i * 2
-                    signatory_name = ws_old_secondary_account[f"E{old_row}"].value
+                    signatory_name = self.get_text(old_sheet[f"E{old_row}"])
                     if signatory_name:
-                        signatory_member_number = ws_old_secondary_account[f"H{old_row}"].value
-                        signatory_expiry_date = self.dmy(ws_old_secondary_account[f"H{old_row + 1}"].value)
+                        signatory_member_number = self.get_int_string(old_sheet[f"H{old_row}"])
+                        expiration_date = self.get_expiration_date_string(old_sheet[f"H{old_row + 1}"])
 
                         new_row = 16 + i
                         new_cols = "EIJ"
@@ -333,8 +397,8 @@ class OldWorkbookToDataForNew:
                             new_row -= 4
                             new_cols = "LPQ"
                         self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory_name)
-                        self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number)
-                        self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory_expiry_date, DATE)
+                        self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory_member_number, INTEGER)
+                        self.append_data("Accounts", f"{new_cols[2]}{new_row}", expiration_date, DATE)
 
     def set_bank_account_type(self, cell, bank_account_type):
         choices = ["Checking", "Savings", "CD/GIC", "Money Market"]
@@ -352,11 +416,11 @@ class OldWorkbookToDataForNew:
         from_row_end = 55
         has_no_funds = True
         for from_row in range(from_row_start, from_row_end + 1):
-            value = ws_old_funds[f"F{from_row}"].value
+            value = self.get_text(ws_old_funds[f"F{from_row}"])
             if value:
                 has_no_funds = False
-                name_of_fund = ws_old_funds[f"D{from_row}"].value
-                purpose_of_fund = ws_old_funds[f"E{from_row}"].value
+                name_of_fund = self.get_text(ws_old_funds[f"D{from_row}"])
+                purpose_of_fund = self.get_text(ws_old_funds[f"E{from_row}"])
 
                 self.append_data("Summary", f"B{to_row}", name_of_fund)
                 self.append_data("Summary", f"D{to_row}", purpose_of_fund)
@@ -364,9 +428,9 @@ class OldWorkbookToDataForNew:
                 to_row = to_row + 1
 
         # General Fund
-        general_fund_value = ws_old_funds["F14"].value
+        general_fund_value = self.get_text(ws_old_funds["F14"])
         if general_fund_value is None and has_no_funds:
-            general_fund_value = ws_old_funds["F11"].value
+            general_fund_value = self.get_text(ws_old_funds["F11"])
         calc_general_funds = f'={general_fund_value}+G35-G48'  # a formula
         self.append_formula(calc_general_funds)
 
@@ -387,15 +451,15 @@ class OldWorkbookToDataForNew:
         to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "FGH")
 
         # ASSET_DTL_5a Undeposited +ve
-        ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
+        old_sheet = self.old_workbook["ASSET_DTL_5a"]
         from_cols = ["CD", "EG"]
         for from_col in range(2):  # there are 2 columns
             from_row_start = 15
             from_row_end = 18
             from_columns = from_cols[from_col]
             for from_row in range(from_row_start, from_row_end + 1):
-                sending_branch_or_reason = ws_old_asset_dtl_5a[f"{from_columns[0]}{from_row}"].value
-                amount = ws_old_asset_dtl_5a[f"{from_columns[1]}{from_row}"].value
+                sending_branch_or_reason = self.get_text(old_sheet[f"{from_columns[0]}{from_row}"])
+                amount = self.get_text(old_sheet[f"{from_columns[1]}{from_row}"])
                 if amount:
                     self.append_data("Outstanding", f"H{to_row}", sending_branch_or_reason)
                     self.append_data("Outstanding", f"K{to_row}", amount, CURRENCY)
@@ -406,16 +470,15 @@ class OldWorkbookToDataForNew:
                     self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
                     break
 
-    def gather_outstanding_checks(self, ws_old_primary_account, from_row_end: int, from_row_start: int,
+    def gather_outstanding_checks(self, old_sheet, from_row_end: int, from_row_start: int,
                                   to_row: int | Any,
                                   from_cols) -> int | Any:
         for from_row in range(from_row_start, from_row_end + 1):
-            check_no = ws_old_primary_account[f"{from_cols[0]}{from_row}"].value
+            check_no = self.get_text(old_sheet[f"{from_cols[0]}{from_row}"])
             if check_no:
-                date = self.dmy(ws_old_primary_account[f"{from_cols[1]}{from_row}"].value)
-                amount = ws_old_primary_account[f"{from_cols[2]}{from_row}"].value
+                amount = self.get_currency(old_sheet[f"{from_cols[2]}{from_row}"])
                 self.append_data("Outstanding", f"E{to_row}", check_no)
-                self.append_data("Outstanding", f"C{to_row}", date, DATE)
+                self.append_date(old_sheet[f"{from_cols[1]}{from_row}"], "Outstanding", f"C{to_row}")
                 if amount:
                     self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
                 to_row = to_row + 1
@@ -423,16 +486,16 @@ class OldWorkbookToDataForNew:
 
     def save_liabilities(self):
         # from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
-        ws_old_liability_dtl_5b = self.old_workbook["LIABILITY_DTL_5b"]
+        old_sheet = self.old_workbook["LIABILITY_DTL_5b"]
 
         # Deferred Revenue
         to_row = 12
         from_row_start = 16
         from_row_end = 30
         for from_row in range(from_row_start, from_row_end + 1):
-            reason = ws_old_liability_dtl_5b[f"C{from_row}"].value
-            prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
-            current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+            reason = old_sheet[f"C{from_row}"].value
+            prior_amount = self.get_text(old_sheet[f"E{from_row}"])
+            current_amount = self.get_text(old_sheet[f"F{from_row}"])
             if current_amount:
                 self.append_data("LiabilityDetails", f"D{to_row}", reason)
                 self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
@@ -447,13 +510,11 @@ class OldWorkbookToDataForNew:
         from_row_end = 43
         to_row = 38
         for from_row in range(from_row_start, from_row_end + 1):
-            owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
-            reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
-            prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
-            current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+            prior_amount = self.get_text(old_sheet[f"E{from_row}"])
+            current_amount = self.get_text(old_sheet[f"F{from_row}"])
             if current_amount:
-                self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
-                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                self.append_string(old_sheet[f"C{from_row}"], "LiabilityDetails", f"B{to_row}")  # owed_to
+                self.append_string(old_sheet[f"D{from_row}"], "LiabilityDetails", f"D{to_row}")  # reason
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
@@ -466,24 +527,22 @@ class OldWorkbookToDataForNew:
         from_row_end = 55
         to_row = 54
         for from_row in range(from_row_start, from_row_end + 1):
-            owed_to = ws_old_liability_dtl_5b[f"C{from_row}"].value
+            owed_to = old_sheet[f"C{from_row}"].value
             if owed_to:
-                reason = ws_old_liability_dtl_5b[f"D{from_row}"].value
-                prior_amount = ws_old_liability_dtl_5b[f"E{from_row}"].value
-                current_amount = ws_old_liability_dtl_5b[f"F{from_row}"].value
+                prior_amount = old_sheet[f"E{from_row}"].value
                 self.append_data("LiabilityDetails", f"B{to_row}", owed_to)
-                self.append_data("LiabilityDetails", f"D{to_row}", reason)
+                self.append_string(old_sheet[f"D{from_row}"], "LiabilityDetails", f"D{to_row}")  # reason
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
-                self.append_data("LiabilityDetails", f"C{to_row}", year)
-                self.append_data("LiabilityDetails", f"H{to_row}", current_amount, CURRENCY)
+                self.append_data("LiabilityDetails", f"C{to_row}", f"{year}", INTEGER)
+                self.append_currency(old_sheet[f"F{from_row}"], "LiabilityDetails", f"H{to_row}")  # current_amount
                 to_row = to_row + 1
 
     def save_assets(self):
         # from ASSET_DTL_5a to Undeposited Funds, Receivables, AssetDetails Prepaid Expenses, Other Assets,
 
-        ws_old_asset_dtl_5a = self.old_workbook["ASSET_DTL_5a"]
+        old_sheet = self.old_workbook["ASSET_DTL_5a"]
 
         # Receivables only if Current Amount != 0
         # if prior amount != 0 then year = 2024 otherwise 2025
@@ -491,17 +550,16 @@ class OldWorkbookToDataForNew:
         from_row_end = 34
         to_row = 14
         for from_row in range(from_row_start, from_row_end + 1):
-            owed_from = ws_old_asset_dtl_5a[f"C{from_row}"].value
-            reason = ws_old_asset_dtl_5a[f"D{from_row}"].value
+            reason = old_sheet[f"D{from_row}"].value
             if reason:
-                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
+                prior_amount = old_sheet[f"F{from_row}"].value
                 year = LAST_YEAR
                 if prior_amount:
                     year -= 1
-                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                current_amount = old_sheet[f"G{from_row}"].value
                 if current_amount:
-                    self.append_data("AssetDetails", f"B{to_row}", owed_from)
-                    self.append_data("AssetDetails", f"C{to_row}", year)
+                    self.append_string(old_sheet[f"C{from_row}"], "AssetDetails", f"B{to_row}")  # owed_from
+                    self.append_data("AssetDetails", f"C{to_row}", year, INTEGER)
                     self.append_data("AssetDetails", f"D{to_row}", reason)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
                     to_row = to_row + 1
@@ -511,10 +569,10 @@ class OldWorkbookToDataForNew:
         from_row_end = 47
         to_row = 31
         for from_row in range(from_row_start, from_row_end + 1):
-            description = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            description = old_sheet[f"C{from_row}"].value
             if description:
-                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
-                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                prior_amount = old_sheet[f"F{from_row}"].value
+                current_amount = old_sheet[f"G{from_row}"].value
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
@@ -529,10 +587,10 @@ class OldWorkbookToDataForNew:
         from_row_end = 61
         to_row = 59
         for from_row in range(from_row_start, from_row_end + 1):
-            description = ws_old_asset_dtl_5a[f"C{from_row}"].value
+            description = old_sheet[f"C{from_row}"].value
             if description:
-                prior_amount = ws_old_asset_dtl_5a[f"F{from_row}"].value
-                current_amount = ws_old_asset_dtl_5a[f"G{from_row}"].value
+                prior_amount = self.get_text(old_sheet[f"F{from_row}"])
+                current_amount = self.get_text(old_sheet[f"G{from_row}"])
                 if current_amount:
                     self.append_data("AssetDetails", f"D{to_row}", description)
                     self.append_data("AssetDetails", f"H{to_row}", current_amount, CURRENCY)
@@ -544,8 +602,8 @@ class OldWorkbookToDataForNew:
 
     def save_depreciation_and_inventory(self):
         sheet_name = "DEPR_DTL_8"
-        ws_old_depr_dtl_8 = self.get_worksheet(sheet_name)
-        if ws_old_depr_dtl_8:
+        old_sheet = self.get_worksheet(sheet_name)
+        if old_sheet:
             to_ws = "Assets&Inventory"
 
             # 5 Year Depreciation
@@ -553,17 +611,13 @@ class OldWorkbookToDataForNew:
             from_row_start = 14
             from_row_end = 23
             for from_row in range(from_row_start, from_row_end + 1):
-                oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
+                oa_ar_fr = old_sheet[f"D{from_row}"].value
                 if oa_ar_fr:
-                    item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
-                    quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
-                    purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
-                    current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
                     self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                    self.append_data(to_ws, f"C{to_row}", item_description)
-                    self.append_data(to_ws, f"D{to_row}", quantity)
-                    self.append_data(to_ws, f"B{to_row}", purchase_year)
-                    self.append_data(to_ws, f"E{to_row}", current_amount, CURRENCY)
+                    self.append_string(old_sheet[f"E{from_row}"], to_ws, f"C{to_row}")  # item_description
+                    self.append_integer(old_sheet[f"F{from_row}"], to_ws, f"D{to_row}")  # quantity
+                    self.append_integer(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # purchase_year
+                    self.append_currency(old_sheet[f"J{from_row}"], to_ws, f"E{to_row}")  # current_amount
                     self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
                     to_row = to_row + 1
 
@@ -571,45 +625,39 @@ class OldWorkbookToDataForNew:
             from_row_start = 32
             from_row_end = 41
             for from_row in range(from_row_start, from_row_end + 1):
-                oa_ar_fr = ws_old_depr_dtl_8[f"D{from_row}"].value
+                oa_ar_fr = old_sheet[f"D{from_row}"].value
                 if oa_ar_fr:
-                    item_description = ws_old_depr_dtl_8[f"E{from_row}"].value
-                    quantity = ws_old_depr_dtl_8[f"F{from_row}"].value
-                    purchase_year = ws_old_depr_dtl_8[f"G{from_row}"].value
-                    current_amount = ws_old_depr_dtl_8[f"J{from_row}"].value
                     self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                    self.append_data(to_ws, f"C{to_row}", item_description)
-                    self.append_data(to_ws, f"D{to_row}", quantity)
-                    self.append_data(to_ws, f"B{to_row}", purchase_year)
-                    self.append_data(to_ws, f"E{to_row}", current_amount, CURRENCY)
+                    self.append_string(old_sheet[f"E{from_row}"], to_ws, f"C{to_row}")  # item_description
+                    self.append_integer(old_sheet[f"F{from_row}"], to_ws, f"D{to_row}")  # quantity
+                    self.append_integer(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # purchase_year
+                    self.append_currency(old_sheet[f"J{from_row}"], to_ws, f"E{to_row}")  # current_amount
                     self.append_data(to_ws, f"I{to_row}", "7-Year Depreciable Assets")
 
                     to_row = to_row + 1
 
         # from INVENTORY_DTL_6 to Assets&Inventory
-        sheet_name = "INVENTORY_DTL_6"
-        ws_old_inventory_dtl_6 = self.get_worksheet(sheet_name)
-        if ws_old_inventory_dtl_6:
+        old_sheet = self.get_worksheet("INVENTORY_DTL_6")
+        if old_sheet:
             from_col_start = 5
             from_col_end = 12
             for from_col_index in range(from_col_start, from_col_end + 1):
                 from_col = get_column_letter(from_col_index)
-                description_and_year_purchaced = ws_old_inventory_dtl_6[f"{from_col}{13}"].value
+                description_and_year_purchaced = self.get_text(old_sheet[f"{from_col}{13}"])
                 if description_and_year_purchaced:
-                    suggested_selling_price = ws_old_inventory_dtl_6[f"{from_col}{14}"].value
-                    existing_lot_quantity = ws_old_inventory_dtl_6[f"{from_col}{16}"].value
-                    existing_lot_extended_cost = ws_old_inventory_dtl_6[f"{from_col}{17}"].value
-                    new_lot_purchase_quantity = ws_old_inventory_dtl_6[f"{from_col}{19}"].value
-                    new_lot_purchase_cost = ws_old_inventory_dtl_6[f"{from_col}{20}"].value
-                    quantity_sold_at_any_price = ws_old_inventory_dtl_6[f"{from_col}{24}"].value
-                    quantity_removed_or_discarded = ws_old_inventory_dtl_6[f"{from_col}{25}"].value
-                    actual_gross_income_from_inventory_sales = ws_old_inventory_dtl_6[f"{from_col}{30}"].value
+                    suggested_selling_price = self.get_text(old_sheet[f"{from_col}{14}"])
+                    new_lot_purchase_quantity = self.get_text(old_sheet[f"{from_col}{19}"])
+                    new_lot_purchase_cost = self.get_text(old_sheet[f"{from_col}{20}"])
+                    quantity_sold_at_any_price = self.get_text(old_sheet[f"{from_col}{24}"])
+                    actual_gross_income_from_inventory_sales = self.get_text(old_sheet[f"{from_col}{30}"])
 
                     self.append_data(to_ws, f"C{to_row}", description_and_year_purchaced)
-                    self.append_data(to_ws, f"D{to_row}", existing_lot_quantity)
-                    self.append_data(to_ws, f"E{to_row}", existing_lot_extended_cost, CURRENCY)
+                    self.append_integer(old_sheet[f"{from_col}{16}"], to_ws, f"D{to_row}")  # existing_lot_quantity
+                    self.append_currency(old_sheet[f"{from_col}{17}"], to_ws,
+                                         f"E{to_row}")  # existing_lot_extended_cost
                     self.append_data(to_ws, f"I{to_row}", "Inventory")
-                    self.append_data(to_ws, f"T{to_row}", quantity_removed_or_discarded)
+                    self.append_integer(old_sheet[f"{from_col}{25}"], to_ws,
+                                        f"T{to_row}")  # quantity_removed_or_discarded
 
                     to_row = to_row + 1
 
@@ -684,21 +732,6 @@ class OldWorkbookToDataForNew:
         new_data_file_name = self.get_new_data_file_name()
         new_data_file_path = f"Resources\\{new_data_file_name}.xlsx"
         self.new_workbook.save(new_data_file_path)
-
-    @staticmethod
-    def dmy(dt):
-        try:
-            if not dt:
-                return None
-            if type(dt) == str:
-                return dt.replace(" ", "")
-            if type(dt) == int:
-                return dt
-            dmy = dt.strftime("%m/%d/%Y")
-            return dmy
-        except Exception as e:
-            print_red(f"EXCEPTION:{e}")
-            return None
 
     def set_new_data(self, new_data):
         print(new_data)
@@ -780,6 +813,56 @@ class OldWorkbookToDataForNew:
         except KeyError:
             print_red(f"EXCEPTION:{state} not found changed to {self.state}")
             return self.state
+
+    @staticmethod
+    def convert_to_last_day(date_str):
+        """
+        Converts a date string to the last day of that month in "dd/mm/yyyy" format.
+        """
+        if date_str is None:
+            return None
+        # Figure out the format
+        try:
+            date_object = datetime.strptime(date_str, "%m/%d/%Y")
+        except ValueError:
+            try:
+                date_object = datetime.strptime(date_str, "%m/%Y")
+            except ValueError:
+                try:
+                    date_object = datetime.strptime(date_str, "%m/%y")
+                except ValueError:
+                    try:
+                        date_split = date_str.split("/")
+                        if len(date_split) == 2:
+                            date_fixed = date_split[0][0:3] + "/" + date_split[1]
+                            date_object = datetime.strptime(date_fixed, "%b/%Y")
+                    except ValueError:
+                        print_red(f"EXCEPTION: invalid date:{date_str}")
+                        return date_str
+        # Get the number of days in the specific month and year
+        year = date_object.year
+        if year < 2000:
+            year += 1000
+        month = date_object.month
+        days_in_month = calendar.monthrange(year, month)[1]
+
+        # Create a new datetime object for the last day of the month
+        last_day_date = datetime(year, month, days_in_month).date()
+
+        # Format the new date object into the desired output string format "mm/dd/yyyy"
+        formatted_date = last_day_date.strftime("%m/%d/%Y")
+
+        return formatted_date
+
+    def get_expiration_date_string(self, old_cell):
+        value = old_cell.value
+        if value and old_cell.is_date:
+            value = value.strftime("%m/%d/%Y")
+
+        if value:
+            value = self.convert_to_last_day(value)
+        return value
+
 
 def print_red(error: str):
     print(Fore.RED + error + Style.RESET_ALL)

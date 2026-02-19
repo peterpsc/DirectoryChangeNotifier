@@ -50,6 +50,8 @@ Sub ConvertAllQ1s()
 
     MsgBox "Converted " + convertedCount, 64, "Success"
 
+    CloseGroupStatusReport()
+
 End Sub
 
 Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String) As Integer
@@ -120,7 +122,7 @@ Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
 
     ' Configure and Open CSV
     csvArgs(0).Name = "FilterName" : csvArgs(0).Value = "Text - txt - csv (StarCalc)"
-    csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1,0,0,false,true,true,false"
+    csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1,1/4,2/4,3/4,4/4,5/4"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
 	oSheets = oTargetDoc.Sheets
@@ -144,6 +146,9 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
 	TYPE_FORMULA  = "formula"
 	TYPE_CURRENCY = "currency"
 	TYPE_DATE     = "date"
+	TYPE_INTEGER  = "integer"
+	TYPE_ZIP      = "zip"
+	TYPE_STATE    = "state"
 
     ProcessCSV = False
     Dim oCSVSheet As Object, oSheet As Object, oCell As Object
@@ -169,7 +174,10 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
         If oTargetDoc.Sheets.hasByName(sWorksheet) Then
             oSheet = oTargetDoc.Sheets.getByName(sWorksheet)
             oCell = oSheet.getCellRangeByName(sCoord)
-            if sType = TYPE_STRING then
+            if sType = TYPE_STRING or sType = TYPE_ZIP or sType = TYPE_STATE or sType = TYPE_INTEGER then
+            	if left(sText,1) = "'" then
+            		sText = Mid(sText, 2)
+            	end if
                 oCell.String = sText
             else
                 If sType = TYPE_FORMULA Then
@@ -180,7 +188,8 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
 	               		oCell.Value = Val(sText)
                		else
 		           		if sType = TYPE_DATE Then
-                            oCell.Value = DateValue(sText)
+                            oCell.String = sText
+                            'oCell.Value = DateValue(sText) ' Problems
              		    Else
          					print("Invalid Type: " + sType)
               			End If
