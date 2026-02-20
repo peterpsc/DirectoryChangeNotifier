@@ -52,7 +52,7 @@ COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them all, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
-SAVE_STATUS_REPORT = False
+SAVE_STATUS_REPORT = True
 COPY_A_TO_G = False  # True when it is ready
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
