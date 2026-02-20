@@ -275,27 +275,30 @@ Sub SetAndFormatInteger(oTargetCell As Object, sValue As String)
 End Sub
 
 Sub SetAndFormatMMDDYYYY(oTargetCell As Object, sText As String)
-    Dim nDay As Integer, nMonth As Integer, nYear As Integer
     Dim dDate As Date
     Dim nKey As Long
     Dim sFormat As String : sFormat = "MM/DD/YYYY"
     Dim aLocale As New com.sun.star.lang.Locale
+    Dim oFormats As Object
 
-    If Len(sText) = 10 Then
-        nMonth   = CInt(Mid(sText, 1, 2))
-        nDay	 = CInt(Mid(sText, 4, 2))
-        nYear  	 = CInt(Mid(sText, 7, 4))
+    If Trim(sText) = "" Or Not IsDate(sText) Then Exit Sub
 
-        dDate = DateSerial(nYear, nMonth, nDay)
-        oTargetCell.Value = dDate
+    ' 2. Convert the "MM/DD/YYYY" string to a real Date value
+    ' DateValue handles "MM/DD/YYYY" reliably in most locales
+    dDate = DateValue(sText)
+    oTargetCell.Value = dDate
 
-        ' Apply the NumberFormat
-        nKey = ThisComponent.NumberFormats.queryKey(sFormat, aLocale, True)
-        If nKey = -1 Then
-            nKey = ThisComponent.NumberFormats.addNew(sFormat, aLocale)
-        End If
-        oTargetCell.NumberFormat = nKey
+    ' 3. Access the document's number format collection
+    oFormats = ThisComponent.getNumberFormats()
+
+    ' 4. Query or add the MM/DD/YYYY display format
+    nKey = oFormats.queryKey(sFormat, aLocale, True)
+    If nKey = -1 Then
+        nKey = oFormats.addNew(sFormat, aLocale)
     End If
+
+    ' 5. Apply the format ID to the cell
+    oTargetCell.NumberFormat = nKey
 End Sub
 
 Function RemoveOuterQuotes(ByVal txt As String) As String

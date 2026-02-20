@@ -146,6 +146,21 @@ class DirChangeNotifier:
             group_names.append(group_name)
         return group_names
 
+    def get_all_group_names(self):
+        group_names = []
+        for region in self.regions:
+            region_group_names = self.get_region_group_names(region)
+            group_names.extend(region_group_names)
+        return group_names
+
+    def get_all_state_group_names(self):
+        state_groups = {}
+        states = Persistence.get_dict("States.csv", Persistence.RESOURCE_PATH)
+        for state in states:
+            state_name = get_state_name(state)
+            state_groups[state_name] = []  # TODO
+        return state_groups
+
 
     def append_specific_dir_paths(self, dir_paths, filters):
         for directory in self.all_directories:
@@ -372,7 +387,6 @@ class DirChangeNotifier:
                 result.append(group_name)
         return result
 
-
 def get_last_modified_timestamp(file_path):
     m_t_obj = get_last_modified_time_obj(file_path)
     m_t_stamp = time.strftime("%Y/%m/%d %H:%M:%S", m_t_obj)
@@ -386,9 +400,43 @@ def get_last_modified_time_obj(file_path):
     return m_t_obj
 
 
+def get_state_name(state):
+    if len(state) > 2:
+        return f"{state[0].upper()}{state[1:]}"
+    else:
+        return state.upper()
+
+
+def create_blank_dir_structure(dir_path):
+    # TODO create an empty directory structure by state (Abbreviation) ignoring Southern and Central
+    # TODO Stop at the Group name
+    # TODO with sub groups at the same level as Baronies
+    # TODO Want to copy directory structure to Teams
+    dcn = DirChangeNotifier("Test")
+    if dir_path is None:
+        return
+
+    state_groups = dcn.get_all_state_group_names()
+
+    if not exists(dir_path):
+        os.mkdir(dir_path)
+    for state in state_groups:
+        state_dir_path = f"{dir_path}/{state}"
+        if not exists(state_dir_path):
+            os.mkdir(state_dir_path)
+        state_name = get_state_name(state)
+        print(state_name)
+
+        for group_name in state_groups[state]:
+            print(f"\t{group_name}")
+    pass
+
+
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Dir Change Notifier")
+    CREATE_BLANK_DIR_STRUCTURE = "A:/East Kingdom Exchequer Reports/"
+    create_blank_dir_structure(CREATE_BLANK_DIR_STRUCTURE)
 
     notification_names = Persistence.get_lines("NotificationNames.txt")
     for notification_name in notification_names:

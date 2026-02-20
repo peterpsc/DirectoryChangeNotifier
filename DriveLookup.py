@@ -29,9 +29,9 @@ PROCESS_SPECIFIC = ["Havre des Glaces"]
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
 PROCESS_SPECIFIC = TIR_MARA
 PROCESS_SPECIFIC = ["Glenn Linn", "An Dubhaigeainn", "Buckland Cross"]
-PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
 PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = ["Havre des Glaces", "Ruantallan", "Towers", "Quintavia", "Another Group"]
+PROCESS_SPECIFIC = ["Concordia of the Snows"]
 PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = True
@@ -43,13 +43,6 @@ COPY_A_TO_G = False  # True when it is ready
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
     SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 1  # False = Recreate Q1 Data anyway
-
-
-# TODO create an empty directory structure by state (Abbreviation) ignoring Southern and Central
-# TODO to A:/East Kingdom Exchequer Reports/
-# TODO Stop at the Group name
-# TODO with sub groups at the same level as Baronies
-# TODO Want to copy directory structure to Teams
 
 # Creates:
 # Group Status.csv
@@ -460,7 +453,6 @@ class DriveLookup:
             group_name, group_dir, group_name)
 
         return group_dir, name_of_branch, full_name_of_branch, region
-
 
 def get_drive_lookup(process_specific: list = None):
     global driveLU

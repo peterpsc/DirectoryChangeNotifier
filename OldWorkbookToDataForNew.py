@@ -146,6 +146,7 @@ class OldWorkbookToDataForNew:
             if type(value) == str:
                 value = value.strip(" #,$")
                 value = value.partition(".")[0]
+                return value
             value = f"{int(value)}"
         return value
 
@@ -486,10 +487,10 @@ class OldWorkbookToDataForNew:
                                   to_row: int | Any,
                                   from_cols) -> int | Any:
         for from_row in range(from_row_start, from_row_end + 1):
-            check_no = self.get_text(old_sheet[f"{from_cols[0]}{from_row}"])
+            check_no = self.get_int_string(old_sheet[f"{from_cols[0]}{from_row}"])
             if check_no:
                 amount = self.get_currency(old_sheet[f"{from_cols[2]}{from_row}"])
-                self.append_data("Outstanding", f"E{to_row}", check_no)
+                self.append_data("Outstanding", f"E{to_row}", check_no, INTEGER)
                 self.append_date(old_sheet[f"{from_cols[1]}{from_row}"], "Outstanding", f"C{to_row}")
                 if amount:
                     self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
