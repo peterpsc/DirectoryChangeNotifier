@@ -13,7 +13,18 @@ from DirChangeNotifier import DirChangeNotifier
 from OldWorkbookToDataForNew import (OldWorkbookToDataForNew, LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR,
                                      THIS_YEAR_PREFIX, print_red)
 
-dcn = DirChangeNotifier("Test")
+
+def get_DirChangeNotifier() -> DirChangeNotifier:
+    dcn = None
+    where = Persistence.get_line("GoogleDrive_Path_Options.txt")
+    if where == "g:\\ /S":
+        dcn = DirChangeNotifier("Test")
+    else:
+        dcn = DirChangeNotifier("GoogleDrive")
+    return dcn
+
+
+dcn = get_DirChangeNotifier()
 
 TIR_MARA = dcn.get_region_group_names("Tir Mara")
 NORTHERN = dcn.get_region_group_names("Northern")
