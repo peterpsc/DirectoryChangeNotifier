@@ -66,15 +66,16 @@ class DriveLookup:
         self.notification_name = notification_name
         self.report_path = report_path
         self.process_specific = process_specific
-        self.dcn = DirChangeNotifier(notification_name)
+        self.dcn = get_DirChangeNotifier()
         self.last_year_dirs = self.get_last_year_dirs()
         self.this_year_dirs = self.get_this_year_dirs(self.last_year_dirs)
 
     def get_last_year_dirs(self):
         all_directories = self.dcn.all_directories
         filtered_directories = []
+        last_year_quarterly_reports = f"{LAST_YEAR_DIR}Quarterly Reports"
         for directory in all_directories:
-            if f"{LAST_YEAR_DIR}Quarterly Reports" in directory:
+            if last_year_quarterly_reports in directory:
                 filtered_directories.append(directory)
 
         last_year_dirs = self.remove_extra_directories(filtered_directories)
@@ -102,29 +103,18 @@ class DriveLookup:
         return this_year_dirs
 
     def remove_extra_directories(self, filtered_directories):
-        extra_directories = []
         intermediate_results = []
 
         for directory in filtered_directories:
-            subdirectory = directory.split("\\")[-1]
-            if subdirectory == "Quarterly Reports" and directory not in extra_directories:
-                intermediate_results.append(directory)
-            elif "4" in subdirectory and "Q" in subdirectory:
-                extra_directories.append(directory)
+            extra_dir = directory.split("\\")[-1]
+            if "4" in extra_dir and "Q" in extra_dir:
                 intermediate_results.append(directory)
             else:
                 sub_directory = directory.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
-                extra_directories.append(sub_directory)
+                if sub_directory not in intermediate_results:
+                    intermediate_results.append(sub_directory)
 
-        returning_directories = []
-        not_wanted_directories = []
-        for directory in extra_directories:
-            sub_directory = directory.partition("\\Quarterly Reports")[0] + "\\Quarterly Reports"
-            not_wanted_directories.append(sub_directory)
-        for directory in intermediate_results:
-            if directory not in not_wanted_directories:
-                returning_directories.append(directory)
-        return returning_directories
+        return intermediate_results
 
     def find_all_q4s_missing_todos(self):
         all = []
