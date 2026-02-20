@@ -26,6 +26,7 @@ def get_DirChangeNotifier() -> DirChangeNotifier:
 
 dcn = get_DirChangeNotifier()
 
+REGIONS = ["Tir Mara", "Northern", "Central", "Southern", "Western", "Northeast", "Other"]
 TIR_MARA = dcn.get_region_group_names("Tir Mara")
 NORTHERN = dcn.get_region_group_names("Northern")
 CENTRAL = dcn.get_region_group_names("Central")
@@ -171,7 +172,8 @@ class DriveLookup:
             formatted_rows.append(formatted_row)
         return formatted_rows
 
-    def save_to_convert(self, to_convert, file_name="To Convert.csv"):
+    def save_to_convert(self, to_convert, name):
+        file_name = f"{name} To Convert.csv"
         to_convert_file_path = Persistence.get_file_path(f"{self.report_path}{file_name}", Persistence.FILE_PATH)
         if not to_convert:
             Persistence.remove_file(to_convert_file_path)
@@ -323,19 +325,20 @@ class DriveLookup:
                 except Exception as e:
                     print(f"An unexpected error occurred: {e}")(a_q1_path, g_q1_path)
 
-    def save_status(self, all, todos):
-        group_status_file_path = self.delete_old_status_report()
+    def save_status(self, all, todos, name):
+        group_status_file_path = self.delete_old_status_report(name)
 
         to_convert, out_of_balance, negative_reports, bugs = self.process_todos(todos)
 
-        self.save_to_convert(to_convert)
+        self.save_to_convert(to_convert, name)
 
         data = self.create_group_status_data(all, out_of_balance, negative_reports, bugs)
         Persistence.save_list(data, group_status_file_path, Persistence.FILE_PATH)
         os.startfile(group_status_file_path)
 
-    def delete_old_status_report(self):
-        group_status_file_path = Persistence.get_file_path(f"{self.report_path}Group Status.csv", Persistence.FILE_PATH)
+    def delete_old_status_report(self, name):
+        group_status_file_path = Persistence.get_file_path(f"{self.report_path}{name} Group Status.csv",
+                                                           Persistence.FILE_PATH)
         try:
             Persistence.remove_file(group_status_file_path, Persistence.FILE_PATH)
         except Exception as e:
@@ -465,23 +468,33 @@ def get_drive_lookup(process_specific: list = None):
         driveLU = DriveLookup("GoogleDrive", "G:\\My Drive\\", process_specific)
     return driveLU
 
-if __name__ == '__main__':
-    PrintHelper.printInBox()
-    PrintHelper.printInBoxWithTime("DriveLookup")
 
-    driveLU = get_drive_lookup(PROCESS_SPECIFIC)
+def process_specific(groups, name="Specific"):
+    driveLU = get_drive_lookup(groups)
 
     if DELETE_ALL_Q1 or DELETE_ALL_Q1_DATA:
         driveLU.delete_all_q1_test_workbooks(DELETE_ALL_Q1, DELETE_ALL_Q1_DATA)
 
-    group_status_file_path = driveLU.delete_old_status_report()
+    group_status_file_path = driveLU.delete_old_status_report(name)
     if group_status_file_path is not None:
         all, q4s, missing, todos = driveLU.find_all_q4s_missing_todos()
         if COPY_G_TO_A:
             driveLU.copy_g_to_a(all, q4s)
         if SAVE_STATUS_REPORT:
-            driveLU.save_status(all, todos)
+            driveLU.save_status(all, todos, name)
         if COPY_A_TO_G:
             driveLU.copy_a_to_g(all, q4s)
+
+
+if __name__ == '__main__':
+    PrintHelper.printInBox()
+    PrintHelper.printInBoxWithTime("DriveLookup")
+
+    if PROCESS_SPECIFIC == None:
+        for region in REGIONS:
+            group_names = dcn.get_region_group_names(region)
+            process_specific(group_names, region)
+    else:
+        process_specific(PROCESS_SPECIFIC, "Specific")
 
     PrintHelper.printInBox()
