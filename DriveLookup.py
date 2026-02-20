@@ -52,7 +52,7 @@ COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them all, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False
-SAVE_STATUS_REPORT = True
+SAVE_STATUS_REPORT = False
 COPY_A_TO_G = False  # True when it is ready
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
@@ -71,9 +71,7 @@ class DriveLookup:
         self.this_year_dirs = self.get_this_year_dirs(self.last_year_dirs)
 
     def get_last_year_dirs(self):
-        path_options = self.dcn.get_dir_change_path_options()
-        ignore_paths = self.dcn.get_ignore_paths()
-        all_directories = self.dcn.get_dir_paths(path_options, ignore_paths)
+        all_directories = self.dcn.all_directories
         filtered_directories = []
         for directory in all_directories:
             if f"{LAST_YEAR_DIR}Quarterly Reports" in directory:

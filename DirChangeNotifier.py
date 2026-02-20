@@ -448,8 +448,8 @@ def create_blank_dir_structure(dir_path):
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Dir Change Notifier")
-    CREATE_BLANK_DIR_STRUCTURE = "A:/East Kingdom Exchequer Reports/"
-    create_blank_dir_structure(CREATE_BLANK_DIR_STRUCTURE)
+    # CREATE_BLANK_DIR_STRUCTURE = "A:/East Kingdom Exchequer Reports/"
+    # create_blank_dir_structure(CREATE_BLANK_DIR_STRUCTURE)
 
     notification_names = Persistence.get_lines("NotificationNames.txt")
     for notification_name in notification_names:
