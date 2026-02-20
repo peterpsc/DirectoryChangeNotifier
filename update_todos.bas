@@ -5,9 +5,7 @@ Sub ConvertAllQ1s()
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
 
-    bRedoAll = True ' if there is a .csv file, Convert it
     converted_count = 0
-
 
     ' Configure and Open CSV
     csvArgs(0).Name = "FilterName" : csvArgs(0).Value = "Text - txt - csv (StarCalc)"
@@ -30,6 +28,8 @@ Sub ConvertAllQ1s()
 		    GlobalScope.BasicLibraries.LoadLibrary("Tools")
 		End If
 
+        iNumRows = GetLastRow(oCSVSheet)
+        bRedoAll = iNumRows > 0
 	    ' Loop through CSV rows
 	    iRow = 0
 	    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
@@ -48,7 +48,7 @@ Sub ConvertAllQ1s()
     ' Close CSV immediately after data transfer
     oCSV.close(True)
 
-    MsgBox "Converted " + convertedCount, 64, "Success"
+    ' MsgBox "Converted " + convertedCount, 64, "Success"
 
     CloseGroupStatusReport()
 
@@ -67,7 +67,22 @@ Sub ConvertAllQ1s()
     Wait 2000
 End Sub
 
+Function GetLastRow(oSheet As Object) As Long
+    Dim oCursor As Object
+
+    ' Create a cursor and move it to the very last used cell
+    oCursor = oSheet.createCursor()
+    oCursor.gotoEndOfUsedArea(False)
+
+    ' Return the 0-based index of the last row
+    ' If you want the "Count" (1-based), use: .EndRow + 1
+    GetLastRow = oCursor.RangeAddress.EndRow
+End Function
+
 Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPath As String, bRedoAll As Boolean) As Integer
+    ' bRedoAll = True: if there is a .csv file, Convert it
+    bDeleteAfterConvert = True  ' True will delete .csv after conversion
+
 	RunWorkbookUpdate = 0
     Dim sOutputURL as String
     sOutputURL = ConvertToUrl(sOutputPath)
@@ -95,14 +110,19 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 			oDoc.close(True)
 
 			sDataUrl = ConvertToURL(sDataPath)
-			If FileExists(sDataUrl) Then
+			If bDeleteAfterConvert and FileExists(sDataUrl) Then
+			    On Error Resume Next
 			    Kill(sDataUrl)
+			    If Err <> 0 Then
+                    MsgBox "Cannot delete '" & sPath & "' because it is open in another program.", 48, "File Locked"
+                    Err = 0 ' Reset the error object
+                Else
+                    ' Optional: Success message
+                End If
 			End If
 		Else
 		    oDoc.close(True)
 	    End if
-
-
 	End if
 End Function
 
@@ -198,9 +218,10 @@ Function ProcessCSV(oCSV As Object, oTargetDoc As Object)
                				Dim nInt As Long
     						nInt = CLng(sText)
    							oCell.Value = nInt
+   							SetAndFormatInteger(oCell, sText)
                			else
 			           		if sType = TYPE_DATE Then
-			           		    SetAndFormatInteger(oCell, sText)
+			           		    SetAndFormatMMDDYYYY(oCell, sText)
 	             		    Else
 	         					print("Invalid Type: " + sType)
 	              			End If
@@ -232,7 +253,7 @@ End Function
 Sub SetAndFormatInteger(oTargetCell As Object, sValue As String)
     Dim nVal As Long
     Dim nKey As Long
-    Dim sFormat As String : sFormat = "#,##0"
+    Dim sFormat As String : sFormat = "###0"
     Dim aLocale As New com.sun.star.lang.Locale
 
     ' 1. Safety Check: Only convert if it's actually a number
@@ -250,6 +271,30 @@ Sub SetAndFormatInteger(oTargetCell As Object, sValue As String)
     Else
         ' If it's not a number, just put the text in the cell
         oTargetCell.String = sValue
+    End If
+End Sub
+
+Sub SetAndFormatMMDDYYYY(oTargetCell As Object, sText As String)
+    Dim nDay As Integer, nMonth As Integer, nYear As Integer
+    Dim dDate As Date
+    Dim nKey As Long
+    Dim sFormat As String : sFormat = "MM/DD/YYYY"
+    Dim aLocale As New com.sun.star.lang.Locale
+
+    If Len(sText) = 10 Then
+        nMonth   = CInt(Mid(sText, 1, 2))
+        nDay	 = CInt(Mid(sText, 4, 2))
+        nYear  	 = CInt(Mid(sText, 7, 4))
+
+        dDate = DateSerial(nYear, nMonth, nDay)
+        oTargetCell.Value = dDate
+
+        ' Apply the NumberFormat
+        nKey = ThisComponent.NumberFormats.queryKey(sFormat, aLocale, True)
+        If nKey = -1 Then
+            nKey = ThisComponent.NumberFormats.addNew(sFormat, aLocale)
+        End If
+        oTargetCell.NumberFormat = nKey
     End If
 End Sub
 

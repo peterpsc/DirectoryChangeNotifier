@@ -143,6 +143,9 @@ class OldWorkbookToDataForNew:
     @staticmethod
     def int_str(value):
         if value:
+            if type(value) == str:
+                value = value.strip(" #,$")
+                value = value.partition(".")[0]
             value = f"{int(value)}"
         return value
 
@@ -835,16 +838,25 @@ class OldWorkbookToDataForNew:
             date_object = datetime.strptime(date_str, "%m/%d/%Y")
         except ValueError:
             try:
-                date_object = datetime.strptime(date_str, "%m/%Y")
+                date_str_split = date_str.split("/")
+                if len(date_str_split) == 3:  # some 31 for the last day of the month, and forget Sep,Apr,Jun,Nov have 30
+                    if date_str_split[1] == "31":
+                        date_str_split[1] = "30"
+                        date_str = "/".join(date_str_split)
+                        date_object = datetime.strptime(date_str, "%m/%d/%Y")  # I am not worrying about Feb
+                elif len(date_str_split) == 2:
+                    if len(date_str_split[0]) > 3:
+                        date_str_split[0] = date_str_split[0][0:3]
+                        date_str = "/".join(date_str_split)
+                        date_object = datetime.strptime(date_str, "%b/%Y")
+                    else:
+                        date_object = datetime.strptime(date_str, "%m/%Y")
             except ValueError:
                 try:
-                    date_object = datetime.strptime(date_str, "%m/%y")
+                    date_object = datetime.strptime(date_str, "%m/%Y")
                 except ValueError:
                     try:
-                        date_split = date_str.split("/")
-                        if len(date_split) == 2:
-                            date_fixed = date_split[0][0:3] + "/" + date_split[1]
-                            date_object = datetime.strptime(date_fixed, "%b/%Y")
+                        date_object = datetime.strptime(date_str, "%m/%y")
                     except ValueError:
                         print_red(f"EXCEPTION: invalid date:{date_str}")
                         return date_str
