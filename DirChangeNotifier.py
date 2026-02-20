@@ -158,7 +158,21 @@ class DirChangeNotifier:
         states = Persistence.get_dict("States.csv", Persistence.RESOURCE_PATH)
         for state in states:
             state_name = get_state_name(state)
-            state_groups[state_name] = []  # TODO
+            state_groups[state_name] = []
+
+        for dir_path in self.all_directories:
+            quarterly_reports = f"{LAST_YEAR_DIR}Quarterly Reports"
+            if quarterly_reports in dir_path:
+                group_path = dir_path.partition(quarterly_reports)[0]
+                group_path_split = group_path.split("\\")
+                group_name = Persistence.remove_surrounding_parens(group_path_split[-1])
+                state_name = group_path_split[2].split(" ")[0]
+                if state_name == "Other":
+                    continue
+                state_group = state_groups[state_name]
+                if state_name not in state_group:
+                    state_group.append(group_name)
+
         return state_groups
 
 
@@ -408,9 +422,9 @@ def get_state_name(state):
 
 
 def create_blank_dir_structure(dir_path):
-    # TODO create an empty directory structure by state (Abbreviation) ignoring Southern and Central
-    # TODO Stop at the Group name
-    # TODO with sub groups at the same level as Baronies
+    # create an empty directory structure by state (Abbreviation) ignoring Southern and Central
+    # Stop at the Group name
+    # with sub groups at the same level as Baronies
     # TODO Want to copy directory structure to Teams
     dcn = DirChangeNotifier("Test")
     if dir_path is None:
@@ -420,16 +434,15 @@ def create_blank_dir_structure(dir_path):
 
     if not exists(dir_path):
         os.mkdir(dir_path)
-    for state in state_groups:
-        state_dir_path = f"{dir_path}/{state}"
+    for state_name in state_groups:
+        state_dir_path = f"{dir_path}{state_name}"
         if not exists(state_dir_path):
             os.mkdir(state_dir_path)
-        state_name = get_state_name(state)
-        print(state_name)
 
-        for group_name in state_groups[state]:
-            print(f"\t{group_name}")
-    pass
+        for group_name in state_groups[state_name]:
+            group_dir_path = f"{state_dir_path}/{group_name}"
+            if not exists(group_dir_path):
+                os.mkdir(group_dir_path)
 
 
 if __name__ == '__main__':

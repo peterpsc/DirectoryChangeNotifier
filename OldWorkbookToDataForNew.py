@@ -35,12 +35,10 @@ CURRENCY = "Currency"
 STATE = "State"
 INTEGER = "Integer"
 FORMULA = "Formula"
-DATE = "Date"  # Date is a special case
+DATE = "Date"
 TYPES = [TYPE, STRING, ZIP, INTEGER, CURRENCY, STATE, FORMULA, DATE]
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
-
-# TODO Zip Codes have leading 0s
 
 class OldWorkbookToDataForNew:
     substitutions = Persistence.get_dict("Group_Substitutions.csv", Persistence.RESOURCE_PATH)
@@ -125,6 +123,12 @@ class OldWorkbookToDataForNew:
         if value:
             if old_cell.is_date:
                 value = old_cell.value.strftime("%m/%d/%Y")
+            else:
+                value = self.get_text(old_cell)
+                date_split = value.split("/")
+                if len(date_split) == 1:
+                    value = "01/01/" + self.int_str(value)
+
         return value
 
     def append_date(self, old_cell, worksheet_name, cell_name):
@@ -138,7 +142,10 @@ class OldWorkbookToDataForNew:
             self.new_data.append([worksheet_name, cell_name, value, DATE, 'False'])
 
     def append_zip(self, old_cell, worksheet_name, cell_name):
-        self.append_string(old_cell, worksheet_name, cell_name, ZIP)
+        zip_code = self.get_text(old_cell)
+        if zip_code:
+            zip_code = "'" + zip_code
+        self.append_data(worksheet_name, cell_name, zip_code, ZIP)
 
     @staticmethod
     def int_str(value):
@@ -629,7 +636,7 @@ class OldWorkbookToDataForNew:
                     self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
                     self.append_string(old_sheet[f"E{from_row}"], to_ws, f"C{to_row}")  # item_description
                     self.append_integer(old_sheet[f"F{from_row}"], to_ws, f"D{to_row}")  # quantity
-                    self.append_integer(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # purchase_year
+                    self.append_date(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # date acquired
                     self.append_currency(old_sheet[f"J{from_row}"], to_ws, f"E{to_row}")  # current_amount
                     self.append_data(to_ws, f"I{to_row}", "5-Year Depreciable Assets")
                     to_row = to_row + 1
@@ -884,6 +891,7 @@ class OldWorkbookToDataForNew:
         if value:
             value = self.convert_to_last_day(value)
         return value
+
 
 def print_red(error: str):
     print(Fore.RED + error + Style.RESET_ALL)

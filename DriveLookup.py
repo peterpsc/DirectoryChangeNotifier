@@ -32,6 +32,9 @@ PROCESS_SPECIFIC = ["Glenn Linn", "An Dubhaigeainn", "Buckland Cross"]
 PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = ["Havre des Glaces", "Ruantallan", "Towers", "Quintavia", "Another Group"]
 PROCESS_SPECIFIC = ["Concordia of the Snows"]
+
+PROCESS_SPECIFIC = ["Carolingia", "Iron Bog"]
+PROCESS_SPECIFIC = ["Malagentia"]
 PROCESS_SPECIFIC = None
 
 COPY_G_TO_A = True
@@ -42,7 +45,7 @@ SAVE_STATUS_REPORT = True
 COPY_A_TO_G = False  # True when it is ready
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
-    SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 1  # False = Recreate Q1 Data anyway
+    SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 2  # False = Recreate Q1 Data anyway
 
 # Creates:
 # Group Status.csv
@@ -455,19 +458,19 @@ class DriveLookup:
         return group_dir, name_of_branch, full_name_of_branch, region
 
 def get_drive_lookup(process_specific: list = None):
-    global driveLU
+    driveLU = None
     where = Persistence.get_line("GoogleDrive_Path_Options.txt")
     if where == "g:\\ /S":
         driveLU = DriveLookup("Test", "A:\\East Kingdom Exchequer Test\\", process_specific)
     else:
         driveLU = DriveLookup("GoogleDrive", "G:\\My Drive\\", process_specific)
-
+    return driveLU
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
-    get_drive_lookup(PROCESS_SPECIFIC)
+    driveLU = get_drive_lookup(PROCESS_SPECIFIC)
 
     if DELETE_ALL_Q1 or DELETE_ALL_Q1_DATA:
         driveLU.delete_all_q1_test_workbooks(DELETE_ALL_Q1, DELETE_ALL_Q1_DATA)
