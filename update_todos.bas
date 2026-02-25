@@ -157,7 +157,7 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 
 	    Dim oDoc As Object
 
-	  	oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(sMasterPath), "_blank", 0, Array())
+	  	oDoc = StarDesktop.loadComponentFromURL(ConvertToURL(gMasterWorkbookPath), "_blank", 0, Array())
 
 	    success = ImportAndProcessCSV(oDoc, sDataPath)
 
