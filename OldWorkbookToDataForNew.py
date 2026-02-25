@@ -8,25 +8,22 @@ we will need to write a macro to load the data and save the file, then delete th
 This reading of the data file and saving may have to be executed for each file manually
 '''
 import calendar
+import os
 from datetime import datetime
-from typing import Any
 
 import openpyxl
 from colorama import Fore, Style
 from openpyxl.utils.cell import get_column_letter
 
 import Persistence
+from GroupFields import (FULL_GROUP_NAME, GROUP_DIR, GROUP_TYPE, Q4_PATH, Q4_FILENAME,
+                         Q1_PATH, BRANCH, NOTE, REGION)
+from GroupFields import LAST_YEAR, QUARTERLY_REPORTS, THIS_YEAR_PREFIX, OTHER
 
 VERIFY_DATA_ONLY = False
 GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
                "Project/Newsletter", "Province", "Shire", "Sub Account"]
-PREFIX = "TEST "
-THIS_YEAR = datetime.now().year
-THIS_YEAR_DIR = f"\\{THIS_YEAR}\\"
-THIS_YEAR_PREFIX = f"{PREFIX}{THIS_YEAR} Q1 "
-LAST_YEAR = datetime.now().year - 1
-LAST_YEAR_DIR = f"\\{LAST_YEAR}\\"
-MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03.xlsx", Persistence.RESOURCE_PATH)
+
 # Types:
 TYPE = "Type"
 STRING = "String"
@@ -37,6 +34,19 @@ INTEGER = "Integer"
 FORMULA = "Formula"
 DATE = "Date"
 TYPES = [TYPE, STRING, ZIP, INTEGER, CURRENCY, STATE, FORMULA, DATE]
+
+UNKNOWN = "Unknown"
+
+GROUP_NAME = "Group Name"
+FULL_GROUP_NAME = "Full Group Name"
+GROUP_TYPE = "Group Type"
+BRANCH = "Branch"
+LOCATION = "Location"
+NOTE = "Note"
+REGION = "Region"
+GROUP_FIELDS = [FULL_GROUP_NAME, GROUP_TYPE, BRANCH, LOCATION, NOTE, REGION]
+
+MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03.xlsx", Persistence.RESOURCE_PATH)
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
 
@@ -50,28 +60,36 @@ class OldWorkbookToDataForNew:
     states = Persistence.get_dict("States.csv", Persistence.RESOURCE_PATH)
 
     def __init__(self,
-                 old_workbook_file_path,
-                 output_file_path,
+                 q4_file_path,
+                 q1_path,
+                 fields,
                  master_data_file_path=MASTER_WORKBOOK_PATH,
                  ):
+        self.q4_file_path = q4_file_path
+        self.q1_path = q1_path
+        self.fields = fields
+        q4_path = os.path.dirname(q4_file_path)
+        if not q4_path.endswith("\\"):
+            q4_path += "\\"
+        fields[Q4_PATH] = q4_path
 
-        self.state = self.get_state_from_path(old_workbook_file_path)
-        self.region = None
-        self.group_type = None
-        split_path = output_file_path.split("/")
+        fields[Q4_FILENAME] = os.path.basename(q4_file_path)
+        fields[Q1_PATH] = q1_path
+        if STATE not in fields:
+            fields[STATE] = self.get_state_from_path(q4_file_path)
+        split_path = q1_path.split("\\")
         name_of_branch = split_path[-4]
-        self.name_of_branch = OldWorkbookToDataForNew.substitute_group_name(name_of_branch)
-        self.full_name_of_branch = self.name_of_branch
-        self.old_workbook_file_path = old_workbook_file_path
+        self.group_name = OldWorkbookToDataForNew.substitute_group_name(name_of_branch)
+        if FULL_GROUP_NAME not in fields:
+            fields[FULL_GROUP_NAME] = self.group_name
         self.master_data_file_path = master_data_file_path
-        self.output_file_path = output_file_path
         self.error = None
         try:
-            self.old_workbook = openpyxl.load_workbook(self.old_workbook_file_path, data_only=True)
+            self.q4_workbook = openpyxl.load_workbook(self.q4_file_path, data_only=True)
         except Exception as e:
-            print_red(f'Error opening workbook: {self.old_workbook_file_path} due to\n{e.args}')
+            print_red(f'Error opening workbook: {self.q4_file_path} due to\n{e.args}')
             self.error = e
-            self.old_workbook = None
+            self.q4_workbook = None
 
         self.new_data = []
         self.append_data("Sheet", "Coord", "Value", "Type", "Locked")
@@ -80,12 +98,12 @@ class OldWorkbookToDataForNew:
         is_balanced = False
         is_negative = False
         try:
-            ws_old_contents = self.old_workbook["Contents"]
+            ws_old_contents = self.q4_workbook["Contents"]
             balanced = ws_old_contents["F11"].value
             is_balanced = not "OUT OF BALANCE" in balanced
         except Exception as e:
             try:
-                ws_old_negative_report = self.old_workbook["NEGATIVE REPORT FORM"]
+                ws_old_negative_report = self.q4_workbook["NEGATIVE REPORT FORM"]
                 is_negative = True
             except Exception as e:
                 print_red(f"EXCEPTION:{e}")
@@ -172,44 +190,52 @@ class OldWorkbookToDataForNew:
     def get_state(self, old_cell):
         value = old_cell.value
         if value:
-            self.state = self.fix_state(value)
+            value = self.fix_state(value)
+        if STATE in self.fields:
+            state = self.fields[STATE]
+            if state != value:
+                value = state
+
         return value
 
     def append_state(self, old_cell, worksheet_name, cell_name):
         value = self.get_state(old_cell)
         if value:
-            self.new_data.append([worksheet_name, cell_name, self.state, STATE, 'False'])
+            self.new_data.append([worksheet_name, cell_name, value, STATE, 'False'])
 
     def save_notes(self):
-        self.append_data("Notes", "A1", self.state, STATE)
-        self.append_data("Notes", "B1", self.output_file_path)
+        self.append_data("Notes", "A1", "Q1 Starting Data from:")
+        q4_hyperlink = self.get_q4_hyperlink_g()  # TODO in Notes: Q4 filename hyperlink from G:\Shared Drives
+
+        self.append_data("Notes", "B1", q4_hyperlink)
 
     def save_summary(self):
-        ws_old_contents = self.old_workbook["Contents"]
-        name_of_branch = self.get_text(ws_old_contents["C8"])
-        name_of_branch, self.full_name_of_branch, self.group_type, self.region = self.lookup_group_full_name_type_region(
-            name_of_branch,
-            self.output_file_path,
-            self.name_of_branch)
-        # if group_type is None:
-        #    group_type = # TODO
-        # print(f"{self.old_workbook_file_path}  Branch name = {name_of_branch}")
-        print(f"Region = {self.region}, Branch name = {self.full_name_of_branch}")
+        ws_old_contents = self.q4_workbook["Contents"]
+        name_of_group = self.get_text(ws_old_contents["C8"])
+        name_of_group, self.fields = self.lookup_ek_group_fields(
+            name_of_group,
+            self.q1_path,
+            self.fields)
+        self.full_group_name = self.fields[FULL_GROUP_NAME]
+        self.group_type = self.fields[GROUP_TYPE]
+        self.region = self.fields[REGION]
+
+        print(f"Region = {self.region}, Branch status_report_name = {self.full_group_name}")
         self.append_data("Summary", "D6", self.group_type)
         if self.region == "Other":
             self.append_data("Summary", "D7", "Other")
         else:
             self.append_data("Summary", "D7", self.KINGDOM)
 
-        self.append_state(ws_old_contents["C15"], "Summary", "D8")  # Corporate or Subsidiary
-        self.append_data("Summary", "D9", self.full_name_of_branch)
+        self.append_state(ws_old_contents["C15"], "Summary", "D8")
+        self.append_data("Summary", "D9", self.full_group_name)
         self.append_string(ws_old_contents["C14"], "Summary", "H8")  # Currency Type
 
     def save_exchequer(self):
-        ws_old_contents = self.old_workbook["Contents"]
+        ws_old_contents = self.q4_workbook["Contents"]
         self.append_string(ws_old_contents["C10"], "Exchequers", "C8")  # exchequer_name
-        old_sheet = self.old_workbook["CONTACT_INFO_1"]
-        self.append_string(old_sheet["D16"], "Exchequers", "C9")  # sca name
+        old_sheet = self.q4_workbook["CONTACT_INFO_1"]
+        self.append_string(old_sheet["D16"], "Exchequers", "C9")  # sca status_report_name
         self.append_integer(old_sheet["H15"], "Exchequers", "L8")  # membership
         self.append_exp(old_sheet["H16"], "Exchequers", "L9")  # expiration
         self.append_string(old_sheet["D12"], "Exchequers", "D10")  # home address
@@ -238,7 +264,7 @@ class OldWorkbookToDataForNew:
             return alt_phone
 
     def save_deputy_exchequer_1(self):
-        old_sheet = self.old_workbook["CONTACT_INFO_1"]
+        old_sheet = self.q4_workbook["CONTACT_INFO_1"]
         deputy_exchequer_title = self.get_text(old_sheet["E21"])
         if deputy_exchequer_title:
             self.append_data("Exchequers", "G15", "Deputy For " + deputy_exchequer_title)
@@ -264,7 +290,7 @@ class OldWorkbookToDataForNew:
                 self.append_data("Exchequers", email_to_cell, email)
 
     def save_deputy_exchequer_2(self):
-        old_sheet = self.old_workbook["CONTACT_INFO_1"]
+        old_sheet = self.q4_workbook["CONTACT_INFO_1"]
         deputy_exchequer_title = self.get_text(old_sheet["E29"])
         if deputy_exchequer_title:
             self.append_data("Exchequers", "G23", "Deputy For " + deputy_exchequer_title)
@@ -291,15 +317,15 @@ class OldWorkbookToDataForNew:
                 self.append_data("Exchequers", email_to_cell, email)
 
     def save_financial_committee(self):
-        ws_old_contents = self.old_workbook["Contents"]
+        ws_old_contents = self.q4_workbook["Contents"]
         self.append_string(ws_old_contents["C9"], "FinancialCommittee", "C11")  # seneshal_name
-        old_sheet = self.old_workbook["FINANCE_COMM_13"]
+        old_sheet = self.q4_workbook["FINANCE_COMM_13"]
         choice_3 = self.get_text(old_sheet["C13"])
         if choice_3:
             choice_3 = "The Financial Committee consists of the Seneschal, Exchequer, and other officers specified below."
             self.append_data("FinancialCommittee", "B7", choice_3)
         else:  # default
-            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
+            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and q4_paths paid members in good standing present at a business meeting."
             self.append_data("FinancialCommittee", "B7", choice_2)
 
         self.append_string(old_sheet["D18"], "FinancialCommittee", "C12")  # seneshal_sca_name
@@ -318,7 +344,7 @@ class OldWorkbookToDataForNew:
 
 
     def save_primary_account(self):
-        old_sheet = self.old_workbook["PRIMARY_ACCOUNT_2a"]
+        old_sheet = self.q4_workbook["PRIMARY_ACCOUNT_2a"]
         self.append_string(old_sheet["E13"], "Accounts", "B9")  # bank_name
         self.append_string(old_sheet["E14"], "Accounts", "B8")  # bank_account_title
         self.append_string(old_sheet["F17"], "Accounts", "B10")  # bank_contact
@@ -367,7 +393,7 @@ class OldWorkbookToDataForNew:
             if i >= 4:
                 new_row -= 4
                 new_cols = "LPQ"
-            self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory[1])  # name
+            self.append_data("Accounts", f"{new_cols[0]}{new_row}", signatory[1])  # status_report_name
             self.append_data("Accounts", f"{new_cols[1]}{new_row}", signatory[2], INTEGER)  # member number
             self.append_data("Accounts", f"{new_cols[2]}{new_row}", signatory[3], DATE)  # expiration date
             i += 1
@@ -375,7 +401,7 @@ class OldWorkbookToDataForNew:
 
     def save_secondary_accounts(self):
         """Missing Contact info and SCA Name on Account"""
-        old_sheet = self.old_workbook["SECONDARY_ACCOUNTS_2b"]
+        old_sheet = self.q4_workbook["SECONDARY_ACCOUNTS_2b"]
         old_cols = "DEFG"
         for account in range(4):
             col = old_cols[account]
@@ -426,7 +452,7 @@ class OldWorkbookToDataForNew:
         self.append_data("Accounts", cell, choice)
 
     def save_funds(self):
-        ws_old_funds = self.old_workbook["FUNDS_14"]
+        ws_old_funds = self.q4_workbook["FUNDS_14"]
         old_cols = "DEF"
         new_cols = "BDG"
 
@@ -460,7 +486,7 @@ class OldWorkbookToDataForNew:
 
     def save_outstanding(self):
         # Checks not cleared on statement to Outstanding -ve
-        ws_old_primary_account = self.old_workbook["PRIMARY_ACCOUNT_2a"]
+        ws_old_primary_account = self.q4_workbook["PRIMARY_ACCOUNT_2a"]
 
         next_cols = "FGH"
         new_cols = "ECK"
@@ -471,7 +497,7 @@ class OldWorkbookToDataForNew:
         to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "FGH")
 
         # ASSET_DTL_5a Undeposited +ve
-        old_sheet = self.old_workbook["ASSET_DTL_5a"]
+        old_sheet = self.q4_workbook["ASSET_DTL_5a"]
         from_cols = ["CD", "EG"]
         for from_col in range(2):  # there are 2 columns
             from_row_start = 15
@@ -490,9 +516,11 @@ class OldWorkbookToDataForNew:
                     self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
                     break
 
-    def gather_outstanding_checks(self, old_sheet, from_row_end: int, from_row_start: int,
-                                  to_row: int | Any,
-                                  from_cols) -> int | Any:
+    def gather_outstanding_checks(self, old_sheet,
+                                  from_row_end: int,
+                                  from_row_start: int,
+                                  to_row: int,
+                                  from_cols):
         for from_row in range(from_row_start, from_row_end + 1):
             check_no = self.get_int_string(old_sheet[f"{from_cols[0]}{from_row}"])
             if check_no:
@@ -506,7 +534,7 @@ class OldWorkbookToDataForNew:
 
     def save_liabilities(self):
         # from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
-        old_sheet = self.old_workbook["LIABILITY_DTL_5b"]
+        old_sheet = self.q4_workbook["LIABILITY_DTL_5b"]
 
         # Deferred Revenue
         to_row = 12
@@ -562,7 +590,7 @@ class OldWorkbookToDataForNew:
     def save_assets(self):
         # from ASSET_DTL_5a to Undeposited Funds, Receivables, AssetDetails Prepaid Expenses, Other Assets,
 
-        old_sheet = self.old_workbook["ASSET_DTL_5a"]
+        old_sheet = self.q4_workbook["ASSET_DTL_5a"]
 
         # Receivables only if Current Amount != 0
         # if prior amount != 0 then year = 2024 otherwise 2025
@@ -709,12 +737,12 @@ class OldWorkbookToDataForNew:
 
         new_data_file_name = self.get_new_data_file_name()
 
-        new_data_file_path = f"{self.output_file_path}{new_data_file_name}.csv"
+        new_data_file_path = f"{self.q1_path}{new_data_file_name}.csv"
         Persistence.write_lines(new_data_file_path, lines, path_type=Persistence.FILE_PATH)
 
     def get_new_data_file_name(self) -> str:
-        assert self.full_name_of_branch is not None, f"full_name_of_branch not set for {self.name_of_branch}"
-        new_data_file_name = f"{THIS_YEAR_PREFIX}{self.name_of_branch}"
+        assert self.full_group_name is not None, f"full_name_of_branch not set for {self.group_name}"
+        new_data_file_name = f"{THIS_YEAR_PREFIX}{self.group_name}"
         return new_data_file_name
 
     def save_new_data(self):
@@ -736,7 +764,7 @@ class OldWorkbookToDataForNew:
             self.save_data()
             return None
         except Exception as e:
-            error = f"EXCEPTION:{self.name_of_branch} {e}"
+            error = f"EXCEPTION:{self.group_name} {e}"
             print_red(error)
             return error
 
@@ -760,26 +788,38 @@ class OldWorkbookToDataForNew:
         cell_obj.value = new_data[2]
 
     @classmethod
-    def lookup_group_full_name_type_region(cls, name_of_branch, q1_file_path, hint=None):
-        name_of_branch = cls.substitute_group_name(name_of_branch)
-        full_name_of_branch = name_of_branch
-        group_type = None
-        group_name_data = None
-        region = q1_file_path.split("/")[2]
-        try:
-            group_name_data = cls.group_data[name_of_branch]
-        except KeyError as e:
-            if hint:
-                try:
-                    group_name_data = cls.group_data[hint]
-                except KeyError as e:
-                    pass
-        if group_name_data:
-            full_name_of_branch = group_name_data[0]
-            group_type = group_name_data[1]
-            region = f"{group_name_data[5]} / {group_name_data[3]}"
+    def lookup_ek_group_fields(cls, name_of_branch, q1_file_path, group_name_fields):
+        group_name_data = []
+        group_name = Persistence.remove_surrounding_parens(name_of_branch)
+        if group_name_fields == {}:
+            group_name_fields[FULL_GROUP_NAME] = group_name
+            group_name_fields[BRANCH] = q1_file_path.split("\\")[2]
+            group_name_fields[GROUP_TYPE] = None
 
-        return name_of_branch, full_name_of_branch, group_type, region
+        try:
+            if group_name != OTHER:
+                group_name_data = cls.group_data[group_name]
+            else:
+                return None, None
+        except KeyError as e:
+            if GROUP_DIR in group_name_fields:
+                try:
+                    group_dir = group_name_fields[GROUP_DIR]
+                    group_name = group_dir.split("\\")[-1]
+                    group_name = Persistence.remove_surrounding_parens(group_name)
+                    group_name_data = cls.group_data[group_name]
+                except KeyError as e:
+                    group_name_fields[NOTE] = UNKNOWN
+                    return group_name, group_name_fields
+
+        group_name_fields[FULL_GROUP_NAME] = group_name_data[0]
+        group_name_fields[GROUP_TYPE] = group_name_data[1]
+        group_name_fields[LOCATION] = group_name_data[2]
+        group_name_fields[BRANCH] = group_name_data[3]
+        group_name_fields[NOTE] = group_name_data[4]
+        group_name_fields[REGION] = group_name_data[5]
+
+        return group_name, group_name_fields
 
     @classmethod
     def lookup_full_group_name(cls, group_name):
@@ -790,17 +830,17 @@ class OldWorkbookToDataForNew:
             return None
 
     @classmethod
-    def substitute_group_name(cls, name_of_branch) -> Any:
-        name_of_branch = Persistence.remove_surrounding_parens(name_of_branch)
+    def substitute_group_name(cls, name_of_branch):
+        group_name = Persistence.remove_surrounding_parens(name_of_branch)
         try:
-            group_name = cls.substitutions[name_of_branch]
+            group_name = cls.substitutions[group_name]
         except KeyError:
-            group_name = name_of_branch
+            pass
         return group_name
 
     def get_worksheet(self, sheet_name, print_exception=False):
         try:
-            worksheet = self.old_workbook[sheet_name]
+            worksheet = self.q4_workbook[sheet_name]
             return worksheet
         except Exception as e:
             if print_exception:
@@ -808,8 +848,8 @@ class OldWorkbookToDataForNew:
         return None
 
     def get_state_from_path(self, old_workbook_file_path):
-        group_path = old_workbook_file_path.partition(f"/{LAST_YEAR}/Quarterly Reports")[0]
-        group_path_split = group_path.split("/")
+        group_path = old_workbook_file_path.partition(f"\\{LAST_YEAR}\\{QUARTERLY_REPORTS}")[0]
+        group_path_split = group_path.split("\\")
         for path_split in group_path_split:
             if path_split.endswith(" branches"):
                 state = path_split.split(" ")[0]
@@ -819,20 +859,21 @@ class OldWorkbookToDataForNew:
         return self.states[state]
 
     def fix_state(self, state):
-        if self.state is None:
+        if not STATE in self.fields:
             return state
 
-        elif state == self.state:
+        remembered_state = self.fields[STATE]
+        if state == remembered_state:
             return state
 
         elif state == "Corporate":
-            return self.state  # "Corporate" switch to state
+            return remembered_state  # "Corporate" switch to state
         try:
             fixed_state = self.states[state]
             return fixed_state  # fix the state,  Canada = Non-US
         except KeyError:
-            print_red(f"EXCEPTION:{state} not found changed to {self.state}")
-            return self.state
+            print_red(f"EXCEPTION:{state} not found changed to {remembered_state}")
+            return remembered_state
 
     @staticmethod
     def convert_to_last_day(date_str):
@@ -892,32 +933,40 @@ class OldWorkbookToDataForNew:
             value = self.convert_to_last_day(value)
         return value
 
+    def get_q4_hyperlink_g(self):
+        file_name = os.path.basename(self.q4_file_path)
+        return file_name  # TODO hyperlink from G:/Shared Drive/...
+
 
 def print_red(error: str):
     print(Fore.RED + error + Style.RESET_ALL)
 
 def main():
+    fields1 = {}
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
-                                  "Resources")
+                                  "Resources", fields1)
     wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
+    fields2 = {}
     wbs = OldWorkbookToDataForNew("Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
-                                  "Resources")
+                                  "Resources", fields2)
 
     bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
+    fields3 = {}
     wbs = OldWorkbookToDataForNew("Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                                  "Resources")
+                                  "Resources", fields3)
     bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()
 
+    fields4 = {}
     wbs = OldWorkbookToDataForNew("Resources\\EK-Towers 2025-Q4.xlsm",
-                                  "Resources")
+                                  "Resources", fields4)
     bug = wbs.save_new_data()
     if VERIFY_DATA_ONLY:
         wbs.save_new_workbook()

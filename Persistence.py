@@ -178,15 +178,38 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
 
     return results
 
-def save_list(data, filename, path_type=PRIVATE_PATH):
+
+def save_list(column_names, data, filename, path_type=PRIVATE_PATH):
     file_path = get_file_path(filename, path_type)
     with open(file_path, 'w', encoding=UTF_8, newline='') as f:
         writer = csv.writer(f)
+        writer.writerow(column_names)
         for row in data:
             formatted_row = []
             for i, val in enumerate(row):
                     formatted_row.append(val)
             writer.writerow(formatted_row)
+
+
+def combine_csvs(output_file_path, file_paths):
+    if file_paths:
+        with open(output_file_path, 'w', newline='') as f_out:
+            writer = csv.writer(f_out)
+
+            for i, path in enumerate(file_paths):
+                with open(path, 'r') as f_in:
+                    reader = csv.reader(f_in)
+                    header = next(reader)
+
+                    # Write the header only for the very first file
+                    if i == 0:
+                        writer.writerow(header)
+
+                    # Write the rest of the rows
+                    writer.writerows(reader)
+    else:
+        if exists(output_file_path):
+            os.remove(output_file_path)
 
 def create_hyperlink(file_path, title: str) -> str:
     if file_path is None:
@@ -516,15 +539,24 @@ def remove_file(filename, path_type=FILE_PATH):
         os.remove(file_path)
 
 def remove_surrounding_parens(text, strip=True):
-    cleaned = re.sub(r'\(.*?\)', '', text)
-    cleaned = cleaned.replace('  ', ' ')
-    if strip:
-        cleaned = cleaned.strip()
-    return cleaned
+    if "(" in text:
+        cleaned = re.sub(r'\(.*?\)', '', text)
+        cleaned = cleaned.replace('  ', ' ')
+        if strip:
+            cleaned = cleaned.strip()
+        return cleaned
+    return text
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("Persistence.py")
+
+    filepath = get_file_path("All States.csv", path_type=PRIVATE_PATH)
+    states_file_path = get_file_path("States.csv", path_type=RESOURCE_PATH)
+    rest_of_states_file_path = get_file_path("Rest of States.csv", path_type=RESOURCE_PATH)
+    combine_csvs(filepath, [states_file_path, rest_of_states_file_path])
+
+    data = get_dict(filepath, FILE_PATH)
 
     PrintHelper.printInBox()
     before = " actual wanted (extra) "
@@ -575,3 +607,4 @@ if __name__ == '__main__':
     PrintHelper.printInBox(random_value(winning_list))
 
     PrintHelper.printInBox()
+

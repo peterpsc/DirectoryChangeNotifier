@@ -7,13 +7,15 @@ from os.path import exists
 import Persistence
 import PrintHelper
 from Gmail import Gmail
-from OldWorkbookToDataForNew import LAST_YEAR_DIR
 from Substitutions import Substitutions
 
 REPORT_MODIFIED = True
 ONLY_TO_ME = False
 ME = "me.lst"
+OTHER = "Other"
 
+LAST_YEAR = datetime.now().year - 1
+LAST_YEAR_DIR = f"\\{LAST_YEAR}\\"
 
 class DirChangeNotifier:
     regions = {"Central": ["\\NY branches\\Central Region\\"],
@@ -22,7 +24,7 @@ class DirChangeNotifier:
                "Southern": ["\\NJ branches\\", "\\NY branches\\Southern Region\\"],
                "Tir Mara": ["\\Canada branches\\"],
                "Western": ["\\PA branches\\", "\\DE branches\\"],
-               "Other": ["\\Other\\"]}
+               OTHER: ["\\Other\\"]}
 
     def __init__(self, notification_name):
         self.notification_name = notification_name
@@ -139,12 +141,16 @@ class DirChangeNotifier:
 
     def get_region_group_names(self, region):
         group_names = []
-        group_paths = self.get_region_dir_paths(region)
-        for group_path in group_paths:
-            group_name = group_path.split("\\")[-1]
-            group_name = Persistence.remove_surrounding_parens(group_name)
-            group_names.append(group_name)
-        return group_names
+        if region != OTHER:
+            group_paths = self.get_region_dir_paths(region)
+            for group_path in group_paths:
+                group_name = group_path.split("\\")[-1]
+                group_name = Persistence.remove_surrounding_parens(group_name)
+                if group_name not in group_names:
+                    group_names.append(group_name)
+            return group_names
+        else:
+            return None  # defer q4_file_path status_report_name until the file is opened
 
     def get_all_group_names(self):
         group_names = []
@@ -423,7 +429,7 @@ def get_state_name(state):
 
 def create_blank_dir_structure(dir_path):
     # create an empty directory structure by state (Abbreviation) ignoring Southern and Central
-    # Stop at the Group name
+    # Stop at the Group status_report_name
     # with sub groups at the same level as Baronies
     # TODO Want to copy directory structure to Teams
     dcn = DirChangeNotifier("Test")

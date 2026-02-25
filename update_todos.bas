@@ -12,8 +12,9 @@ Sub ConvertAllQ1s()
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-	sReportPath = GetGroupDataDir()
-    sToConvertPath = sReportPath + "To Convert.csv"
+	sGroupDataPath = GetGroupDataPath()
+	sStatusReportPath = GetStatusReportPath()
+    sToConvertPath = sStatusReportPath + "All To Convert.csv"
 
     If not FileExists(sToConvertPath) Then
         MsgBox "The file does not exist at: " & sToConvertPath, 48, "File Check Result"
@@ -22,7 +23,7 @@ Sub ConvertAllQ1s()
 	   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sToConvertPath), "_blank", 0, csvArgs())
 	    oCSVSheet = oCSV.Sheets(0)
 
-	    sMasterPath = ReadStringFromFile(sReportPath + "EK Exchequer Master.txt")
+	    sMasterPath = ReadStringFromFile(sStatusReportPath + "EK Exchequer Master.txt")
 
 		If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
 		    GlobalScope.BasicLibraries.LoadLibrary("Tools")
@@ -31,7 +32,7 @@ Sub ConvertAllQ1s()
         iNumRows = GetLastRow(oCSVSheet)
         bRedoAll = iNumRows > 0
 	    ' Loop through CSV rows
-	    iRow = 0
+	    iRow = 1 'skip Column Names
 	    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
 	        fromFileDir    = oCSVSheet.getCellByPosition(0, iRow).String
 	        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
@@ -317,8 +318,6 @@ Function ReadStringFromFile(filePath As String) As String
     Dim fileNum As Integer
     Dim lineInput As String
 
-    ' Ensure the path is in the correct URL format (e.g., "file:///C:/Users/user/data.txt")
-    ' ConvertToURL is a useful function for this
     Dim fileURL As String
     fileURL = ConvertToURL(filePath)
 
@@ -357,7 +356,7 @@ Sub CloseGroupStatusReport()
     Dim oComp As Object
     Dim sTargetTitle As String
 
-    sTargetTitle = "Group Status.csv" ' The exact window title to look for
+    sTargetTitle = "All Group Status.csv" ' The exact window title to look for
 
     ' 1. Get all open LibreOffice windows
     oComponents = StarDesktop.getComponents()
@@ -403,13 +402,19 @@ Function GetPythonDir()
     end if
 End Function
 
-Function GetGroupDataDir()
-    GetGroupDataDir = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
+Function GetGroupDataPath()
+	value = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
+    GetGroupDataPath = value
+End Function
+
+Function GetStatusReportPath()
+    value = GetGroupDataPath() + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
+    GetStatusReportPath = value
 End Function
 
 Sub OpenGroupStatusReport()
     sReportPath = GetGroupDataDir()
-    sTargetTitle = "Group Status.csv"
+    sTargetTitle = "All Group Status.csv"
     sStatusReportFilePath = sReportPath + sTargetTitle
 End Sub
 

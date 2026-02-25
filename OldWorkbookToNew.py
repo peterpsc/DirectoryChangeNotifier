@@ -5,9 +5,8 @@ UserWarning: Data Validation extension is not supported and will be removed
 '''
 import openpyxl
 from openpyxl.styles import Protection
-from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
-
+from openpyxl.worksheet.datavalidation import DataValidation
 
 
 class OldWorkbookToNew:
@@ -165,7 +164,7 @@ class OldWorkbookToNew:
         interest_bearing = ws_old_primary_account["F38"].value
         self.set_interest_bearing(ws_new_accounts, "B14", interest_bearing)
 
-        # TODO add bank name, type
+        # TODO add bank status_report_name, type
         # signatories
         for i in range(0,5):
             self.save_primary_signatories(ws_old_primary_account, ws_new_accounts, 42+i*2, 16+i)
