@@ -1,9 +1,74 @@
+Public  gConverterPath As String
+Public	gGroupDataPath As String
+Public	gStatusReportPath As String
+Public  gAllToConvertPath As String
+Public  gMasterWorkbookPath As String
+Public  gPythonPath As String
+Public  gUpdateBatchPath As String
+
+
+Sub	InitializeGlobals()
+	InitConverterPath()
+	InitPythonPath()
+	InitGroupDataPath()
+	InitStatusReportPath()
+    InitAllToConvertPath()
+    InitMasterWorkbookPath()
+    InitUpdateBatchPath()
+End Sub
+
+Sub InitConverterPath()
+	gConverterPath = "G:/My Drive/Converter the Red/"
+End Sub
+
+Sub InitPythonPath()
+	filePath = gConverterPath + "PythonPath.txt"
+    gPythonPath = ReadStringFromFile(filePath)
+    'gPythonPath = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\"
+    'gPythonPath = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\"
+End Sub
+
+Sub InitGroupDataPath()
+	filePath = gConverterPath + "East Kingdom Exchequer Drive.txt"
+    gGroupDataPath = ReadStringFromFile(filePath)
+End Sub
+
+Sub InitStatusReportPath()
+    gStatusReportPath = gGroupDataPath + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
+End Sub
+
+Sub InitAllToConvertPath()
+	gAllToConvertPath = gStatusReportPath + "All To Convert.csv"
+End Sub
+
+Sub InitMasterWorkbookPath()
+    filePath = gConverterPath + "EK Exchequer Master.txt"
+    gMasterWorkbookPath = ReadStringFromFile(filePath)
+    CheckFileExists(gMasterWorkbookPath)
+End Sub
+
+Sub InitUpdateBatchPath()
+    gUpdateBatchPath = """" + gPythonPath + "Update Group Status.bat"""
+End Sub
+
+Sub CheckFileExists(filePath)
+    fileURL = ConvertToUrl(filePath)
+    If not FileExists(fileURL) Then
+        MsgBox "Missing: " & filePath, 48, "File Check Result"
+    	End
+    End If
+End Sub
+
+
+
 Sub ConvertAllQ1s()
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
     Dim iRow As Integer, convertedCount As Integer
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
+
+	InitializeGlobals()
 
     converted_count = 0
 
@@ -12,39 +77,30 @@ Sub ConvertAllQ1s()
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-	sGroupDataPath = GetGroupDataPath()
-	sStatusReportPath = GetStatusReportPath()
-    sToConvertPath = sStatusReportPath + "All To Convert.csv"
+	CheckFileExists(gAllToConvertPath)
 
-    If not FileExists(sToConvertPath) Then
-        MsgBox "The file does not exist at: " & sToConvertPath, 48, "File Check Result"
-    	Exit Sub
-    Else
-	   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sToConvertPath), "_blank", 0, csvArgs())
-	    oCSVSheet = oCSV.Sheets(0)
+   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(gAllToConvertPath), "_blank", 0, csvArgs())
+    oCSVSheet = oCSV.Sheets(0)
 
-	    sMasterPath = GetMasterWorkbookPath()
+	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
+	    GlobalScope.BasicLibraries.LoadLibrary("Tools")
+	End If
 
-		If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
-		    GlobalScope.BasicLibraries.LoadLibrary("Tools")
-		End If
+    iNumRows = GetLastRow(oCSVSheet)
+    bRedoAll = iNumRows > 0
 
-        iNumRows = GetLastRow(oCSVSheet)
-        bRedoAll = iNumRows > 0
-	    ' Loop through CSV rows
-	    iRow = 1 'skip Column Names
-	    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
-	        fromFileDir    = oCSVSheet.getCellByPosition(0, iRow).String
-	        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
-	        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
-	        sDataPath = toFileDir + toFileName + ".csv"
-	       	sOutputPath = toFileDir + toFileName +  ".xlsx"
-	        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
-			convertedCount = convertedCount + success
-	        iRow = iRow + 1
-	    Loop
-
-    End If
+    ' Loop through CSV rows
+    iRow = 1 'skip Column Names
+    Do While oCSVSheet.getCellByPosition(0, iRow).String <> ""
+        fromFileDir    = oCSVSheet.getCellByPosition(0, iRow).String
+        toFileDir    = oCSVSheet.getCellByPosition(1, iRow).String
+        toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
+        sDataPath = toFileDir + toFileName + ".csv"
+       	sOutputPath = toFileDir + toFileName +  ".xlsx"
+        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
+		convertedCount = convertedCount + success
+        iRow = iRow + 1
+    Loop
 
     ' Close CSV immediately after data transfer
     oCSV.close(True)
@@ -57,16 +113,16 @@ Sub ConvertAllQ1s()
 
     Dim oShell As Object
     Set oShell = CreateObject("WScript.Shell")
-    oShell.CurrentDirectory = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier"
-    sBatchPath = """C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\Update Group Status.bat"""
+    oShell.CurrentDirectory = gPythonPath
 
     ' Syntax: .Run(Command, WindowStyle, WaitOnReturn)
     ' WindowStyle 1 = Normal, 0 = Hidden
     ' WaitOnReturn False = Don't wait for it to finish
-    oShell.Run "cmd.exe /k " & sBatchPath, 1, False
+    oShell.Run "cmd.exe /k " & gUpdateBatchPath, 1, False
 
     Wait 2000
 End Sub
+
 
 Function GetLastRow(oSheet As Object) As Long
     Dim oCursor As Object
@@ -313,37 +369,6 @@ Function RemoveOuterQuotes(ByVal txt As String) As String
     End If
 End Function
 
-Function ReadStringFromFile(filePath As String) As String
-    Dim fileContent As String
-    Dim fileNum As Integer
-    Dim lineInput As String
-
-    Dim fileURL As String
-    fileURL = ConvertToURL(filePath)
-
-    ' Get the next available free file handle number
-    fileNum = FreeFile()
-
-    ' Open the file for input
-    Open fileURL For Input As #fileNum
-
-    ' Read the file line by line until the end (EOF)
-    Do While Not EOF(fileNum)
-        Line Input #fileNum, lineInput
-        fileContent = fileContent & lineInput & Chr(10) ' Concatenate the line and a newline character (Chr(10))
-    Loop
-
-    ' Close the file
-    Close #fileNum
-
-    ' Return the complete string, removing the trailing newline
-    If Len(fileContent) > 0 Then
-        ReadStringFromFile = Left(fileContent, Len(fileContent) - 1)
-    Else
-        ReadStringFromFile = ""
-    End If
-End Function
-
 Sub RefreshGroupStatus()
     CloseGroupStatusReport()
     RunDriveLookup()
@@ -390,47 +415,38 @@ Sub RunDriveLookup()
     Shell(sExePath, 1, sArgs, True)
 End Sub
 
-Function GetPythonDir()
-    where = "g:\\ /S"
-    'where = ReadStringFromFile("GoogleDrive_Path_Options.txt")
-
-    GetPythonDir = None
-    if where = "g:\\ /S" then
-        GetPythonDir = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\"
-    else
-        GetPythonDir = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\"
-    end if
-End Function
-
-Function GetGroupDataPath()
-	filePath = "G:/My Drive/Converter the Red/East Kingdom Exchequer Drive.txt"
+Function ReadStringFromFile(filePath As String) As String
 	CheckFileExists(filePath)
+    Dim fileContent As String
+    Dim fileNum As Integer
+    Dim lineInput As String
 
-    sDrivePath = ReadStringFromFile(filePath)
-    GetGroupDataPath = sDrivePath
-End Function
+    Dim fileURL As String
+    fileURL = ConvertToURL(filePath)
 
-Function GetStatusReportPath()
-    filePath = GetGroupDataPath() + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
-	CheckFileExists(filePath)
+    ' Get the next available free file handle number
+    fileNum = FreeFile()
 
-    GetStatusReportPath = filePath
-End Function
+    ' Open the file for input
+    Open fileURL For Input As #fileNum
 
+    ' Read the file line by line until the end (EOF)
+    Do While Not EOF(fileNum)
+        Line Input #fileNum, lineInput
+        fileContent = fileContent & lineInput & Chr(10) ' Concatenate the line and a newline character (Chr(10))
+    Loop
 
-Function GetMasterWorkbookPath()
-    filePath = ReadStringFromFile(GetGroupDataPath() + "EK Exchequer Master.txt")
-    CheckFileExists(filePath)
-    GetMasterWorkbookPath = filePath
-End Function
+    ' Close the file
+    Close #fileNum
 
-Sub CheckFileExists(filePath)
-    fileURL = ConvertToUrl(filePath)
-    If not FileExists(fileURL) Then
-        MsgBox "Missing: " & filePath, 48, "File Check Result"
-    	End
+    ' Return the complete string, removing the trailing newline
+    If Len(fileContent) > 0 Then
+    	sReturn = Left(fileContent, Len(fileContent) - 1)
+        ReadStringFromFile = sReturn
+    Else
+        ReadStringFromFile = ""
     End If
-End Sub
+End Function
 
 Sub OpenGroupStatusReport()
     sReportPath = GetGroupDataDir()
@@ -438,18 +454,3 @@ Sub OpenGroupStatusReport()
     sStatusReportFilePath = sReportPath + sTargetTitle
 End Sub
 
-Sub ConvertAllQ4sToQ1s()
-    ConvertAllQ1s()
-
-    Dim sExePath As String
-    exeDir = GetPythonDir()
-    sExePath = exeDir +"Update Group Status.bat"
-
-    Wait 500
-    ThisComponent.close(True)
-
-    Dim sCommand As String
-    sCommand = "cmd /c start """" """ & sExePath & """"
-    Shell(sCommand, 0)
-
-End Sub
