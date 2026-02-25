@@ -205,8 +205,7 @@ class OldWorkbookToDataForNew:
 
     def save_notes(self):
         self.append_data("Notes", "A1", "Q1 Starting Data from:")
-        q4_hyperlink = self.get_q4_hyperlink_g()  # TODO in Notes: Q4 filename hyperlink from G:\Shared Drives
-
+        q4_hyperlink = self.get_q4_hyperlink_g()
         self.append_data("Notes", "B1", q4_hyperlink)
 
     def save_summary(self):
@@ -935,7 +934,7 @@ class OldWorkbookToDataForNew:
 
     def get_q4_hyperlink_g(self):
         file_name = os.path.basename(self.q4_file_path)
-        return file_name  # to get the hyperlink from G:/Shared Drive/... run it on G drive computer
+        return file_name  # TODO to get the hyperlink from G:/Shared Drive/... or run it on G drive computer
 
 
 def print_red(error: str):

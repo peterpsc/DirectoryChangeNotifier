@@ -23,7 +23,7 @@ Sub ConvertAllQ1s()
 	   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(sToConvertPath), "_blank", 0, csvArgs())
 	    oCSVSheet = oCSV.Sheets(0)
 
-	    sMasterPath = ReadStringFromFile(sStatusReportPath + "EK Exchequer Master.txt")
+	    sMasterPath = GetMasterWorkbookPath()
 
 		If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
 		    GlobalScope.BasicLibraries.LoadLibrary("Tools")
@@ -403,14 +403,34 @@ Function GetPythonDir()
 End Function
 
 Function GetGroupDataPath()
-	value = ReadStringFromFile("G:/My Drive/East Kingdom Exchequer Drive.txt")
-    GetGroupDataPath = value
+	filePath = "G:/My Drive/Converter the Red/East Kingdom Exchequer Drive.txt"
+	CheckFileExists(filePath)
+
+    sDrivePath = ReadStringFromFile(filePath)
+    GetGroupDataPath = sDrivePath
 End Function
 
 Function GetStatusReportPath()
-    value = GetGroupDataPath() + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
-    GetStatusReportPath = value
+    filePath = GetGroupDataPath() + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
+	CheckFileExists(filePath)
+
+    GetStatusReportPath = filePath
 End Function
+
+
+Function GetMasterWorkbookPath()
+    filePath = ReadStringFromFile(GetGroupDataPath() + "EK Exchequer Master.txt")
+    CheckFileExists(filePath)
+    GetMasterWorkbookPath = filePath
+End Function
+
+Sub CheckFileExists(filePath)
+    fileURL = ConvertToUrl(filePath)
+    If not FileExists(fileURL) Then
+        MsgBox "Missing: " & filePath, 48, "File Check Result"
+    	End
+    End If
+End Sub
 
 Sub OpenGroupStatusReport()
     sReportPath = GetGroupDataDir()

@@ -184,7 +184,6 @@ class DriveLookup:
         for group_name in group_names:
             q4_path = self.group_names[group_name][Q4_PATH]
             if status_report_name == OTHER:
-                # TODO FIX ME get each file in the q4_path
                 for q4_file_name in os.listdir(q4_path):
                     q4_file_path = os.path.join(q4_path, q4_file_name)
                     if os.path.isfile(q4_file_path):
@@ -323,7 +322,8 @@ class DriveLookup:
 
     @staticmethod
     def copy_g_to_a(all, q4s):
-        groupDataDir = Persistence.get_line("G:\\My Drive\\East Kingdom Exchequer Drive.txt", Persistence.FILE_PATH)
+        groupDataDir = Persistence.get_line("G:\\My Drive\\Converter the Red\\East Kingdom Exchequer Drive.txt",
+                                            Persistence.FILE_PATH)
         if groupDataDir.startswith("G:"):
             from_file_path = 'G:\\Shared drives'
             l = len(from_file_path)
