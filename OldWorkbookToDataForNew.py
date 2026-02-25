@@ -935,7 +935,7 @@ class OldWorkbookToDataForNew:
 
     def get_q4_hyperlink_g(self):
         file_name = os.path.basename(self.q4_file_path)
-        return file_name  # TODO hyperlink from G:/Shared Drive/...
+        return file_name  # to get the hyperlink from G:/Shared Drive/... run it on G drive computer
 
 
 def print_red(error: str):
