@@ -81,7 +81,7 @@ Sub ConvertAllQ1s()
         toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
         sDataPath = toFileDir + toFileName + ".csv"
        	sOutputPath = toFileDir + toFileName +  ".xlsx"
-        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
+        success = RunWorkbookUpdate(gMasterWorkbookPath, sDataPath, sOutputPath, bRedoAll)
 		convertedCount = convertedCount + success
         iRow = iRow + 1
     Loop
