@@ -4,7 +4,7 @@ Public	gStatusReportPath As String
 Public  gPythonPath As String
 Public  gMasterWorkbookPath As String
 Public  gUpdateBatchPath As String
-
+Public  gAllToConvertPath As String
 
 Sub	InitializeGlobals()
     converterTheRed = "Converter the Red.lst"
@@ -30,6 +30,7 @@ Sub	InitializeGlobals()
     gPythonPath = lines(3)
     gMasterWorkbookPath = lines(4)
     gUpdateBatchPath = lines(5)
+    gAllToConvertPath = lines(6)
 End Sub
 
 Function DoesFileExist(filePath)
