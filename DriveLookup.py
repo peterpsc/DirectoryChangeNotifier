@@ -44,7 +44,7 @@ def getHostFlavor() -> tuple[Any, Any, Any]:
         converter_path = f"{deployed_converter_path}{CONVERTER_THE_RED}.lst"
         if not exists(converter_path):
             print_red(f"Missing: {converter_path}")
-            ctr_deployed_path = f"C:\\yonay\\PycharmProjects\\DirectoryChangeNotifier\\Resources\\{CONVERTER_THE_RED} Deployed.lst"
+            ctr_deployed_path = f"D:\\yonay\\PycharmProjects\\DirectoryChangeNotifier\\Resources\\{CONVERTER_THE_RED} Deployed.lst"
             shutil.copy2(ctr_deployed_path, converter_path)
     else:
         test_converter_path = "A:\\East Kingdom Exchequer Test\\Exchequer Reporting\\"
