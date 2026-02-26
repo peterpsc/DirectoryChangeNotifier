@@ -305,7 +305,7 @@ class DirChangeNotifier:
                                   previous_date_string, previous_file_paths, current_file_paths, signature)
 
             if changed or not previous_date_string:
-                self.save_date_previous_and_file_paths(notification_name, current_file_paths)
+                self.save_date_previous_and_file_paths(current_file_paths)
 
         except Exception as e:
             PrintHelper.printInBoxException(e)
