@@ -39,7 +39,7 @@ OTHER = "Other"
 CONVERTER_THE_RED = "Converter the Red"
 
 def getHostFlavor() -> tuple[Any, Any, Any]:
-    deployed_converter_path = "G:\\Shared Drive\\Exchequer Reporting\\"
+    deployed_converter_path = "G:\\Shared drives\\Exchequer Reporting\\"
     if exists(deployed_converter_path):  # Deployed
         converter_path = f"{deployed_converter_path}{CONVERTER_THE_RED}.lst"
         if not exists(converter_path):
@@ -95,7 +95,6 @@ PROCESS_NAME = SPECIFIC
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
-DEPLOY_CONVERTER_THE_RED = True
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
