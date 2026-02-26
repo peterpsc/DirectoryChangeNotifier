@@ -8,7 +8,7 @@ Public  gUpdateBatchPath As String
 
 Sub	InitializeGlobals()
     converterTheRed = "Converter the Red.lst"
-    deployedConverterPath = "G:\Shared Drive\Exchequer Reporting\"
+    deployedConverterPath = "G:\Shared drives\Exchequer Reporting\"
     if FileExists(deployed_converter_path) Then ' Deployed
         converterPath = deployedConverterPath + converterTheRed
         if not DoesFileExist(converterPath) Then
