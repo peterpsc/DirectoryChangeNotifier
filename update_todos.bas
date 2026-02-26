@@ -9,7 +9,7 @@ Public  gUpdateBatchPath As String
 Sub	InitializeGlobals()
     converterTheRed = "Converter the Red.lst"
     deployedConverterPath = "G:\Shared drives\Exchequer Reporting\"
-    if FileExists(deployed_converter_path) Then ' Deployed
+    if FileExists(deployedConverterPath) Then ' Deployed
         converterPath = deployedConverterPath + converterTheRed
         if not DoesFileExist(converterPath) Then
             print("Missing: " + converterPath)
