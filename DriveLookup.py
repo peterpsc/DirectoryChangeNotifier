@@ -36,13 +36,28 @@ WESTERN = "Western"
 
 OTHER = "Other"
 
-def get_DirChangeNotifier() -> DirChangeNotifier:
-    dcn = None
-    where = Persistence.get_line("GoogleDrive_Path_Options.txt")
-    if where == "g:\\ /S":
-        dcn = DirChangeNotifier("Test")
+
+def getHostFlavor() -> tuple[Any, Any, Any]:
+    deployed_converter_path = "G:\\Shared Drive\\Exchequer Reporting\\"
+    if exists(deployed_converter_path):  # Deployed
+        converter_path = f"{deployed_converter_path}Converter the Red.lst"
+        if not exists(converter_path):
+            print_red(f"Missing: {converter_path}")
     else:
-        dcn = DirChangeNotifier("GoogleDrive")
+        test_converter_path = "A:\\East Kingdom Exchequer Test\\Exchequer Reporting\\"
+        converter_path = f"{test_converter_path}Converter the Red.lst"
+        if not exists(converter_path):
+            print_red(f"Missing: {converter_path}")
+
+    converter_lines = Persistence.get_lines(converter_path, Persistence.FILE_PATH)
+    notification_name = converter_lines[0]
+    group_data_path = converter_lines[1]
+    status_report_path = converter_lines[2]
+    return group_data_path, notification_name, status_report_path
+
+def get_DirChangeNotifier() -> DirChangeNotifier:
+    group_data_path, notification_name, status_report_path = getHostFlavor()
+    dcn = DirChangeNotifier(notification_name)
     return dcn
 
 
@@ -75,6 +90,7 @@ PROCESS_NAME = SPECIFIC
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
+DEPLOY_CONVERTER_THE_RED = True
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
@@ -88,12 +104,8 @@ if PROCESS_SPECIFIC:
 # Group Status.csv
 # To Convert.csv
 def init_drive_lookup():
-    where = Persistence.get_line("GoogleDrive_Path_Options.txt")
-    driveLU = None
-    if where == "g:\\ /S":
-        driveLU = DriveLookup("Test", "A:\\East Kingdom Exchequer Test\\")
-    else:
-        driveLU = DriveLookup("GoogleDrive", "G:\\My Drive\\")
+    group_data_path, notification_name, status_report_path = getHostFlavor()
+    driveLU = DriveLookup(notification_name, group_data_path, status_report_path)
 
     driveLU.init_all_group_names()
     driveLU.init_region_group_names()
@@ -102,14 +114,13 @@ def init_drive_lookup():
 
     return driveLU
 
-
 class DriveLookup:
     region_group_names = {}
 
-    def __init__(self, notification_name: str, report_path):
+    def __init__(self, notification_name: str, group_data_path, status_report_path):
         self.notification_name = notification_name
-        self.report_path = report_path
-        self.status_path = f"{report_path}Exchequer Reporting\\{THIS_YEAR} Q1 Status\\"
+        self.group_data_path = group_data_path
+        self.status_report_path = status_report_path
 
         self.dcn = get_DirChangeNotifier()
         self.last_year_dirs = self.get_last_year_dirs()
@@ -244,7 +255,7 @@ class DriveLookup:
 
     def save_to_convert(self, to_convert, name):
         file_name = f"{name} To Convert.csv"
-        to_convert_file_path = Persistence.get_file_path(f"{self.status_path}{file_name}", Persistence.FILE_PATH)
+        to_convert_file_path = Persistence.get_file_path(f"{self.status_report_path}{file_name}", Persistence.FILE_PATH)
         if not to_convert:
             Persistence.remove_file(to_convert_file_path)
             return
@@ -320,11 +331,8 @@ class DriveLookup:
             delete = True
         return delete
 
-    @staticmethod
-    def copy_g_to_a(all, q4s):
-        groupDataDir = Persistence.get_line("G:\\My Drive\\Converter the Red\\East Kingdom Exchequer Drive.txt",
-                                            Persistence.FILE_PATH)
-        if groupDataDir.startswith("G:"):
+    def copy_g_to_a(self, all, q4s):
+        if self.notification_name != "Test":
             from_file_path = 'G:\\Shared drives'
             l = len(from_file_path)
             to_file_path = 'A:\\East Kingdom Exchequer Test'
@@ -353,8 +361,7 @@ class DriveLookup:
                         print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
 
     def copy_a_to_g(self, all, q4s):
-        groupDataDir = Persistence.get_line("G:\\My Drive\\East Kingdom Exchequer Drive.txt", Persistence.FILE_PATH)
-        if groupDataDir.startswith("G:"):
+        if self.notification_name != "Test":
             a_file_path = 'A:\\East Kingdom Exchequer Test\\'
             la = len(a_file_path)
             g_file_path = 'G:\\Shared drives\\'
@@ -400,7 +407,7 @@ class DriveLookup:
         try:
             Persistence.remove_file(group_status_file_path, Persistence.FILE_PATH)
         except Exception as e:
-            PrintHelper.printInBox("Please close the Group Status.csv first", force_style=PrintHelper.CENTER,
+            PrintHelper.printInBox(f"Please close the {name} Group Status.csv", force_style=PrintHelper.CENTER,
                                    color=Fore.RED)
             sound_file_path = Persistence.get_file_path('Close the group status report.mp3', Persistence.RESOURCE_PATH)
             PlaySound.play_sound(sound_file_path)
@@ -408,10 +415,10 @@ class DriveLookup:
         return group_status_file_path
 
     def get_group_status_file_path(self, name, filename_suffix=" Group Status.csv"):
-        group_status_file_path = Persistence.get_file_path(f"{self.status_path}{name}{filename_suffix}",
+        group_status_file_path = Persistence.get_file_path(f"{self.status_report_path}{name}{filename_suffix}",
                                                            Persistence.FILE_PATH)
-        if not exists(self.status_path):
-            os.makedirs(self.status_path)
+        if not exists(self.status_report_path):
+            os.makedirs(self.status_report_path)
 
         return group_status_file_path
 

@@ -1,65 +1,48 @@
-Public  gConverterPath As String
+Public  gNotificationName As String
 Public	gGroupDataPath As String
 Public	gStatusReportPath As String
-Public  gAllToConvertPath As String
-Public  gMasterWorkbookPath As String
 Public  gPythonPath As String
+Public  gMasterWorkbookPath As String
 Public  gUpdateBatchPath As String
 
 
 Sub	InitializeGlobals()
-	InitConverterPath()
-	InitPythonPath()
-	InitGroupDataPath()
-	InitStatusReportPath()
-    InitAllToConvertPath()
-    InitMasterWorkbookPath()
-    InitUpdateBatchPath()
+    converterTheRed = "Converter the Red.lst"
+    deployedConverterPath = "G:\Shared Drive\Exchequer Reporting\"
+    if FileExists(deployed_converter_path) Then ' Deployed
+        converterPath = deployedConverterPath + converterTheRed
+        if not DoesFileExist(converterPath) Then
+            print("Missing: " + converterPath)
+        end if
+    else: ' Test
+        testConverterPath = "A:\East Kingdom Exchequer Test\Exchequer Reporting\"
+        converterPath = testConverterPath + converterTheRed
+        if not DoesFileExist(converterPath) Then
+            print("Missing: " + converterPath)
+        end if
+    End if
+
+    CheckFileExists(converterPath)
+    lines = GetFileLines(converterPath)
+    gNotificationName = lines(0)
+    gGroupDataPath = lines(1)
+	gStatusReportPath = lines(2)
+    gPythonPath = lines(3)
+    gMasterWorkbookPath = lines(4)
+    gUpdateBatchPath = lines(5)
 End Sub
 
-Sub InitConverterPath()
-	gConverterPath = "G:/My Drive/Converter the Red/"
-End Sub
-
-Sub InitPythonPath()
-	filePath = gConverterPath + "PythonPath.txt"
-    gPythonPath = ReadStringFromFile(filePath)
-    'gPythonPath = "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\"
-    'gPythonPath = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\"
-End Sub
-
-Sub InitGroupDataPath()
-	filePath = gConverterPath + "East Kingdom Exchequer Drive.txt"
-    gGroupDataPath = ReadStringFromFile(filePath)
-End Sub
-
-Sub InitStatusReportPath()
-    gStatusReportPath = gGroupDataPath + "Exchequer Reporting/" + Year(Now()) + " Q1 Status/"
-End Sub
-
-Sub InitAllToConvertPath()
-	gAllToConvertPath = gStatusReportPath + "All To Convert.csv"
-End Sub
-
-Sub InitMasterWorkbookPath()
-    filePath = gConverterPath + "EK Exchequer Master.txt"
-    gMasterWorkbookPath = ReadStringFromFile(filePath)
-    CheckFileExists(gMasterWorkbookPath)
-End Sub
-
-Sub InitUpdateBatchPath()
-    gUpdateBatchPath = """" + gPythonPath + "Update Group Status.bat"""
-End Sub
+Function DoesFileExist(filePath)
+    fileURL = ConvertToUrl(filePath)
+    DoesFileExist = FileExists(fileURL)
+End Function
 
 Sub CheckFileExists(filePath)
-    fileURL = ConvertToUrl(filePath)
-    If not FileExists(fileURL) Then
+    If not DoesFileExist(filePath) Then
         MsgBox "Missing: " & filePath, 48, "File Check Result"
     	End
     End If
 End Sub
-
-
 
 Sub ConvertAllQ1s()
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
@@ -415,37 +398,30 @@ Sub RunDriveLookup()
     Shell(sExePath, 1, sArgs, True)
 End Sub
 
-Function ReadStringFromFile(filePath As String) As String
-	CheckFileExists(filePath)
-    Dim fileContent As String
-    Dim fileNum As Integer
-    Dim lineInput As String
+Function GetFileLines(ByVal sFileName As String) As Variant
+    Dim iFileNum As Integer
+    Dim sLine As String
+    Dim aLines() As String
+    Dim iCounter As Long
 
-    Dim fileURL As String
-    fileURL = ConvertToURL(filePath)
+    iFileNum = FreeFile() ' Get available file handle
+    iCounter = 0
 
-    ' Get the next available free file handle number
-    fileNum = FreeFile()
+    ' Open the file for reading
+    Open ConvertToURL(sFileName) For Input As #iFileNum
 
-    ' Open the file for input
-    Open fileURL For Input As #fileNum
-
-    ' Read the file line by line until the end (EOF)
-    Do While Not EOF(fileNum)
-        Line Input #fileNum, lineInput
-        fileContent = fileContent & lineInput & Chr(10) ' Concatenate the line and a newline character (Chr(10))
+    Do While Not EOF(iFileNum)
+        Line Input #iFileNum, sLine
+        ' Resize the array to hold the new line
+        ReDim Preserve aLines(iCounter)
+        aLines(iCounter) = sLine
+        iCounter = iCounter + 1
     Loop
 
-    ' Close the file
-    Close #fileNum
+    Close #iFileNum
 
-    ' Return the complete string, removing the trailing newline
-    If Len(fileContent) > 0 Then
-    	sReturn = Left(fileContent, Len(fileContent) - 1)
-        ReadStringFromFile = sReturn
-    Else
-        ReadStringFromFile = ""
-    End If
+    ' Return the populated array
+    GetFileLines = aLines()
 End Function
 
 Sub OpenGroupStatusReport()
