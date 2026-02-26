@@ -36,18 +36,23 @@ WESTERN = "Western"
 
 OTHER = "Other"
 
+CONVERTER_THE_RED = "Converter the Red"
 
 def getHostFlavor() -> tuple[Any, Any, Any]:
     deployed_converter_path = "G:\\Shared Drive\\Exchequer Reporting\\"
     if exists(deployed_converter_path):  # Deployed
-        converter_path = f"{deployed_converter_path}Converter the Red.lst"
+        converter_path = f"{deployed_converter_path}{CONVERTER_THE_RED}.lst"
         if not exists(converter_path):
             print_red(f"Missing: {converter_path}")
+            ctr_deployed_path = f"C:\\yonay\\PycharmProjects\\DirectoryChangeNotifier\\Resources\\{CONVERTER_THE_RED} Deployed.lst"
+            shutil.copy2(ctr_deployed_path, converter_path)
     else:
         test_converter_path = "A:\\East Kingdom Exchequer Test\\Exchequer Reporting\\"
-        converter_path = f"{test_converter_path}Converter the Red.lst"
+        converter_path = f"{test_converter_path}{CONVERTER_THE_RED}.lst"
         if not exists(converter_path):
             print_red(f"Missing: {converter_path}")
+            ctr_test_path = f"C:\\Users\\peter\\PycharmProjects\\DirectoryChangeNotifier\\Resources\\{CONVERTER_THE_RED} Test.lst"
+            shutil.copy2(ctr_test_path, converter_path)
 
     converter_lines = Persistence.get_lines(converter_path, Persistence.FILE_PATH)
     notification_name = converter_lines[0]
@@ -122,13 +127,12 @@ class DriveLookup:
         self.group_data_path = group_data_path
         self.status_report_path = status_report_path
 
-        self.dcn = get_DirChangeNotifier()
         self.last_year_dirs = self.get_last_year_dirs()
 
         self.group_names = {}  # fields
 
     def get_last_year_dirs(self):
-        all_directories = self.dcn.all_directories
+        all_directories = dcn.all_directories
         filtered_directories = []
         last_year_quarterly_reports = f"\\{LAST_YEAR}\\Quarterly Reports"
         for directory in all_directories:
