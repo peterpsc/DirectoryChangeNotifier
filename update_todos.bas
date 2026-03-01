@@ -4,33 +4,18 @@ Public	gStatusReportPath As String
 Public  gPythonPath As String
 Public  gMasterWorkbookPath As String
 Public  gUpdateBatchPath As String
-Public  gAllToConvertPath As String
+Public  gToConvertPath As String
 
-Sub	InitializeGlobals()
-    converterTheRed = "Converter the Red.lst"
-    deployedConverterPath = "G:\Shared drives\Exchequer Reporting\"
-    if FileExists(deployedConverterPath) Then ' Deployed
-        converterPath = deployedConverterPath + converterTheRed
-        if not DoesFileExist(converterPath) Then
-            print("Missing: " + converterPath)
-        end if
-    else: ' Test
-        testConverterPath = "A:\East Kingdom Exchequer Test\Exchequer Reporting\"
-        converterPath = testConverterPath + converterTheRed
-        if not DoesFileExist(converterPath) Then
-            print("Missing: " + converterPath)
-        end if
-    End if
-
-    CheckFileExists(converterPath)
-    lines = GetFileLines(converterPath)
+Sub InitializeGlobals()
+    CheckFileExists(gToConvertPath)
+    lines = GetFileLines(gToConvertPath)
     gNotificationName = lines(0)
     gGroupDataPath = lines(1)
 	gStatusReportPath = lines(2)
     gPythonPath = lines(3)
     gMasterWorkbookPath = lines(4)
     gUpdateBatchPath = lines(5)
-    gAllToConvertPath = lines(6)
+    gToConvertPath = lines(6)
 End Sub
 
 Function DoesFileExist(filePath)
@@ -45,14 +30,76 @@ Sub CheckFileExists(filePath)
     End If
 End Sub
 
-Sub ConvertAllQ1s()
+Sub	InitializeAllConverterPath(sName)
+    converterTheRed = "Converter the Red.lst"
+    deployedConverterPath = "G:\Shared drives\Exchequer Reporting\"
+    if FileExists(deployedConverterPath) Then ' Deployed
+        gToConvertPath = deployedConverterPath + converterTheRed
+        if not DoesFileExist(gToConvertPath) Then
+            print("Missing: " + converterPath)
+        end if
+    else: ' Test
+        testConverterPath = "A:\East Kingdom Exchequer Test\Exchequer Reporting\"
+        gToConvertPath = testConverterPath + converterTheRed
+    End if
+    InitializeGlobals(sName)
+End Sub
+
+
+Sub	InitializeGlobalResources()
+    converterTheRed = "Converter the Red.lst"
+    deployedConverterPath = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\Resources\"
+
+    if FileExists(deployedConverterPath) Then ' Deployed
+        gToConvertPath = deployedConverterPath + converterTheRed
+        if not DoesFileExist(gToConvertPath) Then
+            print("Missing: " + gToConvertPath)
+        end if
+    else: ' Test
+        testConverterPath =  "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\Resources\"
+        gToConvertPath = testConverterPath + converterTheRed
+    End if
+    InitializeGlobals(Resources)
+End Sub
+
+
+Sub ConvertTest()
+	InitializeGlobalResources()
+	q4FilePaths = Array("A:\East Kingdom Exchequer Test\Other\2025\Quarterly Reports\Another Kingdom-Q4.xlsm")
+	groupName = "Test"
+	q1FilePaths = ConvertQ4s(q4FilePaths, "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\Test Data\", groupName)
+	CreateGroupStatus(q1FilePaths, groupName)
+End Sub
+
+Sub ConvertResources()
+	InitializeGlobalResources()
+	ConvertQ1s("Resources")
+End Sub
+
+Sub ConvertSpecific()
+	sName = "Specific"
+	InitializeAllConverterPath(sName)
+	ConvertQ1s(sName)
+End Sub
+
+Sub ConvertOther()
+	sName = "Other"
+	InitializeAllConverterPath(sName)
+	ConvertQ1s(sName)
+End Sub
+
+Sub ConvertAll()
+	sName = "All"
+	InitializeAllConverterPath(sName)
+	ConvertQ1s(sName)
+End Sub
+
+Sub ConvertQ1s(sName)
     Dim oCSV As Object, oCSVSheet As Object, oSheet As Object, oCell As Object
     Dim csvArgs(2) As New com.sun.star.beans.PropertyValue
     Dim iRow As Integer, convertedCount As Integer
     Dim sWorksheet As String, sCoord As String, sText As String
     Dim bRedoAll As Boolean
-
-	InitializeGlobals()
 
     converted_count = 0
 
@@ -61,9 +108,11 @@ Sub ConvertAllQ1s()
     csvArgs(1).Name = "FilterOptions" : csvArgs(1).Value = "44,34,76,1"
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
-	CheckFileExists(gAllToConvertPath)
+	Dim toConvertPath As String
+	toConvertPath = gStatusReportPath + sName + gToConvertPath
+	CheckFileExists(toConvertPath)
 
-   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(gAllToConvertPath), "_blank", 0, csvArgs())
+   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(toConvertPath), "_blank", 0, csvArgs())
     oCSVSheet = oCSV.Sheets(0)
 
 	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
@@ -81,7 +130,7 @@ Sub ConvertAllQ1s()
         toFileName    = oCSVSheet.getCellByPosition(2, iRow).String
         sDataPath = toFileDir + toFileName + ".csv"
        	sOutputPath = toFileDir + toFileName +  ".xlsx"
-        success = RunWorkbookUpdate(gMasterWorkbookPath, sDataPath, sOutputPath, bRedoAll)
+        success = RunWorkbookUpdate(sMasterPath, sDataPath, sOutputPath, bRedoAll)
 		convertedCount = convertedCount + success
         iRow = iRow + 1
     Loop
@@ -91,9 +140,7 @@ Sub ConvertAllQ1s()
 
     ' MsgBox "Converted " + convertedCount, 64, "Success"
 
-    CloseGroupStatusReport()
-
-	Wait 2000
+    ' CloseGroupStatusReport(sName) ' # TODO FIX ME update as you go
 
     Dim oShell As Object
     Set oShell = CreateObject("WScript.Shell")
@@ -353,19 +400,13 @@ Function RemoveOuterQuotes(ByVal txt As String) As String
     End If
 End Function
 
-Sub RefreshGroupStatus()
-    CloseGroupStatusReport()
-    RunDriveLookup()
-    OpenGroupStatusReport()
- End Sub
-
-Sub CloseGroupStatusReport()
+Sub CloseGroupStatusReport(sName)
     Dim oComponents As Object
     Dim oEnum As Object
     Dim oComp As Object
     Dim sTargetTitle As String
 
-    sTargetTitle = "All Group Status.csv" ' The exact window title to look for
+    sTargetTitle = sName + " Group Status.csv" ' The exact window title to look for
 
     ' 1. Get all open LibreOffice windows
     oComponents = StarDesktop.getComponents()
@@ -425,9 +466,9 @@ Function GetFileLines(ByVal sFileName As String) As Variant
     GetFileLines = aLines()
 End Function
 
-Sub OpenGroupStatusReport()
+Sub OpenGroupStatusReport(sName)
     sReportPath = GetGroupDataDir()
-    sTargetTitle = "All Group Status.csv"
+    sTargetTitle = sName + " Group Status.csv"
     sStatusReportFilePath = sReportPath + sTargetTitle
 End Sub
 

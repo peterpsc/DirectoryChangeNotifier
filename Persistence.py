@@ -23,6 +23,7 @@ RESOURCE_PATH = 2
 REMOTE_PATH = 3
 REMOTE_PRIVATE_PATH = 4
 REMOTE_RESOURCES_PATH = 5
+TEST_DATA_PATH = 6
 
 the_remote_file_path = ""  # get it from a file
 
@@ -51,6 +52,15 @@ def find_resource():
         if exists(path):
             return path
     return ""
+
+
+def find_test_data():
+    possible_paths = ['..\\Test Data\\', 'Test Data\\']
+    for path in possible_paths:
+        if exists(path):
+            return path
+    return ""
+
 
 
 def private_file_path(filename):
@@ -87,6 +97,9 @@ def remote_private_file_path(filename):
 def remote_resources_file_path(filename):
     return remote_file_path("Resources\\" + filename)
 
+
+def test_data_file_path(filename):
+    return find_test_data() + filename
 
 def remote_found():
     global the_remote_file_path
@@ -128,6 +141,8 @@ def get_file_path(filename, path_type=PRIVATE_PATH):
         return remote_private_file_path(filename)
     elif path_type == REMOTE_RESOURCES_PATH:
         return remote_resources_file_path(filename)
+    elif path_type == TEST_DATA_PATH:
+        return test_data_file_path(filename)
     else:
         raise Exception("Invalid path")
 

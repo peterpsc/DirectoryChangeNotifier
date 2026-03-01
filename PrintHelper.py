@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime
 
 from colorama import Fore
@@ -20,13 +21,29 @@ IGNORE_COLOR = False
 
 substitutions = Substitutions()
 
+
+# def printInBoxException(e):
+#     printInBox("Exception:", color=Fore.RED)
+#     exc_type, exc_obj, tb = sys.exc_info()
+#     f = tb.tb_frame
+#     lineno = tb.tb_lineno
+#     filename = f.f_code.co_filename
+#     linecache.checkcache(filename)
+#     line = linecache.getline(filename, lineno, f.f_globals)
+#     printInBox(f'{filename}, LINE {lineno}"', color=Fore.RED)
+#     printInBox(f'"{line.strip()}"', color=Fore.RED)
+#     printInBox(f'{exc_obj}', color=Fore.RED)
+
+def printInBoxExceptionMessage(message):
+    printInBox(message, color=Fore.RED)
+
 def printInBoxException(e):
     printInBox("Exception:", color=Fore.RED)
-    for arg in e.args:
-        printInBox(str(arg), force_style=RIGHT, color=Fore.RED)
+    traceback_string = traceback.format_exc()
+    printInBox(f"{traceback_string}", color=Fore.RED)
 
 
-def printInBoxWithTime(text, dt=datetime.now(), style=LEFT):
+def printInBoxWithTime(text, style=LEFT, dt=datetime.now()):
     dt_str = get_datetime_string(dt)
     printInBox(f"{text}: {dt_str}", force_style=style)
 
@@ -63,9 +80,7 @@ def printInBox(txt=None, force_style=None, length=80, color=""):
                 derived_style = force_style
             before = get_indent(text, derived_style, length)
             after = get_remaining_spaces(before, text, length)
-            text = f"|{before}{text}{after}|"
-            if color:
-                text = f"{color}{text}{color_end}"
+            text = f"{color}|{before}{text}{after}|{color_end}"
             print(text)
 
 
@@ -144,10 +159,21 @@ def get_now_string():
     return date.strftime("%Y/%m/%d %H:%M:%S")
 
 
+def print_red(text: str):
+    print(colored(Fore.RED, text))
+
 if __name__ == '__main__':
     printInBox()
     printInBoxWithTime("PrintHelper.py ")
+    printInBox("Testing", color=Fore.GREEN)
     lines = Persistence.get_lines("TestPrintHelper.txt", strip=False, path_type=Persistence.RESOURCE_PATH)
-    text = "\n".join(lines)
+    text = "".join(lines)
     printInBox(text)
     printInBox()
+
+    e = Exception("My Exception")
+    printInBoxException(e)
+    e = Exception()
+    printInBoxException(e)
+
+    print_red("Peter the Red")

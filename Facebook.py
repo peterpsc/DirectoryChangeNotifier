@@ -4,7 +4,6 @@ import os
 from time import sleep
 
 import clipboard
-from pyperclip import PyperclipWindowsException
 from selenium import webdriver
 from selenium.webdriver import Keys, ActionChains
 from selenium.webdriver.common.by import By
@@ -60,7 +59,7 @@ class Facebook:
         ok = self.driver.find_element(By.XPATH, '//span[text()="OK"]')
         self.driver.execute_script('arguments[0].scrollIntoView();', ok)
         post = self.driver.find_element(By.XPATH, '//span[text()="What\'s on your mind, Peter?"]')
-        # self.driver.execute_script('arguments[0].scrollIntoView();', post)
+        # cls.driver.execute_script('arguments[0].scrollIntoView();', post)
         size = post.size
         w, h = size['width'], size['height']
 
@@ -409,7 +408,7 @@ class Facebook:
             attach_file_element = self.driver.find_element(By.XPATH, '//div[@aria-label="Photo/video"]')
             self.click(attach_file_element)
             add_photos_videos_element = self.wait_for_element('//span[text()="Add Photos/Videos"]')
-            # self.click(add_photos_videos_element)
+            # cls.click(add_photos_videos_element)
             # TODO
         self.click(post_button_element)
         sleep(1)

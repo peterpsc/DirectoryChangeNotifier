@@ -1,0 +1,57 @@
+Left
+|Center|
+Right|
+ Right also
+  indent 1
+   indent 2
+    indent 3
+---
+Wordle 896 4/6*
+
+⬛⬛⬛⬛🟩
+⬛🟨⬛⬛🟩
+⬛⬛🟨🟨🟩
+🟩🟩🟩🟩🟩
+---
+|TiddlyHost save today's updates:|
+ already done today 2023:12:02 Kitchen
+---
+|Gmail wordle send to friends:|
+ already done today 2023:12:02 Upstairs
+---
+|Post comments to friends who posted:|
+  Vicki Wyan 6/6
+  Douglas Stangler 3/6 🤝
+ Douglas Stangler 3 < 4
+  John Tiberius 4/6 👍
+ 1 Comment Posted to a friend
+---
+⬛
+🟨
+🟩
+🤝
+👍
+---
+⬛⬛
+🟨🟨
+🟩🟩
+🤝🤝
+👍👍
+---
+⬛⬛⬛
+🟨🟨🟨
+🟩🟩🟩
+🤝🤝🤝
+👍👍👍
+---
+⬛⬛⬛⬛
+🟨🟨🟨🟨
+🟩🟩🟩🟩
+🤝🤝🤝🤝
+👍👍👍👍
+---
+⬛⬛⬛⬛⬛
+🟨🟨🟨🟨🟨
+🟩🟩🟩🟩🟩
+🤝🤝🤝🤝🤝
+👍👍👍👍👍

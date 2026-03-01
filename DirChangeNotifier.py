@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from os.path import exists
 
+import GroupFields
 import Persistence
 import PrintHelper
 from Gmail import Gmail
@@ -112,7 +113,7 @@ class DirChangeNotifier:
                     if cls.is_in_filter_path(filter_paths, file_path):
                         file_paths.append(file_path)
                 if item.is_dir():
-                    PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
+                    # PrintHelper.printInBox(file_path, force_style=PrintHelper.INDENT_1)
                     if recursive:
                         cls.append_file_paths(file_paths, file_path, ignore_paths, filter_paths, ignore_files_containing, recursive)
 
@@ -141,7 +142,9 @@ class DirChangeNotifier:
 
     def get_region_group_names(self, region):
         group_names = []
-        if region != OTHER:
+        if region in GroupFields.READ_FROM_FILE_NAMES:
+            return [region]
+        else:
             group_paths = self.get_region_dir_paths(region)
             for group_path in group_paths:
                 group_name = group_path.split("\\")[-1]
@@ -149,8 +152,6 @@ class DirChangeNotifier:
                 if group_name not in group_names:
                     group_names.append(group_name)
             return group_names
-        else:
-            return None  # defer q4_file_path status_report_name until the file is opened
 
     def get_all_group_names(self):
         group_names = []
