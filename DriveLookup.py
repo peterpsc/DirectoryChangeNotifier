@@ -347,32 +347,39 @@ class DriveLookup:
 
     def copy_g_to_a(self, q4_file_paths):
         if self.notification_name != "Test":
-            from_file_path = 'G:\\Shared drives'
-            l = len(from_file_path)
-            to_q4_path = 'A:\\East Kingdom Exchequer Test'
-            for from_q4_path in q4_file_paths:
-                to_q4_path = f"{to_q4_path}\\{from_q4_path[l:]}"
+            from_base_path = 'g:\\Shared drives\\' # TODO make it immune to g: vs. G:
+            to_q4_root_path = 'A:\\East Kingdom Exchequer Test\\'
+            for from_q4_file_path in q4_file_paths:
+                from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
+                from_g4_stem_file_path = from_q4_path.partition(from_base_path)[-1]
+                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path)
+                to_q4_path = f"{to_q4_root_path}{from_g4_stem_path}"
                 os.makedirs(to_q4_path, exist_ok=True)
-                to_q1_path = to_q4_path.partition(f"\\Quarterly Reports")[0] + "\\Quarterly Reports"
-                to_q1_path = to_q1_path.replace(LAST_YEAR_DIR, THIS_YEAR_DIR)
+                to_q4_path, to_q1_path, to_file_stem = self.get_old_file_path_new_dir(to_q4_path, "")
                 os.makedirs(to_q1_path, exist_ok=True)
-            for from_q4_path in q4_file_paths:
-                if exists(from_q4_path):
-                    to_q4_path = f"{to_q4_path}{from_q4_path[l:]}"
+            for from_q4_file_path in q4_file_paths:
+                from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
+                from_g4_stem_file_path = from_q4_path.partition(from_base_path)[-1]
+                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path)+"\\"
+                to_q4_path = f"{to_q4_root_path}{from_g4_stem_path}"
+                to_q4_path, to_q1_path, to_file_stem = self.get_old_file_path_new_dir(to_q4_path, "")
+                q4_file_name = os.path.basename(from_q4_file_path)
+                if exists(to_q4_path):
                     try:
+                        to_q4_file_path = to_q4_path + q4_file_name
                         # This will overwrite the destination file if it already exists
-                        shutil.copy2(from_q4_path, to_q4_path)
-                        print(f"From File: '{from_q4_path}'\r\n  To File: '{to_q4_path}'")
+                        shutil.copy2(from_q4_file_path, to_q4_file_path)
+                        print(f"From File: '{from_q4_file_path}'\r\n  To File: '{to_q4_path}'")
                     except FileNotFoundError:
                         print("The source or destination file was not found.")
-                    except PermissionError:
+                    except PermissionError as e:
                         print("You don't have permission to access the source or destination file.")
                     except shutil.SameFileError:
                         print("Source and destination represent the same file.")
                     except IsADirectoryError:
                         print("The destination path is a directory but was expected to be a file path.")
                     except Exception as e:
-                        print(f"An unexpected error occurred: {e}")(from_q4_path, to_q4_path)
+                        print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
 
     def save_status(self, q4_paths, todos, missing, name):
         group_status_file_path = self.delete_old_status_report(name)
@@ -553,9 +560,6 @@ class DriveLookup:
                 regions_to_convert_file_paths.append(file_path)
         if regions_to_convert_file_paths:
             Persistence.combine_csvs(all_regions_to_convert_file_path, regions_to_convert_file_paths)
-
-        for file_path in regions_to_convert_file_paths:
-            os.remove(file_path)
 
         all_regions_status_file_path = self.get_group_status_file_path(ALL)
         regions_status_file_paths = []
