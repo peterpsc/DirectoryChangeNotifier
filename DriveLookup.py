@@ -164,15 +164,21 @@ class DriveLookup:
 
     def remove_extra_directories(self, filtered_directories):
         extra_directories = []
+        unwanted_directories = []
         for directory in filtered_directories:
             group_path_qr_extra = directory.partition(f"\\{QUARTERLY_REPORTS}")
             extra = directory.split("\\")
             if len(extra):
                 extra_dir = extra[-1]
-                if "4" in extra_dir and "Q" in extra_dir:
-                    extra_directories.append(f"{group_path_qr_extra[0]}\\{QUARTERLY_REPORTS}")
+                if extra_dir != QUARTERLY_REPORTS:
+                    if "4" in extra_dir and "Q" in extra_dir:
+                        extra_directories.append(f"{group_path_qr_extra[0]}\\{QUARTERLY_REPORTS}")
+                    else:
+                        unwanted_directories.append(directory)
         actual_directories = []
         for directory in filtered_directories:
+            if directory in unwanted_directories:
+                continue
             if directory not in extra_directories:
                 actual_directories.append(directory)
 
