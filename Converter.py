@@ -406,8 +406,6 @@ class Converter:
         # print(f"Losing address of signatories")
 
     def save_secondary_accounts(self):
-        """Missing Contact info and SCA Name on Account"""
-        # TODO FIX ME Signers in Secondary accounts. Need Name instead of "No"
         old_sheet = self.q4_workbook["SECONDARY_ACCOUNTS_2b"]
         old_cols = "DEFG"
         for account in range(4):
@@ -445,7 +443,7 @@ class Converter:
                         signatory_member_number = self.get_int_string(old_sheet[f"{old_col}{old_row + 1}"])
                         expiration_date = self.get_expiration_date_string(old_sheet[f"{old_col}{old_row + 2}"])
 
-                        new_row = 16 + i
+                        new_row = 31 + i + account * 15
                         new_cols = "EIJ"
                         if i >= 4:
                             new_row -= 4
