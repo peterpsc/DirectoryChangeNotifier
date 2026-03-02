@@ -440,8 +440,9 @@ class DriveLookup:
     def append_status_row(self, formatted_rows, q4_path, missing, negative_reports, out_of_balance):
         group_name, fields = self.get_group_fields(q4_path)
         q4_file_name = self.find_q4_file_name(q4_path)
-        q4_file_path = None
-        if q4_file_name:
+        if q4_file_name is None:
+            q4_file_path = None
+        else:
             q4_file_path = f"{q4_path}{q4_file_name}"
             if not exists(q4_file_path) or q4_path in missing:
                 q4_file_path = None
