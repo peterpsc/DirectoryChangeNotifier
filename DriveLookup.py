@@ -72,12 +72,14 @@ if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
 PROCESS_SPECIFIC = ["Østgarðr"]
-
 PROCESS_SPECIFIC = ["Settmour Swamp"]
+
 PROCESS_NAME = SPECIFIC
+PROCESS_SPECIFIC = ["Mountain Freehold"]
 
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
+
 
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
@@ -313,7 +315,7 @@ class DriveLookup:
 
         for group_name in groups:
             group_fields = self.group_names[group_name]
-            this_year_path = group_fields[Q1_PATH]
+            this_year_path = GroupFields.get_field(group_fields, Q1_PATH)
             if not exists(this_year_path):
                 group_path = this_year_path.partition(THIS_YEAR_DIR)[0] + THIS_YEAR_DIR
                 os.mkdir(group_path)
@@ -405,7 +407,7 @@ class DriveLookup:
 
         for q4_path in q4_paths:  # needed to keep track of missing
             group_name = self.get_group_from_g4_path(q4_path)
-            if group_name == OTHER:
+            if group_name == OTHER:  # TODO FIX ME
                 self.append_other_status_rows(formatted_rows, missing, out_of_balance, negative_reports, bugs,
                                               q4_fields)
             else:
