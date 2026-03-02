@@ -72,11 +72,12 @@ if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
 PROCESS_SPECIFIC = ["Østgarðr"]
+
+PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_NAME = SPECIFIC
 
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
-
 
 COPY_G_TO_A = True
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
@@ -443,7 +444,7 @@ class DriveLookup:
             if not exists(q4_file_path) or q4_path in missing:
                 q4_file_path = None
 
-        q1_path = fields[Q1_PATH]
+        q1_path = GroupFields.get_field(fields, Q1_PATH)
         group_dir = q1_path.partition(f"{THIS_YEAR_DIR}{QUARTERLY_REPORTS}")[0] + "\\"
 
         formatted_row = []
@@ -453,12 +454,8 @@ class DriveLookup:
         hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
         formatted_row.append(hyperlink_group)
 
-        full_group_name = fields[FULL_GROUP_NAME]
-        if full_group_name:
-            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{full_group_name}")
-        else:
-            hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
-        formatted_row.append(hyperlink_group)
+        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)
+        formatted_row.append(full_group_name)
 
         hyperlink_last_dir = Persistence.create_hyperlink(q4_path, f"{LAST_YEAR} Q4 dir")
         formatted_row.append(hyperlink_last_dir)

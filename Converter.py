@@ -331,7 +331,7 @@ class Converter:
             choice_3 = "The Financial Committee consists of the Seneschal, Exchequer, and other officers specified below."
             self.append_data("FinancialCommittee", "B7", choice_3)
         else:  # default
-            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and q4_file_paths paid members in good standing present at a business meeting."
+            choice_2 = "The Financial Committee consists of the Seneschal, Exchequer, and all paid members in good standing present at a business meeting."
             self.append_data("FinancialCommittee", "B7", choice_2)
 
         self.append_string(old_sheet["D18"], "FinancialCommittee", "C12")  # seneshal_sca_name
@@ -637,8 +637,8 @@ class Converter:
                     to_row = to_row + 1
 
         # Other Assets
-        from_row_start = 54
-        from_row_end = 61
+        from_row_start = 52
+        from_row_end = 59
         to_row = 59
         for from_row in range(from_row_start, from_row_end + 1):
             description = old_sheet[f"C{from_row}"].value

@@ -182,7 +182,7 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 		bDataExists =  FileExists(sDataPath)
 
 		if not bDataExists then
-			print("Can't open " + sDataPath)
+			' print("Can't open " + sDataPath)
 			Exit Function
 		End If
 
@@ -472,3 +472,57 @@ Sub OpenGroupStatusReport(sName)
     sStatusReportFilePath = sReportPath + sTargetTitle
 End Sub
 
+Function GetOrOpenWorkbook(sFilePath As String) As Objectf # TODO FIX ME
+    Dim oComponents As Object, oEnum As Object, oComp As Object
+    Dim sURL As String
+
+    sURL = ConvertToURL(sFilePath)
+    oComponents = StarDesktop.Components
+    oEnum = oComponents.createEnumeration()
+
+    ' 1. Search existing open workbooks
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        ' Check if the component has a URL and if it matches
+        If HasUnoInterfaces(oComp, "com.sun.star.frame.XModel") Then
+            If oComp.URL = sURL Then
+                GetOrOpenWorkbook = oComp
+                Exit Function
+            End If
+        End If
+    Loop
+
+    ' 2. Open new one if not found
+    Dim args(0) As New com.sun.star.beans.PropertyValue
+    GetOrOpenWorkbook = StarDesktop.loadComponentFromURL(sURL, "_blank", 0, args())
+End Function
+
+Sub FindAndReplaceInRow(nSearchCol As Long, nReplaceCol As Long, sSearch As String, sReplaceValue As String)  # TODO FIX ME
+    Dim oSheet As Object, oCellSearch As Object, oCellReplace As Object
+    Dim iRow As Long
+
+    oSheet = ThisComponent.CurrentController.ActiveSheet
+    iRow = 0 ' Starting row
+
+    Do
+        oCellSearch = oSheet.getCellByPosition(nSearchCol, iRow)
+
+        ' 1. Stop if we hit a blank cell
+        If oCellSearch.Type = com.sun.star.table.CellContentType.EMPTY Then
+            Print "Value not found before reaching a blank row."
+            Exit Do
+        End If
+
+        ' 2. Check for match
+        If oCellSearch.String = sSearch Then
+            ' Get the cell in the same row but different column
+            oCellReplace = oSheet.getCellByPosition(nReplaceCol, iRow)
+            oCellReplace.String = sReplaceValue
+
+            Print "Success: Updated Row " & (iRow + 1)
+            Exit Do
+        End If
+
+        iRow = iRow + 1
+    Loop
+End Sub
