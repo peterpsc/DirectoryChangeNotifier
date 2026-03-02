@@ -29,3 +29,10 @@ def getHostFlavor() -> tuple[Any, Any, Any]:
     group_data_path = converter_lines[1]
     status_report_path = converter_lines[2]
     return group_data_path, notification_name, status_report_path
+
+
+if __name__ == '__main__':
+    group_data_path, notification_name, status_report_path = getHostFlavor()
+    print(group_data_path)
+    print(notification_name)
+    print(status_report_path)
