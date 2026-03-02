@@ -214,20 +214,23 @@ Function RunWorkbookUpdate(sMasterPath As String, sDataPath As String, sOutputPa
 	End if
 End Function
 
-Sub SaveWorkbook(oTargetDoc As Object, sURL As String)
-    ' We now need 2 properties: Overwrite and FilterName
+Sub SaveWorkbook(oTargetDoc As Object, sOutputURL As String)
     Dim args(1) As New com.sun.star.beans.PropertyValue
 
-    ' Property 1: Overwrite existing files
     args(0).Name = "Overwrite"
     args(0).Value = True
 
-    ' Property 2: Set the filter for Excel 2007+ (.xlsx)
+    ' Standard filter for .xlsx
     args(1).Name = "FilterName"
     args(1).Value = "Calc MS Excel 2007 XML"
 
-    ' Save
-    oTargetDoc.storeAsURL(sURL, args())
+    ' Use storeToURL to avoid "Save As" session conflicts on Shared Drives
+    On Local Error GoTo ErrorHandler
+    oTargetDoc.storeToURL(sOutputURL, args())
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Error " & Err & ": " & Error$ & Chr(13) & "Path: " & sURL
 End Sub
 
 Function ImportAndProcessCSV(oTargetDoc As Object, sDataPath As String)
@@ -472,7 +475,7 @@ Sub OpenGroupStatusReport(sName)
     sStatusReportFilePath = sReportPath + sTargetTitle
 End Sub
 
-Function GetOrOpenWorkbook(sFilePath As String) As Objectf # TODO FIX ME
+Function GetOrOpenWorkbook(sFilePath As String) As Objectf '# TODO FIX ME
     Dim oComponents As Object, oEnum As Object, oComp As Object
     Dim sURL As String
 
@@ -497,10 +500,10 @@ Function GetOrOpenWorkbook(sFilePath As String) As Objectf # TODO FIX ME
     GetOrOpenWorkbook = StarDesktop.loadComponentFromURL(sURL, "_blank", 0, args())
 End Function
 
-Sub FindAndReplaceInRow(nSearchCol As Long, nReplaceCol As Long, sSearch As String, sReplaceValue As String)  # TODO FIX ME
+Sub FindAndReplaceInRow(nSearchCol As Long, nReplaceCol As Long, sSearch As String, sReplaceValue As String) '# TODO FIX ME
     Dim oSheet As Object, oCellSearch As Object, oCellReplace As Object
     Dim iRow As Long
-
+'
     oSheet = ThisComponent.CurrentController.ActiveSheet
     iRow = 0 ' Starting row
 

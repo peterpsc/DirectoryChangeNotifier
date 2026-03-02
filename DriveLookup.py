@@ -111,9 +111,7 @@ class DriveLookup:
         self.notification_name = notification_name
         self.group_data_path = group_data_path
         self.status_report_path = status_report_path
-
         self.last_year_dirs = self.get_last_year_dirs()
-
         self.group_names = {}  # fields
 
     def get_last_year_dirs(self):
