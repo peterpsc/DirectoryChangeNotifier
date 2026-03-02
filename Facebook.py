@@ -3,7 +3,7 @@ import datetime
 import os
 from time import sleep
 
-import clipboard
+import pyperclip
 from selenium import webdriver
 from selenium.webdriver import Keys, ActionChains
 from selenium.webdriver.common.by import By
@@ -74,7 +74,7 @@ class Facebook:
         entry = post_form.find_element(By.XPATH, '//div[@aria-label="What\'s on your mind, Peter?"]')
         full_text = text + "\n" + message + "\n(posted by WordleBot the Red)"
 
-        clipboard.copy(full_text)
+        pyperclip.copy(full_text)
         entry.send_keys(Keys.CONTROL, 'v')
         sleep(2)
 
@@ -154,7 +154,7 @@ class Facebook:
 
     def add_signature_to_clipboard(self, comment):
         comment += "\n" + "https://wordle.tiddlyhost.com"
-        clipboard.copy(comment)
+        pyperclip.copy(comment)
 
     def happy_birthdays(self):
         PrintHelper.printInBox()
@@ -202,9 +202,9 @@ class Facebook:
     def clipboard_copy(self, message):
         while True:
             try:
-                clipboard.copy(message)
+                pyperclip.copy(message)
                 break
-            except PyperclipWindowsException as e:
+            except pyperclip.PyperclipWindowsException as e:
                 sleep(1)
 
     def done(self):
@@ -510,7 +510,7 @@ class Facebook:
         post_form = self.driver.find_element(By.TAG_NAME, 'form')
         entry = post_form.find_element(By.XPATH,
                                        '//div[@aria-label="Connect with anyone on Facebook about what\'s on your mind..."]')
-        clipboard.copy(content)
+        pyperclip.copy(content)
         entry.send_keys(Keys.CONTROL, 'v')
 
         if signature:
