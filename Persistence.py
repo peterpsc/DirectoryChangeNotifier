@@ -8,7 +8,7 @@ from os.path import exists
 from pathlib import Path
 from time import sleep
 
-import clipboard
+import pyperclip
 from selenium.webdriver import Keys
 
 import PrintHelper
@@ -351,8 +351,8 @@ def copy_to_clipboard(text):
     prior_text = None
     while True:
         try:
-            prior_text = clipboard.paste()
-            clipboard.copy(text)
+            prior_text = pyperclip.paste()
+            pyperclip.copy(text)
             return prior_text
         except Exception as e:
             print(".", end="")
@@ -360,7 +360,7 @@ def copy_to_clipboard(text):
 
 
 def get_clipboard_text():
-    return clipboard.paste()
+    return pyperclip.paste()
 
 
 def paste_text(element, text, enter=False):
