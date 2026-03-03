@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from os.path import exists
 from pathlib import Path
 from typing import Any
@@ -344,8 +345,10 @@ class DriveLookup:
             delete = True
         return delete
 
-    def copy_g_to_a(self, q4_file_paths):
+    def copy_g_to_a(self):
         if self.notification_name != "Test":
+            PrintHelper.printInBox("COPY_G_TO_A")
+            q4_file_paths = self.get_ek_q4_file_paths()
             from_base_path = 'g:\\Shared drives\\' # TODO make it immune to g: vs. G:
             to_q4_root_path = 'A:\\East Kingdom Exchequer Test\\'
             for from_q4_file_path in q4_file_paths:
@@ -379,6 +382,22 @@ class DriveLookup:
                         print("The destination path is a directory but was expected to be a file path.")
                     except Exception as e:
                         print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
+            PrintHelper.printInBox("Exiting after COPY_G_TO_A")
+            sys.exit()
+
+    def get_ek_q4_file_paths(self) -> list[Any]:
+        q4_paths = []
+        q4_file_paths = []
+        for region in REGIONS:
+            group_names = dcn.get_region_group_names(region)
+            for group_name in group_names:
+                q4_path = self.group_names[group_name][Q4_PATH]
+                q4_paths.append(q4_path)
+                q4_file_name = self.find_q4_file_name(q4_path)
+                if q4_file_name:
+                    q4_file_path = f"{q4_path}{q4_file_name}"
+                    q4_file_paths.append(q4_file_path)
+        return q4_file_paths
 
     def save_status(self, q4_paths, todos, missing, name):
         group_status_file_path = self.delete_old_status_report(name)
@@ -541,8 +560,6 @@ class DriveLookup:
 
         if group_status_file_path is not None:
             q4_paths, q4_file_paths, missing, todos = self.find_all_q4s_missing_todos(group_names, status_report_name)
-            if COPY_G_TO_A:
-                self.copy_g_to_a(q4_file_paths)
 
             self.save_status(q4_paths, todos, missing, status_report_name)
 
@@ -612,6 +629,8 @@ if __name__ == '__main__':
     PrintHelper.printInBoxWithTime("DriveLookup")
 
     driveLU: DriveLookup = init_drive_lookup()
+
+    driveLU.copy_g_to_a()  # exits after copying, because something is wrong with workbooks generated on that computer
 
     if PROCESS_NAME == ALL:
         for region in REGIONS:
