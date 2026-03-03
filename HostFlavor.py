@@ -24,7 +24,7 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
             if DEPLOY_CONVERTER_THE_RED:
                 if not exists(converter_path):
                     print_red(f"Missing: {converter_path}")
-                ctr_deployed_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {notification_name}.lst",
+                ctr_deployed_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {host}.lst",
                                                               Persistence.RESOURCE_PATH)
                 shutil.copy2(ctr_deployed_path, converter_path)
         else:

@@ -42,7 +42,7 @@ def find_private():
     possible_paths = ['../Private/', 'Private/']
     for path in possible_paths:
         if exists(path):
-            return path
+            return os.path.abspath(path) + "\\"
     return ""
 
 
@@ -50,7 +50,7 @@ def find_resource():
     possible_paths = ['../Resources/', 'Resources/']
     for path in possible_paths:
         if exists(path):
-            return path
+            return os.path.abspath(path) + "\\"
     return ""
 
 
@@ -58,7 +58,7 @@ def find_test_data():
     possible_paths = ['..\\Test Data\\', 'Test Data\\']
     for path in possible_paths:
         if exists(path):
-            return path
+            return os.path.abspath(path) + "\\"
     return ""
 
 
