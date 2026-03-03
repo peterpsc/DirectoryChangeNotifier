@@ -1,6 +1,7 @@
 Public  gNotificationName As String
 Public	gGroupDataPath As String
 Public	gStatusReportPath As String
+Public	gTestStatusReportPath As String
 Public  gPythonPath As String
 Public  gMasterWorkbookPath As String
 Public  gUpdateBatchPath As String
@@ -12,10 +13,11 @@ Sub InitializeGlobals()
     gNotificationName = lines(0)
     gGroupDataPath = lines(1)
 	gStatusReportPath = lines(2)
-    gPythonPath = lines(3)
-    gMasterWorkbookPath = lines(4)
-    gUpdateBatchPath = lines(5)
-    gToConvertPath = lines(6)
+	gTestStatusReportPath = lines(3)
+    gPythonPath = lines(4)
+    gMasterWorkbookPath = lines(5)
+    gUpdateBatchPath = lines(6)
+    gToConvertPath = lines(7)
 End Sub
 
 Function DoesFileExist(filePath)

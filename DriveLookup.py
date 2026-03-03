@@ -15,7 +15,7 @@ from DirChangeNotifier import DirChangeNotifier
 from GroupFields import (FULL_GROUP_NAME, GROUP_DIR, GROUP_TYPE, Q4_PATH, Q1_PATH, NOTE, E_REGION, LOCATION)
 from GroupFields import (LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR)
 from GroupFields import OTHER, ALL
-from HostFlavor import getHostFlavor
+from HostFlavor import get_host_flavor
 from PrintHelper import print_red
 
 #
@@ -36,8 +36,7 @@ WESTERN = "Western"
 
 
 def get_DirChangeNotifier() -> DirChangeNotifier:
-    group_data_path, notification_name, status_report_path = getHostFlavor()
-    dcn = DirChangeNotifier(notification_name)
+    dcn = DirChangeNotifier()
     return dcn
 
 
@@ -93,9 +92,7 @@ if PROCESS_SPECIFIC:
 # Group Status.csv
 # To Convert.csv
 def init_drive_lookup():
-    group_data_path, notification_name, status_report_path = getHostFlavor()
-    driveLU = DriveLookup(notification_name, group_data_path, status_report_path)
-
+    driveLU = DriveLookup()
     driveLU.init_region_group_names()
     driveLU.init_all_group_names()
     if DEBUG:
@@ -107,10 +104,12 @@ def init_drive_lookup():
 class DriveLookup:
     region_group_names = {}
 
-    def __init__(self, notification_name: str, group_data_path, status_report_path):
+    def __init__(self, notification_name=None):
         self.notification_name = notification_name
-        self.group_data_path = group_data_path
-        self.status_report_path = status_report_path
+        host, self.group_data_path, self.status_report_path, self.test_status_report_path = get_host_flavor(
+            notification_name)
+        if notification_name is None:
+            self.notification_name = host
         self.last_year_dirs = self.get_last_year_dirs()
         self.group_names = {}  # fields
 

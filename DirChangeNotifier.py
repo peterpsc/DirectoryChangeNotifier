@@ -5,6 +5,7 @@ from datetime import datetime
 from os.path import exists
 
 import GroupFields
+import HostFlavor
 import Persistence
 import PrintHelper
 from Gmail import Gmail
@@ -27,8 +28,11 @@ class DirChangeNotifier:
                "Western": ["\\PA branches\\", "\\DE branches\\"],
                OTHER: ["\\Other\\"]}
 
-    def __init__(self, notification_name):
+    def __init__(self, notification_name=None):
         self.notification_name = notification_name
+        host, group_data_path, status_report_path, test_status_report_path = HostFlavor.get_host_flavor()
+        if notification_name is None:
+            self.notification_name = host
         path_options = self.get_dir_change_path_options()
         ignore_paths = self.get_ignore_paths()
         self.all_directories = self.get_dir_paths(path_options, ignore_paths)
@@ -433,7 +437,7 @@ def create_blank_dir_structure(dir_path):
     # Stop at the Group status_report_name
     # with sub groups at the same level as Baronies
     # TODO Want to copy directory structure to Teams
-    dcn = DirChangeNotifier("Test")
+    dcn = DirChangeNotifier()
     if dir_path is None:
         return
 
