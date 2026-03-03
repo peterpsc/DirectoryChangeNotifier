@@ -382,7 +382,7 @@ class DriveLookup:
                         print("The destination path is a directory but was expected to be a file path.")
                     except Exception as e:
                         print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
-            PrintHelper.printInBox("Exiting after COPY_G_TO_A")
+            PrintHelper.print_red("Exiting after COPY_G_TO_A")
             sys.exit()
 
     def get_ek_q4_file_paths(self) -> list[Any]:
