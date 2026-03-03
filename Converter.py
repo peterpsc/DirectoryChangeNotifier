@@ -910,9 +910,11 @@ class Converter:
             Persistence.remove_file(to_convert_file_path)
             return
 
+        data = []
         column_names = ["Q4 File Path", "Q1 Path", "Q1 File Name"]
+        data.append(column_names)
         data = cls.create_convert_data_from_file_paths(q4_file_paths, name)
-        Persistence.save_list(column_names, data, to_convert_file_path, Persistence.FILE_PATH)
+        Persistence.save_list(data, to_convert_file_path, Persistence.FILE_PATH)
 
     @classmethod
     def create_convert_data_from_file_paths(cls, q4_file_paths, name):

@@ -88,6 +88,8 @@ SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
     SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 2  # False = Recreate Q1 Data anyway
 
+GROUP_STATUS = " Group Status.csv"
+
 # Creates:
 # Group Status.csv
 # To Convert.csv
@@ -251,9 +253,7 @@ class DriveLookup:
         return q1_file_name
 
     @staticmethod
-    def create_convert_data(todos, name):
-        formatted_rows = []
-
+    def create_convert_data(formatted_rows, todos, name):
         for todo in todos:
             if name in GroupFields.READ_FROM_FILE_NAMES:
                 formatted_row = [todo[0], todo[1], DriveLookup.get_other_q1_file(todo[0], todo[2])]
@@ -261,7 +261,6 @@ class DriveLookup:
                 formatted_row = [todo[0], todo[1], todo[2]]
 
             formatted_rows.append(formatted_row)
-        return formatted_rows  # [q4_file_path, q1_path, q1_file_name]
 
 
     def save_to_convert(self, to_convert, name):
@@ -271,10 +270,11 @@ class DriveLookup:
             Persistence.remove_file(to_convert_file_path)
             return
 
-        # data = [q4_file_path, q1_path, q1_file_name]
+        data = []
         column_names = ["Q4 File Path", "Q1 Path", "Q1 File Name"]
-        data = self.create_convert_data(to_convert, name)
-        Persistence.save_list(column_names, data, to_convert_file_path, Persistence.FILE_PATH)
+        data.append(column_names)
+        self.create_convert_data(data, to_convert, name)
+        Persistence.save_list(data, to_convert_file_path, Persistence.FILE_PATH)
 
     @classmethod
     def fix_slashes(cls, file_path):
@@ -417,22 +417,25 @@ class DriveLookup:
         self.save_to_convert(to_convert, name)
 
         column_names = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
-        data = self.create_group_status_data(q4_paths, missing, out_of_balance, negative_reports, bugs, q4_fields)
-        Persistence.save_list(column_names, data, group_status_file_path, Persistence.FILE_PATH)
+        title_row = self.create_title_row(name)
+        formatted_rows = [column_names, title_row]
+        data = self.create_group_status_data(formatted_rows, q4_paths, missing, out_of_balance, negative_reports, bugs,
+                                             q4_fields)
+        Persistence.save_list(data, group_status_file_path, Persistence.FILE_PATH)
 
     def delete_old_status_report(self, name):
         group_status_file_path = self.get_group_status_file_path(name)
         try:
             Persistence.remove_file(group_status_file_path, Persistence.FILE_PATH)
         except Exception as e:
-            PrintHelper.printInBox(f"Please close the {name} Group Status.csv", force_style=PrintHelper.CENTER,
+            PrintHelper.printInBox(f"Please close the {name}{GROUP_STATUS}", force_style=PrintHelper.CENTER,
                                    color=Fore.RED)
             sound_file_path = Persistence.get_file_path('Close the group status report.mp3', Persistence.RESOURCE_PATH)
             PlaySound.play_sound(sound_file_path)
             raise e
         return group_status_file_path
 
-    def get_group_status_file_path(self, name, filename_suffix=" Group Status.csv"):
+    def get_group_status_file_path(self, name, filename_suffix=GROUP_STATUS):
         group_status_file_path = Persistence.get_file_path(f"{self.status_report_path}{name}{filename_suffix}",
                                                            Persistence.FILE_PATH)
         if not exists(self.status_report_path):
@@ -440,9 +443,8 @@ class DriveLookup:
 
         return group_status_file_path
 
-    def create_group_status_data(self, q4_paths, missing, out_of_balance, negative_reports, bugs, q4_fields):
-        formatted_rows = []
-
+    def create_group_status_data(self, formatted_rows, q4_paths, missing, out_of_balance, negative_reports, bugs,
+                                 q4_fields):
         for q4_path in q4_paths:  # needed to keep track of missing
             group_name = self.get_group_from_g4_path(q4_path)
             if group_name == OTHER:  # TODO FIX ME
@@ -488,9 +490,7 @@ class DriveLookup:
         q1_path = GroupFields.get_field(fields, Q1_PATH)
         group_dir = q1_path.partition(f"{THIS_YEAR_DIR}{QUARTERLY_REPORTS}")[0] + "\\"
 
-        formatted_row = []
-        hyperlink_region = Persistence.create_hyperlink(group_dir, f"{fields[E_REGION]}")
-        formatted_row.append(hyperlink_region)
+        formatted_row = [""]
 
         hyperlink_group = Persistence.create_hyperlink(group_dir, f"{group_name}")
         formatted_row.append(hyperlink_group)
@@ -632,6 +632,12 @@ class DriveLookup:
                 print_red(f"ERROR: q4_file_path not in e_region group_names: {group_name}")
         assert region_group_count == group_count - 1  # Don't count OTHER
 
+    def create_title_row(self, name):
+        title_row = []
+        title_path = f"{self.status_report_path}{name}{GROUP_STATUS}"
+        hyperlink = Persistence.create_hyperlink(title_path, name + ":")
+        title_row.append(hyperlink)
+        return title_row
 
 if __name__ == '__main__':
     PrintHelper.printInBox()

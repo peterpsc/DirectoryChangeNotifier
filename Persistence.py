@@ -194,11 +194,10 @@ def get_list(filename, path_type=PRIVATE_PATH, header=True):
     return results
 
 
-def save_list(column_names, data, filename, path_type=PRIVATE_PATH):
+def save_list(data, filename, path_type=PRIVATE_PATH):
     file_path = get_file_path(filename, path_type)
     with open(file_path, 'w', encoding=UTF_8, newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(column_names)
         for row in data:
             formatted_row = []
             for i, val in enumerate(row):

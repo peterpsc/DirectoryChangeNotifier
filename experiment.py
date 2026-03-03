@@ -12,6 +12,9 @@ data = [
 
 def create_complex_csv(dest_path):
     formatted_rows = []
+    column_names = ["File Path", "Dir Path", "File Path", "Dir Path", "Hyperlink", "Status"]
+    formatted_rows.append(column_names)
+
     for row in data:
         formatted_row = []
         for i, val in enumerate(row):
@@ -23,8 +26,8 @@ def create_complex_csv(dest_path):
             else:
                 formatted_row.append(val)
         formatted_rows.append(formatted_row)
-    column_names = ["File Path", "Dir Path", "File Path", "Dir Path", "Hyperlink", "Status"]
-    Persistence.save_list(column_names, formatted_rows, dest_path)
+
+    Persistence.save_list(formatted_rows, dest_path)
 
 if __name__ == '__main__':
     create_complex_csv(".\experiment.csv")
