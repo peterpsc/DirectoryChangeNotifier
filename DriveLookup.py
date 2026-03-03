@@ -80,8 +80,7 @@ PROCESS_SPECIFIC = ["Mountain Freehold"]
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
-
-COPY_G_TO_A = True
+COPY_A_TO_G = False
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = True
@@ -277,7 +276,6 @@ class DriveLookup:
         data = self.create_convert_data(to_convert, name)
         Persistence.save_list(column_names, data, to_convert_file_path, Persistence.FILE_PATH)
 
-
     @classmethod
     def fix_slashes(cls, file_path):
         result = file_path.replace('\\', '/')
@@ -349,7 +347,7 @@ class DriveLookup:
         if self.notification_name != "Test":
             PrintHelper.printInBox("COPY_G_TO_A")
             q4_file_paths = self.get_ek_q4_file_paths()
-            from_base_path = 'g:\\Shared drives\\' # TODO make it immune to g: vs. G:
+            from_base_path = 'g:\\Shared drives\\'  # TODO make it immune to g: vs. G:
             to_q4_root_path = 'A:\\East Kingdom Exchequer Test\\'
             for from_q4_file_path in q4_file_paths:
                 from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
@@ -362,7 +360,7 @@ class DriveLookup:
             for from_q4_file_path in q4_file_paths:
                 from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
                 from_g4_stem_file_path = from_q4_path.partition(from_base_path)[-1]
-                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path)+"\\"
+                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path) + "\\"
                 to_q4_path = f"{to_q4_root_path}{from_g4_stem_path}"
                 to_q4_path, to_q1_path, to_file_stem = self.get_old_file_path_new_dir(to_q4_path, "")
                 q4_file_name = os.path.basename(from_q4_file_path)
@@ -382,21 +380,33 @@ class DriveLookup:
                         print("The destination path is a directory but was expected to be a file path.")
                     except Exception as e:
                         print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
+            if COPY_A_TO_G:
+                self.copy_a_to_g()
+
             PrintHelper.print_red("Exiting after COPY_G_TO_A")
             sys.exit()
 
-    def get_ek_q4_file_paths(self) -> list[Any]:
+    def copy_a_to_g(self):  # TODO FIX ME
+        PrintHelper.print_red("Exiting after COPY_A_TO_G")
+        sys.exit(0)
+
+    def get_ek_q4_paths(self) -> list[Any]:
         q4_paths = []
-        q4_file_paths = []
         for region in REGIONS:
             group_names = dcn.get_region_group_names(region)
             for group_name in group_names:
                 q4_path = self.group_names[group_name][Q4_PATH]
                 q4_paths.append(q4_path)
-                q4_file_name = self.find_q4_file_name(q4_path)
-                if q4_file_name:
-                    q4_file_path = f"{q4_path}{q4_file_name}"
-                    q4_file_paths.append(q4_file_path)
+        return q4_paths
+
+    def get_ek_q4_file_paths(self) -> list[Any]:
+        q4_paths = self.get_ek_q4_paths()
+        q4_file_paths = []
+        for q4_path in q4_paths:
+            q4_file_name = self.find_q4_file_name(q4_path)
+            if q4_file_name:
+                q4_file_path = f"{q4_path}{q4_file_name}"
+                q4_file_paths.append(q4_file_path)
         return q4_file_paths
 
     def save_status(self, q4_paths, todos, missing, name):
@@ -409,7 +419,6 @@ class DriveLookup:
         column_names = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
         data = self.create_group_status_data(q4_paths, missing, out_of_balance, negative_reports, bugs, q4_fields)
         Persistence.save_list(column_names, data, group_status_file_path, Persistence.FILE_PATH)
-
 
     def delete_old_status_report(self, name):
         group_status_file_path = self.get_group_status_file_path(name)
@@ -653,7 +662,5 @@ if __name__ == '__main__':
         status_file_path = driveLU.process_specific(PROCESS_SPECIFIC, PROCESS_NAME)
 
         driveLU.create_status_report(PROCESS_NAME)
-
-
 
     PrintHelper.printInBox()
