@@ -463,7 +463,7 @@ if __name__ == '__main__':
     CREATE_BLANK_DIR_STRUCTURE = None
     create_blank_dir_structure(CREATE_BLANK_DIR_STRUCTURE)
 
-    notification_names = Persistence.get_lines("NotificationNames.txt")
+    notification_names = Persistence.get_lines("NotificationNames.lst")
     for notification_name in notification_names:
         dcn = DirChangeNotifier(notification_name)
         dcn.check_for_this_year_directories()  # Every year, create a new directory structure for the new year

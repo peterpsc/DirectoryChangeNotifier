@@ -62,8 +62,8 @@ def get_host_path(test_file_path, host):
 
 
 if __name__ == '__main__':
-    notification_name, group_data_path, status_report_path, test_status_report_path = get_host_flavor()
-    print(f"  Host: {notification_name}")
+    host, group_data_path, status_report_path, test_status_report_path = get_host_flavor()
+    print(f"  Host: {host}")
     print(f" Group: {group_data_path}")
     print(f"Status:  {status_report_path}")
     print(f"  Test: {test_status_report_path}")

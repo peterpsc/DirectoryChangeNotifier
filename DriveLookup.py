@@ -17,8 +17,10 @@ from DirChangeNotifier import DirChangeNotifier
 from GroupFields import (FULL_GROUP_NAME, GROUP_DIR, GROUP_TYPE, Q4_PATH, Q1_PATH, NOTE, E_REGION, LOCATION)
 from GroupFields import (LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR)
 from GroupFields import OTHER, ALL
-from HostFlavor import get_host_flavor, HOSTS, TEST
+from HostFlavor import get_host_flavor, HOSTS, TEST, DEPLOYED
 from PrintHelper import print_red
+
+TO_CONVERT_CSV = " To Convert.csv"
 
 #
 TO_CONVERT = "TO CONVERT"
@@ -35,7 +37,7 @@ NORTHERN = "Northern"
 CENTRAL = "Central"
 SOUTHERN = "Southern"
 WESTERN = "Western"
-
+REGIONS = [TIR_MARA, NORTHERN, CENTRAL, SOUTHERN, WESTERN, NORTHEAST]
 
 def get_DirChangeNotifier() -> DirChangeNotifier:
     dcn = DirChangeNotifier()
@@ -43,8 +45,6 @@ def get_DirChangeNotifier() -> DirChangeNotifier:
 
 
 dcn = get_DirChangeNotifier()
-
-REGIONS = [TIR_MARA, NORTHERN, CENTRAL, SOUTHERN, WESTERN, NORTHEAST]
 
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
@@ -110,10 +110,10 @@ class DriveLookup:
 
     def __init__(self, notification_name=None):
         self.notification_name = notification_name
-        host, self.group_data_path, self.status_report_path, self.test_status_report_path = get_host_flavor(
+        self.host, self.group_data_path, self.status_report_path, self.test_status_report_path = get_host_flavor(
             notification_name)
         if notification_name is None:
-            self.notification_name = host
+            self.notification_name = self.host
         self.last_year_dirs = self.get_last_year_dirs()
         self.group_names = {}  # fields
 
@@ -264,9 +264,10 @@ class DriveLookup:
 
             formatted_rows.append(formatted_row)
 
-    def save_to_convert(self, to_convert, name, host=TEST):
-        file_name = f"{name} To Convert.csv"
-        to_convert_file_path = Persistence.get_file_path(f"{self.status_report_path}{file_name}", Persistence.FILE_PATH)
+    def save_to_convert(self, to_convert, name, host):
+        to_convert_file_name = self.get_to_convert_file_name(name, host)
+        to_convert_file_path = Persistence.get_file_path(f"{self.status_report_path}{to_convert_file_name}",
+                                                         Persistence.FILE_PATH)
         if not to_convert:
             Persistence.remove_file(to_convert_file_path)
             return
@@ -276,6 +277,13 @@ class DriveLookup:
         data.append(column_names)
         self.create_convert_data(data, to_convert, name)
         Persistence.save_list(data, to_convert_file_path, Persistence.FILE_PATH)
+
+    def get_to_convert_file_name(self, name, host, filename_suffix=".csv") -> str:
+        extra = ""
+        if host == TEST:
+            extra = f" {TEST}"
+        file_name = f"{name}{extra}{filename_suffix}"
+        return file_name
 
     @classmethod
     def fix_slashes(cls, file_path):
@@ -381,15 +389,59 @@ class DriveLookup:
                         print("The destination path is a directory but was expected to be a file path.")
                     except Exception as e:
                         print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
+
             if COPY_A_TO_G:
                 self.copy_a_to_g()
 
             PrintHelper.print_red("Exiting after COPY_G_TO_A")
             sys.exit()
 
-    def copy_a_to_g(self):  # TODO FIX ME
+    def copy_a_to_g(self):
+        if self.notification_name != "Test":
+            PrintHelper.printInBox("COPY_A_TO_G")
+            self.copy_region_status_reports()
+
+            q4_file_paths = self.get_ek_q4_file_paths()
+            for from_q4_file_path in q4_file_paths:
+                from_q1_file_path = self.get_q1_file_path(from_q4_file_path)
+                to_q1_file_path = HostFlavor.get_host_path(from_q1_file_path, HostFlavor.DEPLOYED_PATH)
+                if exists(to_q1_file_path):
+                    try:
+                        # This will overwrite the destination file if it already exists
+                        shutil.copy2(from_q1_file_path, to_q1_file_path)
+                        print(f"From File: '{from_q1_file_path}'\r\n  To File: '{to_q1_file_path}'")
+                    except FileNotFoundError:
+                        print("The source or destination file was not found.")
+                    except PermissionError as e:
+                        print("You don't have permission to access the source or destination file.")
+                    except shutil.SameFileError:
+                        print("Source and destination represent the same file.")
+                    except IsADirectoryError:
+                        print("The destination path is a directory but was expected to be a file path.")
+                    except Exception as e:
+                        print(f"An unexpected error occurred: {e}")(from_q1_file_path, to_q1_file_path)
+
         PrintHelper.print_red("Exiting after COPY_A_TO_G")
         sys.exit(0)
+
+    def get_q1_file_path(self, from_q4_file_path):
+        from_q4_path = os.path.dirname(from_q4_file_path)
+        from_q4_file_name = os.path.basename(from_q4_file_path)
+        old_file_path, new_dir, new_file_name = self.get_old_file_path_new_dir(from_q4_path, from_q4_file_name)
+        return f"{new_dir}{new_file_name}.xlsx"
+
+    def copy_region_status_reports(self):
+        from_status_report_path = HostFlavor.get_host_path(self.status_report_path, TEST)
+
+        self.copy_region_status_report(from_status_report_path, ALL)
+        for region in REGIONS:
+            self.copy_region_status_report(from_status_report_path, region)
+
+    def copy_region_status_report(self, from_status_report_path: Any | None, region: str):
+        from_status_report_file_path = f"{from_status_report_path}{region}{GROUP_STATUS}"
+        to_status_report_file_path = HostFlavor.get_host_path(from_status_report_file_path, DEPLOYED)
+        print(f"From: {from_status_report_file_path} --> To: {to_status_report_file_path}")
+        shutil.copy2(from_status_report_file_path, to_status_report_file_path)
 
     def get_ek_q4_paths(self) -> list[Any]:
         q4_paths = []
@@ -412,19 +464,19 @@ class DriveLookup:
 
     def save_status(self, q4_paths, todos, missing, name):
         for host in HOSTS:
-            group_status_file_path = self.get_group_status_file_path(name, host)
+            group_status_file_path = self.get_group_status_path(name, host)
             self.delete_old_status_report(name, group_status_file_path)
 
             to_convert, out_of_balance, negative_reports, bugs, q4_fields = self.process_todos(todos)
 
             self.save_to_convert(to_convert, name, host)
 
-            column_names = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", "Status"]
+            status = self.get_other_host_status(name, host)
+            column_names = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", status]
             title_row = self.create_title_row(name, host)
             formatted_rows = [column_names, title_row]
             data = self.create_group_status_data(formatted_rows, q4_paths, missing, out_of_balance, negative_reports,
-                                                 bugs,
-                                                 q4_fields, host)
+                                                 bugs, q4_fields, host)
             Persistence.save_list(data, group_status_file_path, Persistence.FILE_PATH)
 
     def delete_old_status_report(self, name, group_status_file_path):
@@ -437,10 +489,10 @@ class DriveLookup:
             PlaySound.play_sound(sound_file_path)
             raise e
 
-    def get_group_status_file_path(self, name, host, filename_suffix=GROUP_STATUS):
+    def get_group_status_path(self, name, host, filename_suffix=GROUP_STATUS):
         status_report_path = self.get_status_report_path(host)
-
-        group_status_file_path = Persistence.get_file_path(f"{status_report_path}{name}{filename_suffix}",
+        to_convert_file_name = self.get_to_convert_file_name(name, host, filename_suffix)
+        group_status_file_path = Persistence.get_file_path(f"{status_report_path}{to_convert_file_name}",
                                                            Persistence.FILE_PATH)
         if not exists(self.status_report_path):
             os.makedirs(self.status_report_path)
@@ -591,32 +643,33 @@ class DriveLookup:
 
     def create_all_regions_status_report(self):
         for host in HOSTS:
-            all_regions_status_file_path = self.get_group_status_file_path(ALL, host)
+            all_regions_status_file_path = self.get_group_status_path(ALL, host)
 
-            all_regions_to_convert_file_path = self.get_group_status_file_path(ALL, host, " To Convert.csv")
+            all_regions_to_convert_file_path = self.get_group_status_path(ALL, host, TO_CONVERT_CSV)
             regions_to_convert_file_paths = []
             for region in REGIONS:
-                file_path = self.get_group_status_file_path(region, host, " To Convert.csv")
+                file_path = self.get_group_status_path(region, host, TO_CONVERT_CSV)
                 if exists(file_path):
                     regions_to_convert_file_paths.append(file_path)
             if regions_to_convert_file_paths:
                 Persistence.combine_csvs(all_regions_to_convert_file_path, regions_to_convert_file_paths)
 
-            all_regions_status_file_path = self.get_group_status_file_path(ALL, host)
+            all_regions_status_file_path = self.get_group_status_path(ALL, host)
             regions_status_file_paths = []
             for region in REGIONS:
-                file_path = self.get_group_status_file_path(region, host)
+                file_path = self.get_group_status_path(region, host)
                 if exists(file_path):
                     regions_status_file_paths.append(file_path)
             Persistence.combine_csvs(all_regions_status_file_path, regions_status_file_paths)
 
-            os.startfile(all_regions_status_file_path)
+            if self.host == host:
+                os.startfile(all_regions_status_file_path)
 
     def create_status_report(self, name):
-        to_convert_file_path = self.get_group_status_file_path(name, " To Convert.csv")
-        all_to_convert_file_path = self.get_group_status_file_path(ALL, " To Convert.csv")
+        to_convert_file_path = self.get_group_status_path(name, self.host, TO_CONVERT_CSV)
+        all_to_convert_file_path = self.get_group_status_path(ALL, self.host, TO_CONVERT_CSV)
         shutil.copy2(to_convert_file_path, all_to_convert_file_path)
-        status_file_path = self.get_group_status_file_path(name)
+        status_file_path = self.get_group_status_path(name)
         os.startfile(status_file_path)
 
     def check_group_regions(self):
@@ -650,7 +703,7 @@ class DriveLookup:
 
     def create_title_row(self, name, host):
         title_row = []
-        status_report_file_path = self.get_group_status_file_path(name, host)
+        status_report_file_path = self.get_group_status_path(name, host)
         host_title_path = HostFlavor.get_host_path(status_report_file_path, host)
         hyperlink = Persistence.create_hyperlink(host_title_path, name + ":")
         title_row.append(hyperlink)
@@ -662,12 +715,24 @@ class DriveLookup:
             if not exists(status_report_path):
                 os.mkdir(status_report_path)
 
+    def get_other_host_status(self, name, host):
+        other_host = TEST
+        if host == TEST:
+            other_host = DEPLOYED
+        other_host_group_status_path = self.get_group_status_path(name, other_host)
+        status = Persistence.create_hyperlink(other_host_group_status_path, "Status")
+        return status
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
     PrintHelper.printInBoxWithTime("DriveLookup")
 
     driveLU: DriveLookup = init_drive_lookup()
+
+    # test_q4_file_path = "A:\\East Kingdom Exchequer Test\\MA branches\\Carolingia\\Towers\\2025\\Quarterly Reports\\EK-Towers-Q4.xlsm"
+    # test_q1_file_path =  driveLU.get_q1_file_path(test_q4_file_path)
+    # expected = f"A:\\East Kingdom Exchequer Test\\MA branches\\Carolingia\\Towers\\2026\\Quarterly Reports\\{THIS_YEAR_PREFIX}Canton of the Towers.xlsx"
+    # assert test_q1_file_path == expected
 
     driveLU.copy_g_to_a()  # exits after copying, because something is wrong with workbooks generated on that computer
 
