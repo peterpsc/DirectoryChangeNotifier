@@ -5,9 +5,20 @@ from typing import Any
 import Persistence
 from PrintHelper import print_red
 
+EXCHEQUER_REPORTING = "Exchequer Reporting\\"
+
+TEST_PATH = "A:\\East Kingdom Exchequer Test\\"
+TEST_CONVERTER_PATH = f"{TEST_PATH}{EXCHEQUER_REPORTING}"
+
+DEPLOYED_PATH = "G:\\Shared drives\\"
+DEPLOYED_CONVERTER_PATH = f"{DEPLOYED_PATH}{EXCHEQUER_REPORTING}"
+
 CONVERTER_THE_RED = "Converter the Red"
+
 TEST = "Test"
 DEPLOYED = "GoogleDrive"
+HOSTS = [TEST, DEPLOYED]
+
 RESOURCES = "Resources"
 DEPLOY_CONVERTER_THE_RED = True
 
@@ -18,9 +29,8 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
         converter_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {RESOURCES}.lst", Persistence.RESOURCE_PATH)
     else:
         host = DEPLOYED
-        deployed_converter_path = "G:\\Shared drives\\Exchequer Reporting\\"
-        if exists(deployed_converter_path):
-            converter_path = f"{deployed_converter_path}{CONVERTER_THE_RED}.lst"
+        if exists(DEPLOYED_CONVERTER_PATH):
+            converter_path = f"{DEPLOYED_CONVERTER_PATH}{CONVERTER_THE_RED}.lst"
             if DEPLOY_CONVERTER_THE_RED:
                 if not exists(converter_path):
                     print_red(f"Missing: {converter_path}")
@@ -29,8 +39,7 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
                 shutil.copy2(ctr_deployed_path, converter_path)
         else:
             host = TEST
-            test_converter_path = "A:\\East Kingdom Exchequer Test\\Exchequer Reporting\\"
-            converter_path = f"{test_converter_path}{CONVERTER_THE_RED}.lst"
+            converter_path = f"{TEST_CONVERTER_PATH}{CONVERTER_THE_RED}.lst"
             if DEPLOY_CONVERTER_THE_RED:
                 if not exists(converter_path):
                     print_red(f"Missing: {converter_path}")
@@ -42,6 +51,14 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
     status_report_path = converter_lines[1]
     test_status_report_path = converter_lines[2]
     return host, group_data_path, status_report_path, test_status_report_path
+
+
+def get_host_path(test_file_path, host):
+    if host == TEST or test_file_path is None:
+        return test_file_path
+    else:
+        replace = test_file_path.replace(TEST_PATH, DEPLOYED_PATH)
+        return replace
 
 
 if __name__ == '__main__':
