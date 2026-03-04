@@ -54,6 +54,8 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
 
 
 def get_host_path(file_path, host):
+    if file_path is None:
+        return None
     if host == TEST:
         replace = file_path.replace(DEPLOYED_PATH, TEST_PATH)
     else:

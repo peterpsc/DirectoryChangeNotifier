@@ -368,9 +368,8 @@ class DriveLookup:
             sys.exit()
 
     def copy_file(self, from_file_path, to_file_path: str):
-        to_path = os.path.basename(to_file_path)
-        os.makedirs(to_path, exist_ok=True)
-        file_name = os.path.basename(from_file_path)
+        to_path = os.path.dirname(to_file_path)
+        os.makedirs(to_path, exist_ok=True)  # make sure the destination path exists
         try:
             # This will overwrite the destination file if it already exists
             shutil.copy2(from_file_path, to_file_path)
