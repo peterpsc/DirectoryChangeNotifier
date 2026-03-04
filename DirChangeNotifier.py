@@ -84,6 +84,29 @@ class DirChangeNotifier:
             options = default_options
         return path, options
 
+    @staticmethod
+    def get_directories(root_path, ignore_names=None):
+        """
+        Recursively gets all directory paths, skipping those in the ignore_names list.
+        """
+        if ignore_names is None:
+            ignore_names = set()
+        else:
+            # Using a set for O(1) average lookup performance
+            ignore_names = set(ignore_names)
+
+        all_directories = []
+
+        # topdown=True is required for in-place pruning of 'dirs'
+        for root, dirs, files in os.walk(root_path, topdown=True):
+            # Prune: Modify 'dirs' in-place so os.walk doesn't visit ignored subfolders
+            dirs[:] = [d for d in dirs if d not in ignore_names]
+
+            for d in dirs:
+                all_directories.append(os.path.join(root, d))
+
+        return all_directories
+
     @classmethod
     def get_file_paths(cls, path_options, ignore_paths, filter_paths=[], ignore_files_containing=[]):
         file_paths = []
@@ -124,16 +147,22 @@ class DirChangeNotifier:
                     if recursive:
                         cls.append_file_paths(file_paths, file_path, ignore_paths, filter_paths, ignore_files_containing, recursive)
 
+
     @classmethod
     def get_dir_paths(cls, path_options, ignore_paths):
-        dir_paths = []
-        for path_option in path_options:
-            if path_option:
-                path, option = cls.split_path_options(path_option)
-                recursive = False
-                if "S" in option:
-                    recursive = True
-                cls.append_dir_paths(dir_paths, path, ignore_paths, recursive=recursive)
+        assert len(path_options) == 1, "get_dir_paths broken"
+        path, option = cls.split_path_options(path_options[0])
+        dir_paths = cls.get_directories(path, ignore_paths)
+
+        # dir_paths = []
+        # for path_option in path_options:
+        #     if path_option:
+        #         path, option = cls.split_path_options(path_option)
+        #         recursive = False
+        #         if "S" in option:
+        #             recursive = True
+
+        #         cls.append_dir_paths(dir_paths, path, ignore_paths, recursive=recursive)
         return dir_paths
 
     def get_region_dir_paths(self, region, filter=f"{LAST_YEAR_DIR}Quarterly Reports"):
