@@ -356,45 +356,35 @@ class DriveLookup:
         if self.notification_name != "Test":
             PrintHelper.printInBox("COPY_G_TO_A")
             q4_file_paths = self.get_ek_q4_file_paths()
-            from_base_path = 'g:\\Shared drives\\'  # TODO make it immune to g: vs. G:
-            to_q4_root_path = 'A:\\East Kingdom Exchequer Test\\'
             for from_q4_file_path in q4_file_paths:
-                from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
-                from_g4_stem_file_path = from_q4_path.partition(from_base_path)[-1]
-                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path)
-                to_q4_path = f"{to_q4_root_path}{from_g4_stem_path}"
-                os.makedirs(to_q4_path, exist_ok=True)
-                to_q4_path, to_q1_path, to_file_stem = self.get_old_file_path_new_dir(to_q4_path, "")
-                os.makedirs(to_q1_path, exist_ok=True)
-            for from_q4_file_path in q4_file_paths:
-                from_q4_path, from_q1_path, to_file_stem = self.get_old_file_path_new_dir(from_q4_file_path, "")
-                from_g4_stem_file_path = from_q4_path.partition(from_base_path)[-1]
-                from_g4_stem_path = os.path.dirname(from_g4_stem_file_path) + "\\"
-                to_q4_path = f"{to_q4_root_path}{from_g4_stem_path}"
-                to_q4_path, to_q1_path, to_file_stem = self.get_old_file_path_new_dir(to_q4_path, "")
-                q4_file_name = os.path.basename(from_q4_file_path)
-                if exists(to_q4_path):
-                    try:
-                        to_q4_file_path = to_q4_path + q4_file_name
-                        # This will overwrite the destination file if it already exists
-                        shutil.copy2(from_q4_file_path, to_q4_file_path)
-                        print(f"From File: '{from_q4_file_path}'\r\n  To File: '{to_q4_path}'")
-                    except FileNotFoundError:
-                        print("The source or destination file was not found.")
-                    except PermissionError as e:
-                        print("You don't have permission to access the source or destination file.")
-                    except shutil.SameFileError:
-                        print("Source and destination represent the same file.")
-                    except IsADirectoryError:
-                        print("The destination path is a directory but was expected to be a file path.")
-                    except Exception as e:
-                        print(f"An unexpected error occurred: {e}")(from_q4_file_path, to_q4_path)
+                from_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, DEPLOYED)
+                to_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, TEST)
+                self.copy_file(from_q4_file_path, to_q4_file_path)
 
             if COPY_A_TO_G:
                 self.copy_a_to_g()
 
             PrintHelper.print_red("Exiting after COPY_G_TO_A")
             sys.exit()
+
+    def copy_file(self, from_file_path, to_file_path: str):
+        to_path = os.path.basename(to_file_path)
+        os.makedirs(to_path, exist_ok=True)
+        file_name = os.path.basename(from_file_path)
+        try:
+            # This will overwrite the destination file if it already exists
+            shutil.copy2(from_file_path, to_file_path)
+            print(f"From File: '{from_file_path}'\r\n  To File: '{to_file_path}'")
+        except FileNotFoundError:
+            print("The source or destination file was not found.")
+        except PermissionError as e:
+            print("You don't have permission to access the source or destination file.")
+        except shutil.SameFileError:
+            print("Source and destination represent the same file.")
+        except IsADirectoryError:
+            print("The destination path is a directory but was expected to be a file path.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")(from_file_path, to_file_path)
 
     def copy_a_to_g(self):
         if self.notification_name != "Test":

@@ -53,12 +53,12 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
     return host, group_data_path, status_report_path, test_status_report_path
 
 
-def get_host_path(test_file_path, host):
-    if host == TEST or test_file_path is None:
-        return test_file_path
+def get_host_path(file_path, host):
+    if host == TEST:
+        replace = file_path.replace(DEPLOYED_PATH, TEST_PATH)
     else:
-        replace = test_file_path.replace(TEST_PATH, DEPLOYED_PATH)
-        return replace
+        replace = file_path.replace(TEST_PATH, DEPLOYED_PATH)
+    return replace
 
 
 if __name__ == '__main__':
