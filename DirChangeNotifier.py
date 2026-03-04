@@ -77,6 +77,9 @@ class DirChangeNotifier:
         else:
             path = path_options.strip()
 
+        if path[-1] != "\\":
+            path = path + "\\"
+
         if not options:
             options = default_options
         return path, options

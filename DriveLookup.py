@@ -266,8 +266,11 @@ class DriveLookup:
             formatted_rows.append(formatted_row)
 
     def save_to_convert(self, to_convert, name, host):
-        to_convert_file_name = self.get_to_convert_file_name(name, host)
-        to_convert_file_path = Persistence.get_file_path(f"{self.status_report_path}{to_convert_file_name}",
+        if host != TEST:
+            return
+
+        to_convert_file_name = self.get_to_convert_file_name(name, host, TO_CONVERT_CSV)
+        to_convert_file_path = Persistence.get_file_path(f"{self.test_status_report_path}{to_convert_file_name}",
                                                          Persistence.FILE_PATH)
         if not to_convert:
             Persistence.remove_file(to_convert_file_path)
@@ -646,6 +649,7 @@ class DriveLookup:
 
             all_regions_status_file_path = self.get_group_status_path(ALL, host)
             regions_status_file_paths = []
+            # TODO FIX ME create area title for the top
             for region in REGIONS:
                 file_path = self.get_group_status_path(region, host)
                 if exists(file_path):
