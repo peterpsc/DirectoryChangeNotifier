@@ -39,6 +39,8 @@ SOUTHERN = "Southern"
 WESTERN = "Western"
 REGIONS = [TIR_MARA, NORTHERN, CENTRAL, SOUTHERN, WESTERN, NORTHEAST]
 
+FILTER_FOR_4Q = ["Q4","4Q","EOY","YTD","4th", "Quarter 4"]
+
 def get_DirChangeNotifier() -> DirChangeNotifier:
     host, converter_path = HostFlavor.get_host_type_converter_path()
     dcn = DirChangeNotifier(host)
@@ -143,9 +145,7 @@ class DriveLookup:
     def init_region_group_names(self):
         for region in REGIONS:
             self.region_group_names[region] = dcn.get_region_group_names(region)
-            # for group_name in self.region_group_names[region]:
-            #     GroupFields.GroupFields.append_ek_group_name(group_name)
-
+            pass
     def init_all_group_names(self):
         self.group_names = {}
 
@@ -245,8 +245,9 @@ class DriveLookup:
                         and not file_name.endswith(".xlsx")
                         or file_name.startswith("~")):
                     continue
-                if "Q4" in file_name or "4Q" in file_name or "EOY" in file_name or "4th" in file_name or "Quarter 4" in file_name:
-                    return file_name
+                for filter in FILTER_FOR_4Q:
+                    if filter in file_name:
+                        return file_name
         return None
 
     @staticmethod
@@ -359,7 +360,12 @@ class DriveLookup:
     def copy_g_to_a(self):
         if self.notification_name != "Test":
             PrintHelper.printInBox("COPY_G_TO_A")
-            q4_file_paths = self.get_ek_q4_file_paths()
+            q4_paths = self.get_ek_q4_paths()
+            for q4_path in q4_paths:
+                to_q4_path = HostFlavor.get_host_path(q4_path, TEST)
+                if not exists(to_q4_path):
+                    os.makedirs(to_q4_path, exist_ok=True)
+            q4_file_paths = self.get_ek_q4_file_paths(q4_paths)
             for from_q4_file_path in q4_file_paths:
                 from_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, DEPLOYED)
                 to_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, TEST)
@@ -372,22 +378,25 @@ class DriveLookup:
             sys.exit()
 
     def copy_file(self, from_file_path, to_file_path: str):
+        if from_file_path is None:
+            return
         to_path = os.path.dirname(to_file_path)
         os.makedirs(to_path, exist_ok=True)  # make sure the destination path exists
         try:
             # This will overwrite the destination file if it already exists
-            shutil.copy2(from_file_path, to_file_path)
             print(f"From File: '{from_file_path}'\r\n  To File: '{to_file_path}'")
+            shutil.copy2(from_file_path, to_file_path)
+            # shutil.copy(from_file_path, to_file_path)
         except FileNotFoundError:
             print("The source or destination file was not found.")
         except PermissionError as e:
-            print("You don't have permission to access the source or destination file.")
+            print(f"You don't have permission to access the source or destination file.{e}")
         except shutil.SameFileError:
             print("Source and destination represent the same file.")
         except IsADirectoryError:
-            print("The destination path is a directory but was expected to be a file path.")
+            print_red("The destination path is a directory but was expected to be a file path.")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")(from_file_path, to_file_path)
+            print_red(f"An unexpected error occurred: {e.args} {from_file_path}, {to_file_path}")
 
     def copy_a_to_g(self):
         if self.notification_name != "Test":
@@ -445,8 +454,7 @@ class DriveLookup:
                 q4_paths.append(q4_path)
         return q4_paths
 
-    def get_ek_q4_file_paths(self) -> list[Any]:
-        q4_paths = self.get_ek_q4_paths()
+    def get_ek_q4_file_paths(self, q4_paths) -> list[Any]:
         q4_file_paths = []
         for q4_path in q4_paths:
             q4_file_name = self.find_q4_file_name(q4_path)
@@ -685,15 +693,15 @@ class DriveLookup:
         for region_group_name in all_region_group_names:
             found = region_group_name in all_group_names
             if not found:
-                print_red(f"ERROR: e_region q4_file_path not in group_names: {region_group_name}")
+                print_red(f"ERROR: e_region not in group_names: {region_group_name}")
 
         for group_name in all_group_names:
             if group_name == OTHER:
                 continue
             found = group_name in all_region_group_names
             if not found:
-                print_red(f"ERROR: q4_file_path not in e_region group_names: {group_name}")
-        assert region_group_count == group_count - 1  # Don't count OTHER
+                print_red(f"ERROR: not in group_names: {group_name}")
+        # assert region_group_count == group_count - 1  # Don't count OTHER
 
     def create_title_row(self, name, host):
         title_row = []

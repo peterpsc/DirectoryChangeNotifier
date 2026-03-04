@@ -43,9 +43,11 @@ def get_host_type_converter_path(notification_name=None):
             if DEPLOY_CONVERTER_THE_RED:
                 if not exists(converter_path):
                     print_red(f"Missing: {converter_path}")
-                ctr_deployed_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {host}.lst",
-                                                              Persistence.RESOURCE_PATH)
-                shutil.copy2(ctr_deployed_path, converter_path)
+                    ctr_deployed_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {host}.lst",
+                                                                  Persistence.RESOURCE_PATH)
+                    assert exists(ctr_deployed_path)
+                    assert exists(DEPLOYED_CONVERTER_PATH)
+                    shutil.copy(ctr_deployed_path, converter_path)
         else:
             host = TEST
             converter_path = f"{TEST_CONVERTER_PATH}{CONVERTER_THE_RED}.lst"
