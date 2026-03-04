@@ -353,9 +353,9 @@ class DirChangeNotifier:
         return Persistence.get_lines(file_path, Persistence.FILE_PATH)
 
     def copy_first(self, end_of_name):
-        first_file_path = Persistence.private_file_path(self.notification_name + end_of_name)
-        file_path = Persistence.private_file_path(notification_name + end_of_name)
-        self.copy_and_edit(first_file_path, file_path)
+        master_file_path = Persistence.private_file_path(HostFlavor.TEST + end_of_name)
+        file_path = Persistence.private_file_path(self.notification_name + end_of_name)
+        self.copy_and_edit(master_file_path, file_path)
 
     def copy_and_edit(self, first_file_path, file_path):
         if exists(first_file_path):
