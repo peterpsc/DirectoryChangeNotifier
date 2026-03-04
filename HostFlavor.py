@@ -16,7 +16,7 @@ DEPLOYED_CONVERTER_PATH = f"{DEPLOYED_PATH}{EXCHEQUER_REPORTING}"
 CONVERTER_THE_RED = "Converter the Red"
 
 TEST = "Test"
-DEPLOYED = "GoogleDrive"
+DEPLOYED = "Deployed"
 HOSTS = [TEST, DEPLOYED]
 
 RESOURCES = "Resources"
@@ -24,6 +24,15 @@ DEPLOY_CONVERTER_THE_RED = True
 
 
 def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
+    host_type, converter_path = get_host_type_converter_path(notification_name)
+
+    converter_lines = Persistence.get_lines(converter_path, Persistence.FILE_PATH)
+    group_data_path = converter_lines[0]
+    status_report_path = converter_lines[1]
+    test_status_report_path = converter_lines[2]
+    return host_type, group_data_path, status_report_path, test_status_report_path
+
+def get_host_type_converter_path(notification_name=None):
     if notification_name == RESOURCES:
         host = RESOURCES
         converter_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {RESOURCES}.lst", Persistence.RESOURCE_PATH)
@@ -45,13 +54,7 @@ def get_host_flavor(notification_name=None) -> tuple[Any, Any, Any, Any]:
                     print_red(f"Missing: {converter_path}")
                 ctr_test_path = Persistence.get_file_path(f"{CONVERTER_THE_RED} {host}.lst", Persistence.RESOURCE_PATH)
                 shutil.copy2(ctr_test_path, converter_path)
-
-    converter_lines = Persistence.get_lines(converter_path, Persistence.FILE_PATH)
-    group_data_path = converter_lines[0]
-    status_report_path = converter_lines[1]
-    test_status_report_path = converter_lines[2]
-    return host, group_data_path, status_report_path, test_status_report_path
-
+    return host, converter_path
 
 def get_host_path(file_path, host):
     if file_path is None:
@@ -69,3 +72,5 @@ if __name__ == '__main__':
     print(f" Group: {group_data_path}")
     print(f"Status:  {status_report_path}")
     print(f"  Test: {test_status_report_path}")
+
+

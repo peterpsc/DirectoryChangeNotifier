@@ -40,7 +40,8 @@ WESTERN = "Western"
 REGIONS = [TIR_MARA, NORTHERN, CENTRAL, SOUTHERN, WESTERN, NORTHEAST]
 
 def get_DirChangeNotifier() -> DirChangeNotifier:
-    dcn = DirChangeNotifier()
+    host, converter_path = HostFlavor.get_host_type_converter_path()
+    dcn = DirChangeNotifier(host)
     return dcn
 
 
