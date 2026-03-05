@@ -20,6 +20,11 @@ from GroupFields import OTHER, ALL
 from HostFlavor import get_host_flavor, HOSTS, TEST, DEPLOYED
 from PrintHelper import print_red
 
+COPY_A_TO_G = False  # Should mostly be False, until you want to release
+DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
+DELETE_ALL_Q1_DATA = True  # keep True
+DEBUG = True
+
 TO_CONVERT_CSV = " To Convert.csv"
 
 #
@@ -85,10 +90,6 @@ PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
 
-COPY_A_TO_G = False  # Should mostly be False, until you want to release
-DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
-DELETE_ALL_Q1_DATA = True  # keep True
-DEBUG = True
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
     SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 2  # False = Recreate Q1 Data anyway
