@@ -23,7 +23,7 @@ from PrintHelper import print_red
 COPY_A_TO_G = False  # Should mostly be False, until you want to release
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
-DEBUG = True
+DEBUG = False  # should mostly be False
 
 TO_CONVERT_CSV = " To Convert.csv"
 
@@ -79,16 +79,16 @@ PROCESS_SPECIFIC = ["Dragonship Haven"]
 PROCESS_SPECIFIC = ["Østgarðr"]
 PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_SPECIFIC = ["Mountain Freehold"]
+PROCESS_SPECIFIC = ["Eisental"]
 
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
-PROCESS_SPECIFIC = ["Eisental"]
-PROCESS_NAME = SPECIFIC
-
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
+PROCESS_SPECIFIC = ["Towers"]
+PROCESS_NAME = SPECIFIC
 
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
@@ -121,6 +121,7 @@ class DriveLookup:
             self.notification_name = self.host
         self.last_year_dirs = self.get_last_year_dirs()
         self.group_names = {}  # fields
+        self.all_ek_group_names = []
 
     def get_last_year_dirs(self):
         all_directories = dcn.all_directories
@@ -147,7 +148,9 @@ class DriveLookup:
     def init_region_group_names(self):
         for region in REGIONS:
             self.region_group_names[region] = dcn.get_region_group_names(region)
-            pass
+            for group_name in self.region_group_names[region]:
+                self.all_ek_group_names.append(group_name)
+
     def init_all_group_names(self):
         self.group_names = {}
 
@@ -193,6 +196,8 @@ class DriveLookup:
         q4_file_paths = []
         missing = []
         todos = []
+        if group_names is None:
+            group_names = self.all_ek_group_names
 
         for group_name in group_names:
             q4_path = self.group_names[group_name][Q4_PATH]
@@ -363,12 +368,14 @@ class DriveLookup:
     def copy_g_to_a(self):
         if self.notification_name != "Test":
             PrintHelper.printInBox("COPY_G_TO_A")
-            q4_paths = self.get_ek_q4_paths()
+
+            q4_paths, q4_file_paths, missing, todos = self.find_all_q4s_missing_todos(PROCESS_SPECIFIC, PROCESS_NAME)
+            # q4_paths = self.get_ek_q4_paths()
             for q4_path in q4_paths:
                 to_q4_path = HostFlavor.get_host_path(q4_path, TEST)
                 if not exists(to_q4_path):
                     os.makedirs(to_q4_path, exist_ok=True)
-            q4_file_paths = self.get_ek_q4_file_paths(q4_paths)
+            # q4_file_paths = self.get_ek_q4_file_paths(q4_paths)
             for from_q4_file_path in q4_file_paths:
                 from_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, DEPLOYED)
                 to_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, TEST)
@@ -390,16 +397,16 @@ class DriveLookup:
             print(f"From File: '{from_file_path}'\r\n  To File: '{to_file_path}'")
             shutil.copy2(from_file_path, to_file_path)
             # shutil.copy(from_file_path, to_file_path)
-        except FileNotFoundError:
-            print("The source or destination file was not found.")
+        except FileNotFoundError as e:
+            print(f"The source or destination file was not found: {e}")
         except PermissionError as e:
-            print(f"You don't have permission to access the source or destination file.{e}")
-        except shutil.SameFileError:
-            print("Source and destination represent the same file.")
-        except IsADirectoryError:
-            print_red("The destination path is a directory but was expected to be a file path.")
+            print(f"You don't have permission to access the source or destination file: {e}")
+        except shutil.SameFileError as e:
+            print(f"Source and destination represent the same file: {e}")
+        except IsADirectoryError as e:
+            print_red(f"The destination path is a directory but was expected to be a file path: {e}")
         except Exception as e:
-            print_red(f"An unexpected error occurred: {e.args} {from_file_path}, {to_file_path}")
+            print_red(f"An unexpected error occurred: {e} {from_file_path}, {to_file_path}")
 
     def copy_a_to_g(self):
         if self.notification_name != "Test":
