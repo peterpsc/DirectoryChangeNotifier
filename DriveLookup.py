@@ -84,7 +84,7 @@ PROCESS_SPECIFIC = ["Mountain Freehold"]
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
 
-COPY_A_TO_G = False
+COPY_A_TO_G = True # Should mostly be False, until you want to release
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = True
@@ -404,11 +404,12 @@ class DriveLookup:
             PrintHelper.printInBox("COPY_A_TO_G")
             self.copy_region_status_reports()
 
-            q4_file_paths = self.get_ek_q4_file_paths()
+            q4_paths = self.get_ek_q4_paths()
+            q4_file_paths = self.get_ek_q4_file_paths(q4_paths)
             for from_q4_file_path in q4_file_paths:
-                from_q1_file_path = self.get_q1_file_path(from_q4_file_path)
-                to_q1_file_path = HostFlavor.get_host_path(from_q1_file_path, HostFlavor.DEPLOYED_PATH)
-                if exists(to_q1_file_path):
+                to_q1_file_path = self.get_q1_file_path(from_q4_file_path)
+                from_q1_file_path = HostFlavor.get_host_path(to_q1_file_path, TEST)
+                if exists(from_q1_file_path):
                     try:
                         # This will overwrite the destination file if it already exists
                         shutil.copy2(from_q1_file_path, to_q1_file_path)
