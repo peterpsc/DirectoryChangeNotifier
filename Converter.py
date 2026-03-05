@@ -102,7 +102,8 @@ class Converter:
                 ws_old_negative_report = self.q4_workbook["NEGATIVE REPORT FORM"]
                 is_negative = True
             except Exception as e:
-                print_red(f"EXCEPTION:{e}")
+                # print_red(f"EXCEPTION:{e}")
+                pass
         return is_balanced, is_negative
 
     def append_data(self, worksheet_name, cell_name, value, code=STRING, locked=False):
