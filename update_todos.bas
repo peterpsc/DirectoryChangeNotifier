@@ -1,23 +1,22 @@
-Public  gNotificationName As String
+Public  gConverterTheRedPath As String
 Public	gGroupDataPath As String
 Public	gStatusReportPath As String
 Public	gTestStatusReportPath As String
 Public  gPythonPath As String
 Public  gMasterWorkbookPath As String
 Public  gUpdateBatchPath As String
-Public  gToConvertPath As String
+Public  gToConvertSuffix As String
 
-Sub InitializeGlobals()
-    CheckFileExists(gToConvertPath)
-    lines = GetFileLines(gToConvertPath)
-    gNotificationName = lines(0)
-    gGroupDataPath = lines(1)
-	gStatusReportPath = lines(2)
-	gTestStatusReportPath = lines(3)
-    gPythonPath = lines(4)
-    gMasterWorkbookPath = lines(5)
-    gUpdateBatchPath = lines(6)
-    gToConvertPath = lines(7)
+Sub InitializeGlobals(sName)
+    CheckFileExists(gConverterTheRedPath)
+    lines = GetFileLines(gConverterTheRedPath)
+    gGroupDataPath = lines(0)
+	gStatusReportPath = lines(1)
+	gTestStatusReportPath = lines(2)
+    gPythonPath = lines(3)
+    gMasterWorkbookPath = lines(4)
+    gUpdateBatchPath = lines(5)
+    gToConvertSuffix = lines(6)
 End Sub
 
 Function DoesFileExist(filePath)
@@ -42,7 +41,7 @@ Sub	InitializeAllConverterPath(sName)
         end if
     else: ' Test
         testConverterPath = "A:\East Kingdom Exchequer Test\Exchequer Reporting\"
-        gToConvertPath = testConverterPath + converterTheRed
+        gConverterTheRedPath = testConverterPath + converterTheRed
     End if
     InitializeGlobals(sName)
 End Sub
@@ -111,10 +110,10 @@ Sub ConvertQ1s(sName)
     csvArgs(2).Name = "Hidden" : csvArgs(2).Value = True
 
 	Dim toConvertPath As String
-	toConvertPath = gStatusReportPath + sName + gToConvertPath
+	toConvertPath = gTestStatusReportPath + sName + gToConvertSuffix
 	CheckFileExists(toConvertPath)
-
-   	oCSV = StarDesktop.loadComponentFromURL(ConvertToURL(toConvertPath), "_blank", 0, csvArgs())
+    toConvertURL = ConvertToURL(toConvertPath)
+   	oCSV = StarDesktop.loadComponentFromURL(toConvertURL, "_blank", 0, csvArgs())
     oCSVSheet = oCSV.Sheets(0)
 
 	If (Not GlobalScope.BasicLibraries.isLibraryLoaded("Tools")) Then
@@ -139,11 +138,17 @@ Sub ConvertQ1s(sName)
 
     ' Close CSV immediately after data transfer
     oCSV.close(True)
+    Kill(toConvertUrl) ' Delete the All To Convert.csv
 
     ' MsgBox "Converted " + convertedCount, 64, "Success"
 
-    ' CloseGroupStatusReport(sName) ' # TODO FIX ME update as you go
+	if convertedCount > 0 then
+   		CloseAllWorkbooks()
+    	UpdateStatusReport()
+    end if
+End Sub
 
+Sub UpdateStatusReport()
     Dim oShell As Object
     Set oShell = CreateObject("WScript.Shell")
     oShell.CurrentDirectory = gPythonPath
@@ -155,7 +160,6 @@ Sub ConvertQ1s(sName)
 
     Wait 2000
 End Sub
-
 
 Function GetLastRow(oSheet As Object) As Long
     Dim oCursor As Object
@@ -405,32 +409,6 @@ Function RemoveOuterQuotes(ByVal txt As String) As String
     End If
 End Function
 
-Sub CloseGroupStatusReport(sName)
-    Dim oComponents As Object
-    Dim oEnum As Object
-    Dim oComp As Object
-    Dim sTargetTitle As String
-
-    sTargetTitle = sName + " Group Status.csv" ' The exact window title to look for
-
-    ' 1. Get all open LibreOffice windows
-    oComponents = StarDesktop.getComponents()
-    oEnum = oComponents.createEnumeration()
-
-    ' 2. Loop through open documents to find the match
-    Do While oEnum.hasMoreElements()
-        oComp = oEnum.nextElement()
-
-        ' Check if the component is a spreadsheet and matches the title
-        If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-            If oComp.Title = sTargetTitle Then
-                oComp.close(True) ' Close it (True = deliver ownership)
-                Exit Do ' Stop looking once found and closed
-            End If
-        End If
-    Loop
-End Sub
-
 Sub RunDriveLookup()
     ' Path to the executable
     Dim sExePath As String
@@ -530,4 +508,24 @@ Sub FindAndReplaceInRow(nSearchCol As Long, nReplaceCol As Long, sSearch As Stri
 
         iRow = iRow + 1
     Loop
+End Sub
+
+Sub CloseAllWorkbooks()
+    Dim oDesktop As Object
+    Dim oComponents As Object
+    Dim oDoc As Object
+
+    ' Close all open spreadsheets
+    oDesktop = createUnoService("com.sun.star.frame.Desktop")
+    oComponents = oDesktop.getComponents().createEnumeration()
+
+    While oComponents.hasMoreElements()
+        oDoc = oComponents.nextElement()
+        ' Only close if it is a spreadsheet document
+        If oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+            ' Set Modified to False to close without saving prompts (optional)
+            ' oDoc.setModified(False)
+            oDoc.close(True)
+        End If
+    Wend
 End Sub
