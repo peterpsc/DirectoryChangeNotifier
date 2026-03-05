@@ -241,9 +241,10 @@ class DriveLookup:
         for path in paths:
             if path.is_file():  # filter out directories
                 file_name = path.name
-                if (not file_name.endswith(".xlsm")
-                        and not file_name.endswith(".xlsx")
-                        or file_name.startswith("~")):
+                if file_name.startswith("~"):
+                    continue
+                extension = os.path.splitext(file_name)[1]
+                if extension not in [".xlsm", ".xlsx"]:
                     continue
                 for filter in FILTER_FOR_4Q:
                     if filter in file_name:
@@ -473,7 +474,7 @@ class DriveLookup:
             self.save_to_convert(to_convert, name, host)
 
             status = self.get_other_host_status(name, host)
-            column_names = ["Region", "Group", "Full Group Name", "Hyperlink", "Hyperlink", "Hyperlink", status]
+            column_names = ["Region", "Group", "Hyperlink", "Hyperlink to Q4 file", "Hyperlink", status]
             title_row = self.create_title_row(name, host)
             formatted_rows = [column_names, title_row]
             data = self.create_group_status_data(formatted_rows, q4_paths, missing, out_of_balance, negative_reports,
@@ -559,11 +560,9 @@ class DriveLookup:
         formatted_row = [""]
 
         host_group_dir = HostFlavor.get_host_path(group_dir, host)
-        hyperlink_group = Persistence.create_hyperlink(host_group_dir, f"{group_name}")
-        formatted_row.append(hyperlink_group)
-
         full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)
-        formatted_row.append(full_group_name)
+        hyperlink_group = Persistence.create_hyperlink(host_group_dir, f"{full_group_name}")
+        formatted_row.append(hyperlink_group)
 
         host_q4_path = HostFlavor.get_host_path(q4_path, host)
         hyperlink_last_dir = Persistence.create_hyperlink(host_q4_path, f"{LAST_YEAR} Q4 dir")
@@ -572,7 +571,7 @@ class DriveLookup:
         hyperlink_q4_negative = None
         hyperlink_q4_oob = None
 
-        host_q4_file_path = HostFlavor.get_host_path(q4_file_path, host)
+        host_q4_file_path = HostFlavor.get_host_path(q4_file_path, host)  # TODO FIX ME hyperlink with filename
         if q4_file_path is None:
             formatted_row.append(MISSING)
         elif q4_file_path in negative_reports:
@@ -582,14 +581,14 @@ class DriveLookup:
             hyperlink_q4_oob = Persistence.create_hyperlink(host_q4_file_path, OUT_OF_BALANCE)
             formatted_row.append(hyperlink_q4_oob)
         else:
-            hyperlink_q4 = Persistence.create_hyperlink(host_q4_file_path, f"{LAST_YEAR} Q4")
+            hyperlink_q4 = Persistence.create_hyperlink(host_q4_file_path, q4_file_name)
             formatted_row.append(hyperlink_q4)
 
         host_q1_path = HostFlavor.get_host_path(q1_path, host)
         hyperlink_q1_dir = Persistence.create_hyperlink(host_q1_path, f"{THIS_YEAR} Q1 dir")
         formatted_row.append(hyperlink_q1_dir)
 
-        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)
+        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)  # TODO FIX ME hyperlink
         q1_stem = f"{THIS_YEAR_PREFIX}{full_group_name}"
         q1_file_path = f"{q1_path}{q1_stem}.xlsx"
         q1_data_path = f"{q1_path}{q1_stem}.csv"
