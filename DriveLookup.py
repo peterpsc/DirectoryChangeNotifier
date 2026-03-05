@@ -71,18 +71,19 @@ PROCESS_SPECIFIC = ["Panther Vale", "Lions End"]
 PROCESS_NAME = OTHER
 
 PROCESS_SPECIFIC = ["Dragonship Haven"]
+PROCESS_SPECIFIC = ["Østgarðr"]
+PROCESS_SPECIFIC = ["Settmour Swamp"]
+PROCESS_SPECIFIC = ["Mountain Freehold"]
 
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
-PROCESS_SPECIFIC = ["Østgarðr"]
-PROCESS_SPECIFIC = ["Settmour Swamp"]
-
+PROCESS_SPECIFIC = ["Eisental"]
 PROCESS_NAME = SPECIFIC
-PROCESS_SPECIFIC = ["Mountain Freehold"]
 
 PROCESS_SPECIFIC = None
 PROCESS_NAME = ALL
+
 
 COPY_A_TO_G = False  # Should mostly be False, until you want to release
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
@@ -671,7 +672,7 @@ class DriveLookup:
         to_convert_file_path = self.get_group_status_path(name, self.host, TO_CONVERT_CSV)
         all_to_convert_file_path = self.get_group_status_path(ALL, self.host, TO_CONVERT_CSV)
         shutil.copy2(to_convert_file_path, all_to_convert_file_path)
-        status_file_path = self.get_group_status_path(name)
+        status_file_path = self.get_group_status_path(name, self.host)
         os.startfile(status_file_path)
 
     def check_group_regions(self):

@@ -491,16 +491,19 @@ class Converter:
         self.append_data("Summary", "G59", formula, FORMULA)
 
     def save_outstanding(self):
-        # Checks not cleared on statement to Outstanding -ve
         ws_old_primary_account = self.q4_workbook["PRIMARY_ACCOUNT_2a"]
-
-        next_cols = "FGH"
-        new_cols = "ECK"
         to_row = 14
+        # Deposits not cleared on statement to Outstanding +ve
+        from_row_start = 21
+        from_row_end = 23
+        to_row = self.gather_deposits_not_cleared(ws_old_primary_account, from_row_start, from_row_end, to_row, "CE")
+        to_row = self.gather_deposits_not_cleared(ws_old_primary_account, from_row_start, from_row_end, to_row, "FH")
+
+        # Checks not cleared on statement to Outstanding -ve
         from_row_start = 27
         from_row_end = 34
-        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "CDE")
-        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_end, from_row_start, to_row, "FGH")
+        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_start, from_row_end, to_row, "CDE")
+        to_row = self.gather_outstanding_checks(ws_old_primary_account, from_row_start, from_row_end, to_row, "FGH")
 
         # ASSET_DTL_5a Undeposited +ve
         old_sheet = self.q4_workbook["ASSET_DTL_5a"]
@@ -521,22 +524,6 @@ class Converter:
                     print_red(f"No more room for Outstanding")
                     self.append_data("Outstanding", f"H{to_row - 1}", sending_branch_or_reason + " AND MORE!!!")
                     break
-
-    def gather_outstanding_checks(self, old_sheet,
-                                  from_row_end: int,
-                                  from_row_start: int,
-                                  to_row: int,
-                                  from_cols):
-        for from_row in range(from_row_start, from_row_end + 1):
-            check_no = self.get_int_string(old_sheet[f"{from_cols[0]}{from_row}"])
-            if check_no:
-                amount = self.get_currency(old_sheet[f"{from_cols[2]}{from_row}"])
-                self.append_data("Outstanding", f"E{to_row}", check_no, INTEGER)
-                self.append_date(old_sheet[f"{from_cols[1]}{from_row}"], "Outstanding", f"C{to_row}")
-                if amount:
-                    self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
-                to_row = to_row + 1
-        return to_row
 
     def save_liabilities(self):
         # from LIABILITY_DTL_5b to LiabilityDetails Deferred Revenue, Payables and Other Liabilities
@@ -653,6 +640,31 @@ class Converter:
                         year -= 1
                     self.append_data("AssetDetails", f"C{to_row}", self.int_str(year), INTEGER)
                     to_row = to_row + 1
+
+    def gather_deposits_not_cleared(self, old_sheet, from_row_start, from_row_end, to_row, from_cols):
+        for from_row in range(from_row_start, from_row_end + 1):
+            amount = self.get_currency(old_sheet[f"{from_cols[1]}{from_row}"])
+            if amount:
+                self.append_date(old_sheet[f"{from_cols[0]}{from_row}"], "Outstanding", f"C{to_row}")
+                self.append_data("Outstanding", f"K{to_row}", amount, CURRENCY)
+                to_row = to_row + 1
+        return to_row
+
+    def gather_outstanding_checks(self, old_sheet,
+                                  from_row_start: int,
+                                  from_row_end: int,
+                                  to_row: int,
+                                  from_cols):
+        for from_row in range(from_row_start, from_row_end + 1):
+            check_no = self.get_int_string(old_sheet[f"{from_cols[0]}{from_row}"])
+            if check_no:
+                amount = self.get_currency(old_sheet[f"{from_cols[2]}{from_row}"])
+                self.append_data("Outstanding", f"E{to_row}", check_no, INTEGER)
+                self.append_date(old_sheet[f"{from_cols[1]}{from_row}"], "Outstanding", f"C{to_row}")
+                if amount:
+                    self.append_data("Outstanding", f"K{to_row}", -amount, CURRENCY)
+                to_row = to_row + 1
+        return to_row
 
     def save_depreciation_and_inventory(self):
         sheet_name = "DEPR_DTL_8"
@@ -930,9 +942,6 @@ class Converter:
     def get_status_report_path(cls, name):
         status_report_path = "C:\\Users\\peter\\PycharmProjects\\DirectoryChangeNotifier\\Test Data\\"  # TODO FIX ME
         return status_report_path
-
-
-
 
 def main():
     q4_relative_file_paths = ["Resources\\EK-Towers 2025-Q4.xlsm",
