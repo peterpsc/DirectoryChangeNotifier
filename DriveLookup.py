@@ -21,6 +21,7 @@ from HostFlavor import get_host_flavor, HOSTS, TEST, DEPLOYED
 from PrintHelper import print_red
 
 COPY_A_TO_G = False  # Should mostly be False, until you want to release
+COPY_G_TO_A = False  # Should mostly be False, until you want to release
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False  # should mostly be False
@@ -57,7 +58,6 @@ dcn = get_DirChangeNotifier()
 PROCESS_SPECIFIC = ["Havre des Glaces"]
 PROCESS_SPECIFIC = dcn.append_group_names(PROCESS_SPECIFIC, ["Malagentia"])
 PROCESS_SPECIFIC = ["Glenn Linn", "An Dubhaigeainn", "Buckland Cross"]
-PROCESS_SPECIFIC = ["Carillion"]
 PROCESS_SPECIFIC = ["Havre des Glaces", "Ruantallan", "Towers", "Quintavia", "Another Group"]
 PROCESS_SPECIFIC = ["Concordia of the Snows"]
 PROCESS_SPECIFIC = ["Carolingia", "Iron Bog"]
@@ -84,11 +84,16 @@ PROCESS_SPECIFIC = ["Eisental"]
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
-PROCESS_SPECIFIC = None
-PROCESS_NAME = ALL
-
 PROCESS_SPECIFIC = ["Towers"]
+
+PROCESS_SPECIFIC = ["Rusted Woodlands"]
+
+PROCESS_SPECIFIC = ["Eisental", "Hartshorn-dale"]
 PROCESS_NAME = SPECIFIC
+PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
+
+PROCESS_NAME = ALL
+PROCESS_SPECIFIC = None
 
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
@@ -381,11 +386,6 @@ class DriveLookup:
                 to_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, TEST)
                 self.copy_file(from_q4_file_path, to_q4_file_path)
 
-            if COPY_A_TO_G:
-                self.copy_a_to_g()
-
-            PrintHelper.print_red("Exiting after COPY_G_TO_A")
-            sys.exit()
 
     def copy_file(self, from_file_path, to_file_path: str):
         if from_file_path is None:
@@ -745,7 +745,15 @@ if __name__ == '__main__':
     # expected = f"A:\\East Kingdom Exchequer Test\\MA branches\\Carolingia\\Towers\\2026\\Quarterly Reports\\{THIS_YEAR_PREFIX}Canton of the Towers.xlsx"
     # assert test_q1_file_path == expected
 
-    driveLU.copy_g_to_a()  # exits after copying, because something is wrong with workbooks generated on that computer
+    if COPY_G_TO_A:
+        driveLU.copy_g_to_a()
+
+    if COPY_A_TO_G:
+        driveLU.copy_a_to_g()
+
+    if driveLU.host != TEST:  # exits, because something is wrong with workbooks generated on that computer
+        PrintHelper.print_red("Exiting on DEPLOYED")
+        sys.exit()
 
     if PROCESS_NAME == ALL:
         for region in REGIONS:
