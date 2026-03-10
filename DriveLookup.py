@@ -21,7 +21,7 @@ from HostFlavor import get_host_flavor, HOSTS, TEST, DEPLOYED
 from PrintHelper import print_red
 
 COPY_A_TO_G = False  # Should mostly be False, until you want to release
-COPY_G_TO_A = False  # Should mostly be False, until you want to release
+COPY_G_TO_A = False  # Should mostly be False, because people looking at a file and touching it change it
 DELETE_ALL_Q1 = False  # Should mostly be False, tries to delete them q4_file_paths, but if they are open, keep them
 DELETE_ALL_Q1_DATA = True  # keep True
 DEBUG = False  # should mostly be False
