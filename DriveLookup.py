@@ -434,9 +434,6 @@ class DriveLookup:
                     except Exception as e:
                         print(f"An unexpected error occurred: {e}")(from_q1_file_path, to_q1_file_path)
 
-        PrintHelper.print_red("Exiting after COPY_A_TO_G")
-        sys.exit(0)
-
     def get_q1_file_path(self, from_q4_file_path):
         from_q4_path = os.path.dirname(from_q4_file_path)
         from_q4_file_name = os.path.basename(from_q4_file_path)
