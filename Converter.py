@@ -198,6 +198,16 @@ class Converter:
         if value:
             self.new_data.append([worksheet_name, cell_name, value, STATE, 'False'])
 
+    def append_oa_ar_fr(self, old_cell, worksheet_name, cell_name):
+        value = self.get_text(old_cell)
+        if value:
+            if value == "OA":
+                value = "OA (Admin.)"
+            elif value == "AR":
+                value = "AR (Events)"
+            elif value == "FR":
+                value = "FR (Fundr.)"
+            self.new_data.append([worksheet_name, cell_name, value, STRING, 'False'])
     def save_notes(self):
         self.append_data("Notes", "A1", "Q1 Starting Data from:")
         q4_hyperlink = self.get_q4_hyperlink_g()
@@ -678,10 +688,10 @@ class Converter:
             from_row_start = 14
             from_row_end = 23
             for from_row in range(from_row_start, from_row_end + 1):
-                oa_ar_fr = old_sheet[f"D{from_row}"].value
-                if oa_ar_fr:
-                    self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                    self.append_string(old_sheet[f"E{from_row}"], to_ws, f"C{to_row}")  # item_description
+                item_description = self.get_text(old_sheet[f"E{from_row}"])
+                if item_description:
+                    self.append_data(to_ws, f"C{to_row}", item_description)
+                    self.append_oa_ar_fr(old_sheet[f"D{from_row}"], to_ws, f"J{to_row}")
                     self.append_integer(old_sheet[f"F{from_row}"], to_ws, f"D{to_row}")  # quantity
                     self.append_date(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # date acquired
                     self.append_currency(old_sheet[f"J{from_row}"], to_ws, f"E{to_row}")  # current_amount
@@ -692,10 +702,10 @@ class Converter:
             from_row_start = 32
             from_row_end = 41
             for from_row in range(from_row_start, from_row_end + 1):
-                oa_ar_fr = old_sheet[f"D{from_row}"].value
-                if oa_ar_fr:
-                    self.append_data(to_ws, f"J{to_row}", oa_ar_fr)
-                    self.append_string(old_sheet[f"E{from_row}"], to_ws, f"C{to_row}")  # item_description
+                item_description = self.get_text(old_sheet[f"E{from_row}"])
+                if item_description:
+                    self.append_data(to_ws, f"C{to_row}", item_description)
+                    self.append_oa_ar_fr(old_sheet[f"D{from_row}"], to_ws, f"J{to_row}")
                     self.append_integer(old_sheet[f"F{from_row}"], to_ws, f"D{to_row}")  # quantity
                     self.append_date(old_sheet[f"G{from_row}"], to_ws, f"B{to_row}")  # date acquired
                     self.append_currency(old_sheet[f"J{from_row}"], to_ws, f"E{to_row}")  # current_amount
