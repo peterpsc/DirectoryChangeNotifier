@@ -140,6 +140,7 @@ class Converter:
                 value = old_cell.value.strftime("%m/%d/%Y")
             else:
                 value = self.get_text(old_cell)
+                value = value.replace(".", "/")  # some people use . instead of /
                 date_split = value.split("/")
                 if len(date_split) == 1:
                     value = "01/01/" + self.int_str(value)
