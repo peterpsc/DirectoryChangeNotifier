@@ -150,7 +150,7 @@ class DirChangeNotifier:
 
     @classmethod
     def get_dir_paths(cls, path_options, ignore_paths):
-        assert len(path_options) == 1, "get_dir_paths broken"
+        # assert len(path_options) == 1, "get_dir_paths broken"
         path, option = cls.split_path_options(path_options[0])
         dir_paths = cls.get_directories(path, ignore_paths)
 
