@@ -37,6 +37,8 @@ FORMULA = "Formula"
 DATE = "Date"
 TYPES = [TYPE, STRING, ZIP, INTEGER, CURRENCY, STATE, FORMULA, DATE]
 
+# if you get a new MASTER_WORKBOOK you also need to change 4 Files:
+# Converter the Red.lst, Converter the Red Test.lst, Converter the Red Resources.lst, Converter the Red Deployed.lst
 MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03-C.xlsx", Persistence.RESOURCE_PATH)
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
@@ -135,12 +137,14 @@ class Converter:
 
     def get_date(self, old_cell):
         value = old_cell.value
+        t = type(value)
         if value:
             if old_cell.is_date:
                 value = old_cell.value.strftime("%m/%d/%Y")
             else:
                 value = self.get_text(old_cell)
-                value = value.replace(".", "/")  # some people use . instead of /
+                if not value.endswith(".0"):
+                    value = value.replace(".", "/")  # some people use . instead of /
                 date_split = value.split("/")
                 if len(date_split) == 1:
                     value = "01/01/" + self.int_str(value)
@@ -924,7 +928,7 @@ class Converter:
 
     @classmethod
     def save_to_convert(cls, q4_file_paths, name):
-        file_name = f"{name} To Convert.csv"
+        file_name = f"{name} Test To Convert.csv"
         q1_to_convert_paths = []
         status_report_path = cls.get_status_report_path(name)
 
@@ -935,14 +939,13 @@ class Converter:
             return
 
         data = []
-        column_names = ["Q4 File Path", "Q1 Path", "Q1 File Name"]
+        column_names = ["Q4 File Path", "Q1 Path", "Q1 File Stem"]
         data.append(column_names)
-        data = cls.create_convert_data_from_file_paths(q4_file_paths, name)
+        data = cls.create_convert_data_from_file_paths(data, q4_file_paths, name)
         Persistence.save_list(data, to_convert_file_path, Persistence.FILE_PATH)
 
     @classmethod
-    def create_convert_data_from_file_paths(cls, q4_file_paths, name):
-        result = []
+    def create_convert_data_from_file_paths(cls, result, q4_file_paths, name):
         for q4_file_path in q4_file_paths:
             found = cls.q4_file_paths_q1_file_path_names[q4_file_path]
             row = [q4_file_path, found[0], found[1]]
@@ -956,10 +959,7 @@ class Converter:
         return status_report_path
 
 def main():
-    q4_relative_file_paths = ["Resources\\EK-Towers 2025-Q4.xlsm",
-                              "Resources\\FINAL - An Dubh Q4 2025 Report.xlsm",
-                              "Resources\\2025 Q4 EK-Quarterly-Report_Carolingia updated by Kex.xlsm",
-                              ]
+    q4_relative_file_paths = ["Resources\\MK Dec 2025 1 Q4 updated.xlsm"]
     q4_file_paths = []
     for q4_relative_file_path in q4_relative_file_paths:
         q4_file_path = os.path.abspath(q4_relative_file_path)

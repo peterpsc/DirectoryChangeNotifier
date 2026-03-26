@@ -39,7 +39,7 @@ Sub	InitializeAllConverterPath(sName)
         if not DoesFileExist(gToConvertPath) Then
             print("Missing: " + converterPath)
         end if
-    else: ' Test
+    else ' Test
         testConverterPath = "A:\East Kingdom Exchequer Test\Exchequer Reporting\"
         gConverterTheRedPath = testConverterPath + converterTheRed
     End if
@@ -52,15 +52,15 @@ Sub	InitializeGlobalResources()
     deployedConverterPath = "D:\yonay\PycharmProjects\DirectoryChangeNotifier\Resources\"
 
     if FileExists(deployedConverterPath) Then ' Deployed
-        gToConvertPath = deployedConverterPath + converterTheRed
-        if not DoesFileExist(gToConvertPath) Then
-            print("Missing: " + gToConvertPath)
+        gConverterTheRedPath = deployedConverterPath + converterTheRed
+        if not DoesFileExist(gConverterTheRedPath) Then
+            print("Missing: " + gConverterTheRedPath)
         end if
-    else: ' Test
+    else ' Test
         testConverterPath =  "C:\Users\peter\PycharmProjects\DirectoryChangeNotifier\Resources\"
-        gToConvertPath = testConverterPath + converterTheRed
+        gConverterTheRedPath = testConverterPath + converterTheRed
     End if
-    InitializeGlobals(Resources)
+    InitializeGlobals("Resources")
 End Sub
 
 
@@ -529,3 +529,36 @@ Sub CloseAllWorkbooks()
         End If
     Wend
 End Sub
+
+Sub FixFormula()
+    Dim oDoc As Object
+    Dim oSheets As Object
+    Dim oSheet As Object
+    Dim oCell1 As Object
+    Dim oCell2 As Object
+
+    oDoc = ThisComponent
+    oSheets = oDoc.getSheets()
+
+    ' 1. Check if the sheet exists before trying to access it
+    If oSheets.hasByName("DEPR_DTL_8") Then
+        oSheet = oSheets.getByName("DEPR_DTL_8")
+
+        ' 2. Switch the view to this sheet (optional, but helpful for "opening" it)
+        oDoc.CurrentController.setActiveSheet(oSheet)
+
+        ' 3. Access cells by their name/address
+        oCell1 = oSheet.getCellRangeByName("M39")
+        oCell2 = oSheet.getCellRangeByName("M40")
+
+        ' 4. Set the numerical values
+        ' Use .Value for numbers so they can be used in calculations
+        oCell1.Value = 1900.00
+        oCell2.Value = 1900.00
+
+        MsgBox "Sheet updated successfully."
+    Else
+        MsgBox "Error: Sheet 'DEPR_DTL_8' not found."
+    End If
+End Sub
+

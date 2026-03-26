@@ -63,7 +63,6 @@ PROCESS_SPECIFIC = ["Concordia of the Snows"]
 PROCESS_SPECIFIC = ["Carolingia", "Iron Bog"]
 
 PROCESS_SPECIFIC = TIR_MARA
-PROCESS_SPECIFIC = OTHER
 PROCESS_NAME = TIR_MARA
 
 PROCESS_SPECIFIC = None
@@ -76,24 +75,27 @@ PROCESS_SPECIFIC = ["Panther Vale", "Lions End"]
 PROCESS_NAME = OTHER
 
 PROCESS_SPECIFIC = ["Dragonship Haven"]
-PROCESS_SPECIFIC = ["Østgarðr"]
 PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_SPECIFIC = ["Mountain Freehold"]
 PROCESS_SPECIFIC = ["Eisental"]
 
-if PROCESS_NAME == OTHER:
-    PROCESS_SPECIFIC = [OTHER]
 
 PROCESS_SPECIFIC = ["Towers"]
 
 PROCESS_SPECIFIC = ["Rusted Woodlands"]
 
 PROCESS_SPECIFIC = ["Eisental", "Hartshorn-dale"]
-PROCESS_NAME = SPECIFIC
 PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
+
+PROCESS_SPECIFIC = ["Østgarðr"]
+PROCESS_NAME = SPECIFIC
 
 PROCESS_NAME = ALL
 PROCESS_SPECIFIC = None
+
+PROCESS_NAME = OTHER
+if PROCESS_NAME == OTHER:
+    PROCESS_SPECIFIC = [OTHER]
 
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
@@ -520,8 +522,8 @@ class DriveLookup:
         for q4_path in q4_paths:  # needed to keep track of missing
             group_name = self.get_group_from_g4_path(q4_path)
             if group_name == OTHER:  # TODO FIX ME
-                self.append_other_status_rows(formatted_rows, missing, out_of_balance, negative_reports, bugs,
-                                              q4_fields)
+                self.append_other_status_rows(formatted_rows, q4_path, missing, negative_reports, out_of_balance,
+                                              q4_fields, host)
             else:
                 self.append_status_row(formatted_rows, q4_path, missing, negative_reports, out_of_balance, host)
 
@@ -542,13 +544,13 @@ class DriveLookup:
     def append_other_status_rows(self, formatted_rows, q4_path, missing, negative_reports, out_of_balance, q4_fields,
                                  host):
         group_name, fields = self.get_group_fields(q4_path)
-        q4_file_name = os.path.basename(q4_path)
-        q4_field = q4_fields[q4_file_name]
-        group_name = q4_field[FULL_GROUP_NAME]
-        fields[E_REGION] = OTHER
-        fields[FULL_GROUP_NAME] = group_name
+        for q4_file in q4_fields:
+            q4_file_fields = q4_fields[q4_file]
+            group_name = q4_file_fields[FULL_GROUP_NAME]
+            fields[E_REGION] = OTHER
+            fields[FULL_GROUP_NAME] = group_name
 
-        self.append_status_row(formatted_rows, q4_path, missing, negative_reports, out_of_balance, host)
+            self.append_status_row(formatted_rows, q4_path, missing, negative_reports, out_of_balance, host)
 
     def append_status_row(self, formatted_rows, q4_path, missing, negative_reports, out_of_balance, host):
         group_name, fields = self.get_group_fields(q4_path)
