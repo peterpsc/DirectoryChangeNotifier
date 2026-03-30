@@ -1,14 +1,27 @@
 import openpyxl
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, PatternFill, Alignment
 import os
 import tkinter as tk
 from tkinter import filedialog
-import webbrowser
+import subprocess
+
+
+# Row fill colors
+FILL_CHANGED = PatternFill(fill_type='solid', fgColor='FFFBE6')
+FILL_ADDED   = PatternFill(fill_type='solid', fgColor='E8F9ED')
+FILL_REMOVED = PatternFill(fill_type='solid', fgColor='FDECEA')
+FILLS = {'changed': FILL_CHANGED, 'added': FILL_ADDED, 'removed': FILL_REMOVED}
+
+FONT_HEADER   = Font(bold=True)
+FONT_LINK_A   = Font(color='1155CC', underline='single')
+FONT_LINK_B   = Font(color='1155CC', underline='single')
+FONT_MISSING  = Font(color='721C24', bold=True)
 
 
 def prompt_file(label):
     root = tk.Tk()
-    root.withdraw()  # hide the blank Tk window
+    root.withdraw()
     root.attributes('-topmost', True)
     print(f"Opening file browser for {label}...")
     path = filedialog.askopenfilename(
@@ -53,91 +66,92 @@ def compare_sheets(ws_a, ws_b):
     return diffs
 
 
-def esc(val):
-    if val is None:
-        return '<em class="empty">empty</em>'
-    s = str(val).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-    return s
+def cell_link(path, sheet_name, addr):
+    """Build an Excel hyperlink URL to a specific cell in a local workbook."""
+    abs_path = os.path.abspath(path).replace('\\', '/')
+    return f"file:///{abs_path}#'{sheet_name}'!{addr}"
 
 
-def generate_html(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_results):
+def write_xlsx(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_results, out_path):
     name_a = os.path.basename(file_a)
     name_b = os.path.basename(file_b)
 
-    p = []
-    p.append(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Spreadsheet Diff: {esc(name_a)} vs {esc(name_b)}</title>
-<style>
-  body {{ font-family: sans-serif; font-size: 14px; margin: 24px; color: #222; }}
-  h1   {{ font-size: 1.4em; margin-bottom: 4px; }}
-  h2   {{ font-size: 1.1em; margin-top: 2em; border-bottom: 2px solid #ccc; padding-bottom: 4px; }}
-  .summary {{ background:#f5f5f5; border:1px solid #ddd; padding:10px 16px;
-              border-radius:4px; margin-top:10px; line-height:1.7; }}
-  table {{ border-collapse:collapse; width:100%; margin-top:10px; }}
-  th  {{ background:#f0f0f0; text-align:left; padding:6px 10px; border:1px solid #ccc; white-space:nowrap; }}
-  td  {{ padding:5px 10px; border:1px solid #ddd; vertical-align:top; }}
-  tr.changed  {{ background:#fffbe6; }}
-  tr.added    {{ background:#e8f9ed; }}
-  tr.removed  {{ background:#fdecea; }}
-  .badge {{ display:inline-block; padding:2px 7px; border-radius:3px;
-            font-size:0.82em; font-weight:bold; }}
-  .b-changed  {{ background:#fff3cd; color:#7d5a00; }}
-  .b-added    {{ background:#d4edda; color:#155724; }}
-  .b-removed  {{ background:#f8d7da; color:#721c24; }}
-  .missing  {{ color:#721c24; }}
-  .empty    {{ color:#aaa; }}
-  ul {{ margin-top:6px; }}
-</style>
-</head>
-<body>
-<h1>Spreadsheet Diff Report</h1>
-<div class="summary">
-  <strong>File A:</strong> {esc(name_a)}<br>
-  <strong>File B:</strong> {esc(name_b)}
-</div>
-""")
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)  # remove default sheet
 
-    # Missing sheets
+    # --- Summary sheet ---
+    ws_sum = wb.create_sheet("Summary")
+    ws_sum.column_dimensions['A'].width = 20
+    ws_sum.column_dimensions['B'].width = 60
+
+    ws_sum.append(["File A", file_a])
+    ws_sum.append(["File B", file_b])
+    ws_sum.append([])
+
     if sheets_only_in_a or sheets_only_in_b:
-        p.append('<h2>Missing Sheets</h2><ul>')
+        ws_sum.append(["Missing Sheets", ""])
+        ws_sum.cell(ws_sum.max_row, 1).font = FONT_HEADER
         for s in sheets_only_in_a:
-            p.append(f'<li class="missing">Sheet <strong>{esc(s)}</strong> exists only in <strong>{esc(name_a)}</strong></li>')
+            ws_sum.append([s, f"Only in {name_a}"])
+            ws_sum.cell(ws_sum.max_row, 1).font = FONT_MISSING
         for s in sheets_only_in_b:
-            p.append(f'<li class="missing">Sheet <strong>{esc(s)}</strong> exists only in <strong>{esc(name_b)}</strong></li>')
-        p.append('</ul>')
+            ws_sum.append([s, f"Only in {name_b}"])
+            ws_sum.cell(ws_sum.max_row, 1).font = FONT_MISSING
+        ws_sum.append([])
 
-    # Per-sheet sections
+    ws_sum.append(["Sheet", "Differences"])
+    ws_sum.cell(ws_sum.max_row, 1).font = FONT_HEADER
+    ws_sum.cell(ws_sum.max_row, 2).font = FONT_HEADER
     for sheet_name, diffs in sheet_results.items():
-        count_label = f'{len(diffs)} difference{"s" if len(diffs) != 1 else ""}'
-        p.append(f'<h2>Sheet: {esc(sheet_name)} &nbsp;<span style="font-weight:normal;font-size:0.9em;color:#666">({count_label})</span></h2>')
+        ws_sum.append([sheet_name, len(diffs)])
 
-        p.append(f"""<table>
-<thead><tr>
-  <th>Cell</th>
-  <th>{esc(name_a)}</th>
-  <th>{esc(name_b)}</th>
-  <th>Type</th>
-</tr></thead>
-<tbody>""")
+    # --- Per-sheet diff sheets ---
+    for sheet_name, diffs in sheet_results.items():
+        # Sheet names max 31 chars; truncate if needed
+        tab_name = sheet_name[:31]
+        ws = wb.create_sheet(tab_name)
+
+        ws.column_dimensions['A'].width = 10   # Cell in A
+        ws.column_dimensions['B'].width = 10   # Cell in B
+        ws.column_dimensions['C'].width = 30   # Value in A
+        ws.column_dimensions['D'].width = 30   # Value in B
+        ws.column_dimensions['E'].width = 12   # Type
+
+        # Header row
+        ws.append(["Cell in A", "Cell in B", name_a, name_b, "Type"])
+        for col in range(1, 6):
+            ws.cell(1, col).font = FONT_HEADER
 
         for d in diffs:
-            css = d['type']
-            badge_css = f'b-{d["type"]}'
-            label = d['type'].capitalize()
-            p.append(f"""<tr class="{css}">
-  <td>{esc(d['addr'])}</td>
-  <td>{esc(d['val_a'])}</td>
-  <td>{esc(d['val_b'])}</td>
-  <td><span class="badge {badge_css}">{label}</span></td>
-</tr>""")
+            addr  = d['addr']
+            val_a = d['val_a'] if d['val_a'] is not None else ''
+            val_b = d['val_b'] if d['val_b'] is not None else ''
+            dtype = d['type']
+            row_num = ws.max_row + 1
 
-        p.append('</tbody></table>')
+            ws.append([addr, addr, val_a, val_b, dtype.capitalize()])
 
-    p.append('</body></html>')
-    return '\n'.join(p)
+            fill = FILLS[dtype]
+            for col in range(1, 6):
+                ws.cell(row_num, col).fill = fill
+
+            # Hyperlink col A → cell in file A (for changed/removed)
+            if dtype in ('changed', 'removed'):
+                c = ws.cell(row_num, 1)
+                c.hyperlink = cell_link(file_a, sheet_name, addr)
+                c.font = FONT_LINK_A
+            else:
+                ws.cell(row_num, 1).value = ''
+
+            # Hyperlink col B → cell in file B (for changed/added)
+            if dtype in ('changed', 'added'):
+                c = ws.cell(row_num, 2)
+                c.hyperlink = cell_link(file_b, sheet_name, addr)
+                c.font = FONT_LINK_B
+            else:
+                ws.cell(row_num, 2).value = ''
+
+    wb.save(out_path)
 
 
 def main():
@@ -171,15 +185,12 @@ def main():
         else:
             print(f"  No differences   : {sheet} (skipped)")
 
-    html = generate_html(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_results)
-
     out_dir  = os.path.dirname(os.path.abspath(file_a))
-    out_path = os.path.join(out_dir, "spreadsheet_diff.html")
-    with open(out_path, 'w', encoding='utf-8') as f:
-        f.write(html)
+    out_path = os.path.join(out_dir, "spreadsheet_diff.xlsx")
+    write_xlsx(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_results, out_path)
 
     print(f"\nReport saved to: {out_path}")
-    webbrowser.open(out_path)
+    os.startfile(out_path)
 
 
 if __name__ == '__main__':
