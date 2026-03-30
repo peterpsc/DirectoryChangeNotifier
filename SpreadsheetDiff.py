@@ -1,7 +1,9 @@
 import openpyxl
+from openpyxl.utils import get_column_letter
 import os
 import tkinter as tk
 from tkinter import filedialog
+import webbrowser
 
 
 def prompt_file(label):
@@ -21,60 +23,34 @@ def prompt_file(label):
     return path
 
 
-def read_sheet(ws):
-    """Returns (headers, key_col, rows_dict).
-
-    headers:   list of column names from row 1
-    key_col:   name of the first column (used as row key)
-    rows_dict: {key_value: {col_name: cell_value, ...}}
-    """
-    rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return [], None, {}
-
-    headers = [str(h) if h is not None else f"Col_{i + 1}" for i, h in enumerate(rows[0])]
-    key_col = headers[0] if headers else None
-
-    rows_dict = {}
-    for row in rows[1:]:
-        if not any(v is not None for v in row):
-            continue  # skip blank rows
-        row_data = {headers[i]: row[i] for i in range(min(len(headers), len(row)))}
-        key_val = row_data.get(key_col)
-        if key_val is not None:
-            rows_dict[key_val] = row_data
-
-    return headers, key_col, rows_dict
-
-
 def compare_sheets(ws_a, ws_b):
-    headers_a, key_a, rows_a = read_sheet(ws_a)
-    headers_b, key_b, rows_b = read_sheet(ws_b)
+    """Compare two sheets cell by cell. Returns list of diffs with Excel addresses."""
+    def sheet_to_dict(ws):
+        data = {}
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value is not None:
+                    data[(cell.row, cell.column)] = cell.value
+        return data
 
-    set_a = set(headers_a)
-    set_b = set(headers_b)
-    common_headers = [h for h in headers_a if h in set_b]
-
-    keys_a = set(rows_a)
-    keys_b = set(rows_b)
+    data_a = sheet_to_dict(ws_a)
+    data_b = sheet_to_dict(ws_b)
 
     diffs = []
-    for key in keys_a & keys_b:
-        for col in common_headers:
-            val_a = rows_a[key].get(col)
-            val_b = rows_b[key].get(col)
-            if val_a != val_b:
-                diffs.append({'key': key, 'col': col, 'val_a': val_a, 'val_b': val_b})
+    for (row, col) in sorted(set(data_a) | set(data_b)):
+        val_a = data_a.get((row, col))
+        val_b = data_b.get((row, col))
+        if val_a != val_b:
+            addr = f"{get_column_letter(col)}{row}"
+            if val_a is not None and val_b is not None:
+                diff_type = 'changed'
+            elif val_a is not None:
+                diff_type = 'removed'
+            else:
+                diff_type = 'added'
+            diffs.append({'addr': addr, 'val_a': val_a, 'val_b': val_b, 'type': diff_type})
 
-    return {
-        'key_col': key_a or key_b,
-        'headers_only_in_a': [h for h in headers_a if h not in set_b],
-        'headers_only_in_b': [h for h in headers_b if h not in set_a],
-        'common_headers': common_headers,
-        'rows_only_in_a': [{'key': k, 'data': rows_a[k]} for k in sorted(keys_a - keys_b, key=str)],
-        'rows_only_in_b': [{'key': k, 'data': rows_b[k]} for k in sorted(keys_b - keys_a, key=str)],
-        'diffs': sorted(diffs, key=lambda d: (str(d['key']), d['col'])),
-    }
+    return diffs
 
 
 def esc(val):
@@ -111,7 +87,6 @@ def generate_html(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_resu
   .b-changed  {{ background:#fff3cd; color:#7d5a00; }}
   .b-added    {{ background:#d4edda; color:#155724; }}
   .b-removed  {{ background:#f8d7da; color:#721c24; }}
-  .no-diff  {{ color:#777; font-style:italic; }}
   .missing  {{ color:#721c24; }}
   .empty    {{ color:#aaa; }}
   ul {{ margin-top:6px; }}
@@ -135,52 +110,28 @@ def generate_html(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_resu
         p.append('</ul>')
 
     # Per-sheet sections
-    for sheet_name, r in sheet_results.items():
-        total = len(r['diffs']) + len(r['rows_only_in_a']) + len(r['rows_only_in_b'])
-        count_label = f'{total} difference{"s" if total != 1 else ""}'
+    for sheet_name, diffs in sheet_results.items():
+        count_label = f'{len(diffs)} difference{"s" if len(diffs) != 1 else ""}'
         p.append(f'<h2>Sheet: {esc(sheet_name)} &nbsp;<span style="font-weight:normal;font-size:0.9em;color:#666">({count_label})</span></h2>')
 
-        if r['headers_only_in_a']:
-            cols = ', '.join(esc(h) for h in r['headers_only_in_a'])
-            p.append(f'<p><strong>Columns only in {esc(name_a)}:</strong> {cols}</p>')
-        if r['headers_only_in_b']:
-            cols = ', '.join(esc(h) for h in r['headers_only_in_b'])
-            p.append(f'<p><strong>Columns only in {esc(name_b)}:</strong> {cols}</p>')
-
-        if total == 0:
-            p.append('<p class="no-diff">No differences found.</p>')
-            continue
-
-        key_col = r['key_col']
         p.append(f"""<table>
 <thead><tr>
-  <th>{esc(key_col)} (key)</th>
-  <th>Column</th>
+  <th>Cell</th>
   <th>{esc(name_a)}</th>
   <th>{esc(name_b)}</th>
   <th>Type</th>
 </tr></thead>
 <tbody>""")
 
-        for d in r['diffs']:
-            p.append(f"""<tr class="changed">
-  <td>{esc(d['key'])}</td><td>{esc(d['col'])}</td>
-  <td>{esc(d['val_a'])}</td><td>{esc(d['val_b'])}</td>
-  <td><span class="badge b-changed">Changed</span></td>
-</tr>""")
-
-        for row in r['rows_only_in_a']:
-            p.append(f"""<tr class="removed">
-  <td>{esc(row['key'])}</td>
-  <td colspan="3"><em>Row present only in {esc(name_a)}</em></td>
-  <td><span class="badge b-removed">Removed</span></td>
-</tr>""")
-
-        for row in r['rows_only_in_b']:
-            p.append(f"""<tr class="added">
-  <td>{esc(row['key'])}</td>
-  <td colspan="3"><em>Row present only in {esc(name_b)}</em></td>
-  <td><span class="badge b-added">Added</span></td>
+        for d in diffs:
+            css = d['type']
+            badge_css = f'b-{d["type"]}'
+            label = d['type'].capitalize()
+            p.append(f"""<tr class="{css}">
+  <td>{esc(d['addr'])}</td>
+  <td>{esc(d['val_a'])}</td>
+  <td>{esc(d['val_b'])}</td>
+  <td><span class="badge {badge_css}">{label}</span></td>
 </tr>""")
 
         p.append('</tbody></table>')
@@ -213,8 +164,12 @@ def main():
 
     sheet_results = {}
     for sheet in common_sheets:
-        print(f"  Comparing sheet  : {sheet}")
-        sheet_results[sheet] = compare_sheets(wb_a[sheet], wb_b[sheet])
+        diffs = compare_sheets(wb_a[sheet], wb_b[sheet])
+        if diffs:
+            print(f"  Differences found: {sheet} ({len(diffs)})")
+            sheet_results[sheet] = diffs
+        else:
+            print(f"  No differences   : {sheet} (skipped)")
 
     html = generate_html(file_a, file_b, sheets_only_in_a, sheets_only_in_b, sheet_results)
 
@@ -224,6 +179,7 @@ def main():
         f.write(html)
 
     print(f"\nReport saved to: {out_path}")
+    webbrowser.open(out_path)
 
 
 if __name__ == '__main__':
