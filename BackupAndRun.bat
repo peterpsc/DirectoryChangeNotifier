@@ -4,5 +4,5 @@ call Backup.bat
 
 SET PYTHONPATH=
 SET PYTHONHOME=
-py DriveLookup.py %*
+py DriveLookup.py %1
 pause
