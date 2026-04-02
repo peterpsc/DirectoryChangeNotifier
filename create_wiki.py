@@ -10,6 +10,7 @@ Output: Resources/DirectoryChangeNotifier.html
 import json
 import os
 import shutil
+import uuid
 from datetime import datetime, timedelta
 
 # ---------------------------------------------------------------------------
@@ -102,11 +103,20 @@ def add_todolist(tiddlers, name, tasks):
 
     if tasks_t is None:
         # First run — create all five tiddlers from scratch
-        ts = [_ts(i) for i in range(len(tasks))]
-        add_json_tiddler(tiddlers, tasks_title, {ts[i]: tasks[i] for i in range(len(tasks))})
-        add_json_tiddler(tiddlers, status_title, {ts[i]: "undone" for i in range(len(tasks))})
-        add_json_tiddler(tiddlers, priority_title, {ts[i]: "none" for i in range(len(tasks))})
-        add_json_tiddler(tiddlers, done_title, {})
+        keys = [str(uuid.uuid4()) for _ in tasks]
+        now = _ts()
+        entry = {
+            "title": tasks_title,
+            "text": json.dumps({keys[i]: tasks[i] for i in range(len(tasks))}, indent=4),
+            "type": "application/json",
+            "list": " ".join(keys),
+            "created": now,
+            "modified": now,
+        }
+        tiddlers.append(entry)
+        add_json_tiddler(tiddlers, status_title,   {keys[i]: "undone" for i in range(len(tasks))})
+        add_json_tiddler(tiddlers, priority_title, {keys[i]: "none"   for i in range(len(tasks))})
+        add_json_tiddler(tiddlers, done_title,  {})
         add_json_tiddler(tiddlers, state_title, {"itemtext": "", "markall": ""})
     else:
         # Subsequent runs — merge seed tasks not already present by value
@@ -115,23 +125,16 @@ def add_todolist(tiddlers, name, tasks):
         new_tasks = [t for t in tasks if t not in existing_values]
         if new_tasks:
             now = _ts()
-            # Generate timestamps guaranteed not to collide with existing keys
-            used_keys = set(existing_tasks.keys())
-            new_keys = []
-            offset = 0
-            while len(new_keys) < len(new_tasks):
-                ts = _ts(offset)
-                if ts not in used_keys:
-                    new_keys.append(ts)
-                    used_keys.add(ts)
-                offset += 1
-            ts = new_keys
-            existing_tasks.update({ts[i]: new_tasks[i] for i in range(len(new_tasks))})
+            new_keys = [str(uuid.uuid4()) for _ in new_tasks]
+            existing_tasks.update({new_keys[i]: new_tasks[i] for i in range(len(new_tasks))})
             tasks_t["text"] = json.dumps(existing_tasks, indent=4)
             tasks_t["modified"] = now
+            # Append new keys to the list field so the plugin renders them
+            existing_list = tasks_t.get("list", "")
+            tasks_t["list"] = (existing_list + " " + " ".join(new_keys)).strip()
 
-            for title, update in ((status_title, {ts[i]: "undone" for i in range(len(new_tasks))}),
-                                  (priority_title, {ts[i]: "none" for i in range(len(new_tasks))})):
+            for title, update in ((status_title,   {new_keys[i]: "undone" for i in range(len(new_tasks))}),
+                                  (priority_title, {new_keys[i]: "none"   for i in range(len(new_tasks))})):
                 t = _find(tiddlers, title)
                 if t:
                     existing = json.loads(t["text"])
@@ -141,7 +144,7 @@ def add_todolist(tiddlers, name, tasks):
                 else:
                     add_json_tiddler(tiddlers, title, update)
         # done/state: add-only (never overwrite user edits)
-        add_json_tiddler(tiddlers, done_title, {})
+        add_json_tiddler(tiddlers, done_title,  {})
         add_json_tiddler(tiddlers, state_title, {"itemtext": "", "markall": ""})
 
 
@@ -388,11 +391,14 @@ TASKS_CRITICAL = []
 
 TASKS_HIGH = [
     "Fix FULL_GROUP_NAME for unbalanced/error OTHER workbooks (save_summary only runs when balanced==True)",
+    "Separate wiki content strings from generator logic in create_wiki.py (move prose to .md/.txt files)",
 ]
 
 TASKS_MEDIUM = [
     "Add SpreadsheetDiff option to skip first N header rows from comparison",
     "Verify OTHER region end-to-end with at least one balanced workbook",
+    "Fix _load/_save offset fragility -- re-compute start/end at save time instead of using stale offsets",
+    "Fix add_or_update tags/tiddler_type asymmetry -- empty string behaves differently on create vs update",
 ]
 
 TASKS_LOW = [
@@ -512,6 +518,16 @@ DIALOG_TODAY = """\
 ** Created test_create_wiki.py with 27 pytest tests covering _ts, _find, add_or_update, add_json_tiddler, add_todolist (first run and merge), and _load/_save round-trip. Tests caught a real bug: timestamp collision in merge path when add_todolist called twice within the same second. Fixed with collision-detection loop. All 27 pass.
 * Since you did the ci, why is Done since last check-in not cleared?
 ** Cleared DONE_SINCE_CHECKIN. Should have been emptied automatically on ci.
+* can the brutal critic find any issues?
+** Yes. Key issues: fake timestamp keys (should be UUIDs), _load uses .index() with no error handling, collision-avoidance loop now redundant with UUIDs, missing tests for done/state after merge and malformed HTML load. Five minor issues also noted.
+* next
+** Replaced fake timestamp keys with uuid4() — collision-avoidance loop removed. Added 9 new tests: UUID key format, done/state tiddler preservation after merge, _load error handling, tiddler_type and empty-string tags edge cases. 36/36 pass.
+* Please add the TODOs into the TODO List in the appropriate priority section
+** Added 2 High and 2 Medium items from the brutal critic's remaining list.
+* Why can't I see them in the TiddlyWiki TODO List?
+** Root cause: tasks tiddler was missing the list field — the kookma/todolist plugin uses it to iterate and render items. Also found that shutil.copy was overwriting the output on every run, preventing the merge path from ever running. Fixed both. Saved list field rule to memory for all projects.
+* ci n
+** Committed. (n treated as stray keystroke.)
 """
 
 PETER_REQUESTS = """\
@@ -547,7 +563,8 @@ if __name__ == "__main__":
     if not os.path.exists(EMPTY_HTML):
         raise FileNotFoundError(f"Wiki template not found: {EMPTY_HTML}")
 
-    shutil.copy(EMPTY_HTML, OUTPUT_HTML)
+    if not os.path.exists(OUTPUT_HTML):
+        shutil.copy(EMPTY_HTML, OUTPUT_HTML)
     html, tiddlers, start, end = _load(OUTPUT_HTML)
 
     today = datetime.now().strftime("%Y-%m-%d")

@@ -4,6 +4,7 @@ Run:  pytest test_create_wiki.py -v
 """
 
 import json
+import uuid
 import pytest
 
 from create_wiki import (
@@ -258,3 +259,91 @@ def test_save_escapes_script_close_tag(tmp_path):
     raw = p.read_text(encoding="utf-8")
     store_section = raw.split(STORE_OPEN)[1].split(STORE_CLOSE)[0]
     assert "</script>" not in store_section
+
+
+def test_load_raises_on_missing_store_open(tmp_path):
+    p = tmp_path / "broken.html"
+    p.write_text("<html>no store here</html>", encoding="utf-8")
+    with pytest.raises(ValueError):
+        _load(str(p))
+
+
+def test_load_raises_on_invalid_json(tmp_path):
+    p = tmp_path / "broken.html"
+    p.write_text(f"<html>{STORE_OPEN}not valid json{STORE_CLOSE}</html>", encoding="utf-8")
+    with pytest.raises(Exception):
+        _load(str(p))
+
+
+# ---------------------------------------------------------------------------
+# UUID keys
+# ---------------------------------------------------------------------------
+
+def test_todolist_keys_are_uuids():
+    tiddlers = []
+    add_todolist(tiddlers, "High", ["Task A", "Task B"])
+    tasks = json.loads(_find(tiddlers, "$:/todolist/data/tasks/High")["text"])
+    for key in tasks:
+        parsed = uuid.UUID(key)  # raises if not a valid UUID
+        assert str(parsed) == key
+
+
+def test_todolist_merge_new_keys_are_uuids():
+    tiddlers = []
+    add_todolist(tiddlers, "High", ["Task A"])
+    add_todolist(tiddlers, "High", ["Task A", "Task B"])
+    tasks = json.loads(_find(tiddlers, "$:/todolist/data/tasks/High")["text"])
+    for key in tasks:
+        uuid.UUID(key)  # raises if not a valid UUID
+
+
+# ---------------------------------------------------------------------------
+# done / state tiddlers after merge
+# ---------------------------------------------------------------------------
+
+def test_add_todolist_merge_done_tiddler_unchanged():
+    tiddlers = []
+    add_todolist(tiddlers, "High", ["Task A"])
+    # Simulate user marking a task done
+    done_t = _find(tiddlers, "$:/todolist/data/done/High")
+    done_t["text"] = json.dumps({"some-key": "Task A"})
+    add_todolist(tiddlers, "High", ["Task A", "Task B"])
+    done_after = json.loads(_find(tiddlers, "$:/todolist/data/done/High")["text"])
+    assert "some-key" in done_after  # user's done entry preserved
+
+
+def test_add_todolist_merge_state_tiddler_unchanged():
+    tiddlers = []
+    add_todolist(tiddlers, "High", ["Task A"])
+    state_t = _find(tiddlers, "$:/todolist/data/state/High")
+    state_t["text"] = json.dumps({"itemtext": "draft text", "markall": ""})
+    add_todolist(tiddlers, "High", ["Task A", "Task B"])
+    state_after = json.loads(_find(tiddlers, "$:/todolist/data/state/High")["text"])
+    assert state_after["itemtext"] == "draft text"
+
+
+# ---------------------------------------------------------------------------
+# add_or_update — tiddler_type edge cases
+# ---------------------------------------------------------------------------
+
+def test_add_or_update_tiddler_type_set_on_create():
+    tiddlers = []
+    add_or_update(tiddlers, "T", "text", tiddler_type="application/json")
+    assert tiddlers[0]["type"] == "application/json"
+
+
+def test_add_or_update_tiddler_type_none_preserves_existing():
+    tiddlers = []
+    add_or_update(tiddlers, "T", "text", tiddler_type="application/json")
+    add_or_update(tiddlers, "T", "updated", tiddler_type=None)
+    assert tiddlers[0]["type"] == "application/json"
+
+
+# ---------------------------------------------------------------------------
+# add_or_update — empty string tags
+# ---------------------------------------------------------------------------
+
+def test_add_or_update_empty_string_tags_not_stored_on_create():
+    tiddlers = []
+    add_or_update(tiddlers, "T", "text", tags="")
+    assert "tags" not in tiddlers[0]
