@@ -10,6 +10,7 @@ This reading of the data file and saving may have to be executed for each file m
 import calendar
 import os
 from datetime import datetime
+from pathlib import Path
 
 import openpyxl
 from openpyxl.utils.cell import get_column_letter
@@ -70,8 +71,8 @@ class Converter:
 
         fields[Q4_FILENAME] = self.q4_stem
         fields[Q1_PATH] = q1_path
-        if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] != OTHER:
-            fields[STATE] = self.get_state_from_path(q4_file_path)
+        # if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] is not None:
+        #     fields[STATE] = self.get_state_from_path(q4_file_path)
         split_path = q1_path.split("\\")
         if len(split_path) > 3:
             name_of_branch = split_path[-4]
@@ -226,7 +227,7 @@ class Converter:
         if self.name in READ_FROM_FILE_NAMES:  # get the fields from the Q4 workbook
             self.group_name = name_of_group
             self.full_group_name = name_of_group
-            self.fields[FULL_GROUP_NAME] = name_of_group
+            self.fields[FULL_GROUP_NAME] = self.full_group_name
             self.group_type = self.get_group_type(self.group_name)
             self.fields[GROUP_TYPE] = self.group_type
             self.state = self.get_text(ws_old_contents["C15"])
@@ -439,16 +440,16 @@ class Converter:
 
                 signature_requirement = self.get_text(old_sheet[f"{old_col}15"])
                 choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
-                self.append_data("Accounts", f"{old_col}28", choice)
+                self.append_data("Accounts", f"B{new_row_start + 6}", choice)
 
-                self.append_data("Summary", "B20", bank_account_type)
-                self.append_string(old_sheet[f"{old_col}14"], "Accounts", "B26")  # bank_account_number
-                self.append_currency(old_sheet[f"{old_col}19"], "Accounts", "C31")  # balance
-                self.append_currency(old_sheet["D25"], "Accounts", "C32")  # ledger_balance
+                self.append_string(old_sheet[f"{old_col}14"], "Accounts",
+                                   f"B{new_row_start + 4}")  # bank_account_number
+                self.append_currency(old_sheet[f"{old_col}19"], "Accounts", f"C{new_row_start + 9}")  # balance
+                self.append_currency(old_sheet[f"{old_col}25"], "Accounts", f"C{new_row_start + 10}")  # ledger_balance
 
                 interest_bearing = self.get_text(old_sheet[f"{old_col}17"])
                 choice = self.get_choice(self.INTEREST_BEARING_CHOICES, interest_bearing)
-                self.append_data("Accounts", "B29", choice)
+                self.append_data("Accounts", f"B{new_row_start + 7}", choice)
 
                 # signatories
                 for i in range(6):
@@ -959,11 +960,13 @@ class Converter:
         return status_report_path
 
 def main():
-    q4_relative_file_paths = ["Resources\\MK Dec 2025 1 Q4 updated.xlsm"]
-    q4_file_paths = []
-    for q4_relative_file_path in q4_relative_file_paths:
-        q4_file_path = os.path.abspath(q4_relative_file_path)
-        q4_file_paths.append(q4_file_path)
+    # q4_file_paths = [r"A:\SourceCode\PycharmProjects\DirectoryChangeNotifier\Resources\Caer_Mear_2025_Q4.xlsm"]
+    q4_path = Path("A:\\East Kingdom Exchequer Test\\Other\\2025\\Quarterly Reports")
+    q4_file_paths = [f.resolve() for f in q4_path.iterdir() if f.is_file()]
+    for q4_file_path in q4_file_paths:
+        basename = os.path.basename(q4_file_path)
+        if basename.startswith(".~lock."):
+            continue
         q1_relative_path = "Test Data"
         q1_path = os.path.abspath(q1_relative_path) + "\\"
         print(f"{q4_file_path} -> {q1_path}")
