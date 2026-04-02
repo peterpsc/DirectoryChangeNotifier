@@ -430,8 +430,8 @@ Error message and password prompt
     {
         "created": "20220205214022219",
         "title": "$:/DefaultTiddlers",
-        "text": "[[DirectoryChangeNotifier]]",
-        "modified": "20260330170518000"
+        "text": "[[Done since last check-in]]\n[[TODO List]]\nIdeas\n[[Test Coverage]]\n[[Peter Requests]]\n[[Claude Requests]]",
+        "modified": "20260325202457733"
     },
     {
         "title": "$:/Import",
@@ -486,7 +486,7 @@ Error message and password prompt
         "created": "20220205200136807",
         "title": "$:/SiteTitle",
         "text": "DirectoryChangeNotifier",
-        "modified": "20260330170518000"
+        "modified": "20260402020736000"
     },
     {
         "created": "20220206215745387",
@@ -812,9 +812,9 @@ Error message and password prompt
     },
     {
         "created": "20260325202722299",
-        "text": "<div class=\"tc-table-of-contents\">\n\n<<toc-selective-expandable 'Claude Requests'>>\n\n<\/div>",
+        "text": "<div class=\"tc-table-of-contents\">\n<<toc-selective-expandable 'Claude Requests'>>\n<\/div>\n",
         "title": "Claude Requests",
-        "modified": "20260325202723856"
+        "modified": "20260402020736000"
     },
     {
         "created": "20231019132107564",
@@ -828,7 +828,7 @@ Error message and password prompt
         "title": "Contents",
         "created": "20220206032218014",
         "list-before": "$:/core/ui/SideBar/Open",
-        "modified": "20220219211527183",
+        "modified": "20260402020736000",
         "tags": "$:/tags/SideBar",
         "type": "text/vnd.tiddlywiki",
         "text": "<div class=\"tc-table-of-contents\">\n<<toc-selective-expandable 'Contents' sort[title]>>\n<\/div>\n"
@@ -842,9 +842,9 @@ Error message and password prompt
     },
     {
         "created": "20260325202534192",
-        "text": "",
+        "text": "* Created SpreadsheetDiff.py -- compare two Excel workbooks, output .xlsx with hyperlinks\n* Created SpreadsheetDiff.bat launcher\n* Created TiddlyWiki project documentation (create_wiki.py)\n* Updated CLAUDE.md\n",
         "title": "Done since last check-in",
-        "modified": "20260325202540407",
+        "modified": "20260402020736000",
         "tags": "[[Daily Plan]]"
     },
     {
@@ -858,15 +858,15 @@ Error message and password prompt
         "title": "Goals",
         "color": "#0000ff",
         "created": "20220207214731826",
-        "modified": "20220220192636354",
+        "modified": "20260402020736000",
         "tags": "Contents",
-        "text": "<div class=\"tc-table-of-contents\">\n<<toc-selective-expandable \"Goals\" !sort[modified]>>\n<\/div>\n"
+        "text": "<div class=\"tc-table-of-contents\">\n<<toc-selective-expandable 'Goals' sort[title]>>\n<\/div>\n"
     },
     {
         "created": "20260325202624068",
         "text": "",
         "title": "Ideas",
-        "modified": "20260325202625903",
+        "modified": "20260402020736000",
         "tags": "TODOs"
     },
     {
@@ -894,9 +894,9 @@ Error message and password prompt
     },
     {
         "created": "20260325202703245",
-        "text": "<div class=\"tc-table-of-contents\">\n\n<<toc-selective-expandable \"Peter Requests\">>\n\n<\/div>",
+        "text": "<div class=\"tc-table-of-contents\">\n<<toc-selective-expandable 'Peter Requests'>>\n<\/div>\n",
         "title": "Peter Requests",
-        "modified": "20260325202705112"
+        "modified": "20260402020736000"
     },
     {
         "title": "Simple Formatting",
@@ -917,7 +917,7 @@ Error message and password prompt
         "created": "20260325202638085",
         "text": "",
         "title": "Test Coverage",
-        "modified": "20260325202641843",
+        "modified": "20260402020736000",
         "tags": "TODOs"
     },
     {
@@ -936,9 +936,9 @@ Error message and password prompt
     },
     {
         "created": "20260325202557327",
-        "text": "<<todolist-ui caption:\"Critical\" width:\"\" base:\"Critical\">>\n<<todolist-ui caption:\"High\" width:\"\" base:\"High\">>\n<<todolist-ui caption:\"Medium\" width:\"\" base:\"Medium\">>\n<<todolist-ui caption:\"Low\" width:\"\" base:\"Low\">>",
+        "text": "<<todolist-ui caption:\"Critical\" width:\"\" base:\"Critical\">>\n<<todolist-ui caption:\"High\" width:\"\" base:\"High\">>\n<<todolist-ui caption:\"Medium\" width:\"\" base:\"Medium\">>\n<<todolist-ui caption:\"Low\" width:\"\" base:\"Low\">>\n",
         "title": "TODO List",
-        "modified": "20260325202558806"
+        "modified": "20260402020736000"
     },
     {
         "created": "20220328194925435",
@@ -972,39 +972,225 @@ Error message and password prompt
     },
     {
         "title": "DirectoryChangeNotifier",
-        "text": "Welcome to the DirectoryChangeNotifier wiki.\n\nThis project monitors directories (primarily Google Drive) for file additions, removals,\nand modifications, then sends automated notifications via Gmail and/or Facebook\n(Messenger, Pages, Groups).\n\nIt is tailored for the Society for Creative Anachronism (SCA) organisation's file-tracking needs.\n\n[[Running the Application]] | [[Configuration]] | [[Architecture]] | [[Modules]] | [[SpreadsheetDiff]]\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "''DirectoryChangeNotifier'' monitors directories for file additions, removals,\nand modifications, then sends automated notifications via Gmail and/or Facebook.\n\nTailored for the Society for Creative Anachronism (SCA) organisation's file-tracking needs.\n\n[[Contents]] | [[Goals]] | [[Running the Application]] | [[Configuration]] | [[Architecture]] | [[Modules]] | [[SpreadsheetDiff]] | [[Acronyms]]\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "Goals Overview",
+        "text": "* Email or Facebook Messenger when files are added, removed, or modified in a monitored path\n* Monitor Google Drive (G:) for SCA group file changes\n* Support multiple notification profiles from a single run\n* Route notifications to email, Facebook Pages, Messenger, and Groups\n* Track quarterly SCA Exchequer report cycles via Converter\n* Provide SpreadsheetDiff tool to compare Excel workbooks\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Goals"
     },
     {
         "title": "Running the Application",
-        "text": "!! Running the Application\n\n```\npython DirChangeNotifier.py\n```\n\nNo CLI arguments — all configuration is file-based in `Private/`.\n\n!! Individual Module Self-Tests\n\nEach module has an `if __name__ == '__main__':` block:\n\n```\npython Persistence.py\npython DataFrame.py\npython Gmail.py\npython Facebook.py\n```\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "!!Running the Application\n\n```\npython DirChangeNotifier.py\n```\n\nNo CLI arguments -- all configuration is file-based in `Private/`.\n\n!!Individual Module Self-Tests\n\nEach module has an `if __name__ == '__main__':` block:\n\n```\npython Persistence.py\npython DataFrame.py\npython Gmail.py\npython Facebook.py\n```\n\n!!SpreadsheetDiff\n\n```\npython SpreadsheetDiff.py\n```\n\nOr double-click `SpreadsheetDiff.bat`.\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
     },
     {
         "title": "Configuration",
-        "text": "!! Required Files in Private/\n\nThe `Private/` directory is git-ignored and must be created manually.\n\n| File | Purpose |\n|---|---|\n| `CredentialsNotifier.txt` | Line 1: Gmail address, Line 2: app password |\n| `NotificationNames.lst` | List of profile names to run, one per line |\n\n!! Per-Profile Files\n\nFor each profile name (e.g. `GoogleDrive`):\n\n| File | Purpose |\n|---|---|\n| `GoogleDrive_Path_Options.txt` | Paths to monitor; append `/S` for recursive |\n| `GoogleDrive_Ignore_Paths.txt` | Path substrings to skip |\n| `GoogleDrive_Ignore_Files_Containing.txt` | Filename patterns to skip |\n| `GoogleDrive_Notification_List.txt` | Recipients (see below) |\n| `GoogleDrive_Title.txt` | Email subject prefix |\n| `GoogleDrive_Signature.txt` | Optional email signature |\n\n!! Notification List Format\n\n```\nemail@example.com\nFB:PageName\nFBM:PersonName\nFBG:GroupName\n```\n\n!! State Snapshots\n\nSaved to `Private/{ProfileName}_DirTreeToday.txt`.\nLine 1 = timestamp, remaining lines = file paths.\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "!!Required Files in Private/\n\nThe `Private/` directory is git-ignored and must be created manually.\n\n|!File|!Purpose|\n|`CredentialsNotifier.txt`|Line 1: Gmail address, Line 2: app password|\n|`NotificationNames.lst`|List of profile names to run, one per line|\n\n!!Per-Profile Files\n\nFor each profile name (e.g. `GoogleDrive`):\n\n|!File|!Purpose|\n|`GoogleDrive_Path_Options.txt`|Paths to monitor; append `/S` for recursive|\n|`GoogleDrive_Ignore_Paths.txt`|Path substrings to skip|\n|`GoogleDrive_Ignore_Files_Containing.txt`|Filename patterns to skip|\n|`GoogleDrive_Notification_List.txt`|Recipients (see below)|\n|`GoogleDrive_Title.txt`|Email subject prefix|\n|`GoogleDrive_Signature.txt`|Optional email signature|\n\n!!Notification List Format\n\n```\nemail@example.com\nFB:PageName\nFBM:PersonName\nFBG:GroupName\n```\n\n!!State Snapshots\n\nSaved to `Private/{ProfileName}_DirTreeToday.txt`.\n* Line 1 -- timestamp\n* Remaining lines -- full file paths, one per line\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
     },
     {
         "title": "Architecture",
-        "text": "!! Core Flow\n\n# DirChangeNotifier loads profiles and scans the filesystem\n# Compares current file list against saved snapshot\n# Triggers notifications for any additions, removals, or modifications\n# Saves new snapshot for next run\n\n!! Change Detection\n\nSnapshot-based: current file list vs `_DirTreeToday.txt`.\n\n* Files only in current → Added\n* Files only in previous → Removed\n* Same path with newer mtime → Modified\n\nNo database — entirely file-based state.\n\n!! Notification Routing\n\n```\nDirChangeNotifier → Gmail → SMTP (email)\n                          → Facebook → FB wall post\n                                     → Messenger DM\n                                     → Group post\n```\n\n!! Environment Detection\n\n`HostFlavor.get_host_flavor()` switches between `TEST` (local dev) and `DEPLOYED` (production).\nCheck `HostFlavor.py` when paths or behaviour seem environment-dependent.\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "!!Core Flow\n\n# DirChangeNotifier loads profiles and scans the filesystem\n# Compares current file list against saved snapshot\n# Triggers notifications for any additions, removals, or modifications\n# Saves new snapshot for next run\n\n!!Change Detection\n\nSnapshot-based comparison against `_DirTreeToday.txt`:\n\n|!Condition|!Result|\n|File only in current scan|Added|\n|File only in previous snapshot|Removed|\n|Same path, newer mtime|Modified|\n\nNo database -- entirely file-based state.\n\n!!Notification Routing\n\n```\nDirChangeNotifier --> Gmail --> SMTP (email recipients)\n                            --> Facebook --> FB wall post  (FB:Name)\n                                         --> Messenger DM (FBM:Name)\n                                         --> Group post   (FBG:Name)\n```\n\n!!Environment Detection\n\n`HostFlavor.get_host_flavor()` switches between `TEST` (local dev) and `DEPLOYED` (production).\nCheck `HostFlavor.py` when paths or behaviour seem environment-dependent.\n\n!!Dependency Order\n\n```\nDirChangeNotifier --> Gmail --> Facebook\n                            --> GroupFields, HostFlavor, Persistence, PrintHelper, Substitutions\n                            --> DataFrame\n```\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
     },
     {
         "title": "Modules",
-        "text": "!! Module Overview\n\n| Module | Purpose |\n|---|---|\n| `DirChangeNotifier.py` | Entry point: loads profiles, scans filesystem, compares snapshot, triggers notifications |\n| `Gmail.py` | Routes notifications: splits recipients into email vs Facebook, sends via SMTP |\n| `Facebook.py` | Selenium browser automation for FB wall posts, Messenger DMs, and group posts |\n| `Persistence.py` | All file I/O: config files, snapshots, path utilities, clipboard |\n| `PrintHelper.py` | Styled console output with colours and indentation |\n| `Substitutions.py` | Template variable substitution, signatures, date formatting |\n| `DataFrame.py` | Pandas DataFrame wrapper for CSV operations |\n| `HostFlavor.py` | Detects TEST vs DEPLOYED environment and resolves paths |\n| `GroupFields.py` | SCA group metadata and field lookups |\n| `Converter.py` | Converts Q4 Excel Exchequer reports to Q1 format for the new year |\n\n!! Resources Directory\n\n* `Substitutions.csv`, `Signatures.csv`, `Group_Substitutions.csv` — template data\n* `SCA Regions.csv`, `States.csv` — SCA organisational reference data\n* `Converter the Red Test.lst` / `Converter the Red Deployed.lst` — Converter config per environment\n\n!! Key Dependencies\n\n* `selenium` — Facebook browser automation\n* `pandas` — CSV/DataFrame operations\n* `pyperclip` — clipboard utilities\n* `openpyxl` — Excel file handling (SpreadsheetDiff)\n* Standard: `smtplib`, `os`, `re`, `csv`, `datetime`\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "|!Module|!Purpose|\n|`DirChangeNotifier.py`|Entry point: loads profiles, scans filesystem, compares snapshot, triggers notifications|\n|`Gmail.py`|Routes notifications: splits recipients into email vs Facebook, sends via SMTP|\n|`Facebook.py`|Selenium browser automation for FB wall posts, Messenger DMs, and group posts|\n|`Persistence.py`|All file I/O: config files, snapshots, path utilities, clipboard|\n|`PrintHelper.py`|Styled console output with colours and indentation|\n|`Substitutions.py`|Template variable substitution, signatures, date formatting|\n|`DataFrame.py`|Pandas DataFrame wrapper for CSV operations|\n|`HostFlavor.py`|Detects TEST vs DEPLOYED environment and resolves paths|\n|`GroupFields.py`|SCA group metadata and field lookups|\n|`Converter.py`|Converts Q4 Excel Exchequer reports to Q1 format for the new year|\n\n!!Resources Directory\n\n|!File|!Purpose|\n|`Substitutions.csv`|Template variable definitions|\n|`Signatures.csv`|Email signatures|\n|`Group_Substitutions.csv`|SCA group-specific substitutions|\n|`SCA Regions.csv`|SCA organisational reference data|\n|`States.csv`|State reference data|\n|`Converter the Red Test.lst`|Converter config for TEST environment|\n|`Converter the Red Deployed.lst`|Converter config for DEPLOYED environment|\n\n!!Key Dependencies\n\n|!Package|!Purpose|\n|`selenium`|Facebook browser automation|\n|`pandas`|CSV/DataFrame operations|\n|`pyperclip`|Clipboard utilities|\n|`openpyxl`|Excel file handling (SpreadsheetDiff)|\n|`sounddevice`|Audio playback (PlaySound.py)|\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
     },
     {
         "title": "SpreadsheetDiff",
-        "text": "!! SpreadsheetDiff\n\nCompares two Excel workbooks and produces an `.xlsx` diff report.\n\n!! Running\n\n```\npython SpreadsheetDiff.py\n```\n\nOr double-click `SpreadsheetDiff.bat`.\n\n!! How It Works\n\n# File browser dialogs prompt for File A and File B\n# All sheets present in both workbooks are compared cell by cell\n# Sheets with no differences are skipped\n# An `.xlsx` report is saved next to File A and opened automatically in Excel\n\n!! Output Format\n\nOne sheet per workbook sheet that has differences.\n\n| Column | Content |\n|---|---|\n| Cell in A | Clickable hyperlink → opens File A at that cell |\n| Cell in B | Clickable hyperlink → opens File B at that cell |\n| File A | Value in File A |\n| File B | Value in File B |\n| Type | Changed / Added / Removed |\n\nRows are colour-coded: yellow = Changed, green = Added, red = Removed.\n\nA Summary sheet lists both file paths, any missing sheets, and diff counts per sheet.\n",
-        "created": "20260330170518000",
-        "modified": "20260330170518000"
+        "text": "Compares two Excel workbooks cell by cell and produces an `.xlsx` diff report\nwith clickable hyperlinks to the differing cells in each source file.\n\n!!Running\n\n```\npython SpreadsheetDiff.py\n```\n\nOr double-click `SpreadsheetDiff.bat`.\n\n!!How It Works\n\n# File browser dialogs prompt for File A and File B\n# All sheets present in both workbooks are compared cell by cell\n# Sheets with no differences are skipped\n# An `.xlsx` report is saved next to File A and opened automatically in Excel\n\n!!Output Format\n\nOne tab per workbook sheet that has differences, plus a Summary tab.\n\n|!Column|!Content|\n|Cell in A|Clickable hyperlink to that cell in File A|\n|Cell in B|Clickable hyperlink to that cell in File B|\n|File A|Value in File A|\n|File B|Value in File B|\n|Type|Changed / Added / Removed|\n\nRows are colour-coded:\n\n|!Colour|!Meaning|\n|Yellow|Changed -- value differs between files|\n|Green|Added -- cell has a value only in File B|\n|Red|Removed -- cell has a value only in File A|\n\n!!Notes\n\n* Only cell values are compared -- formatting is ignored\n* Row 1 is treated as headers but is still compared for value changes\n* Sheets missing from one file are listed on the Summary tab\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
+    },
+    {
+        "title": "Acronyms",
+        "text": "|!Acronym|!Meaning|\n|FB|Facebook|\n|FBM|Facebook Messenger (direct message)|\n|FBG|Facebook Group|\n|SCA|Society for Creative Anachronism -- the organisation this tool was built for|\n|SMTP|Simple Mail Transfer Protocol -- used to send Gmail notifications|\n|mtime|Modification time -- OS file timestamp used to detect changes|\n|TEST|Local development environment (detected by HostFlavor)|\n|DEPLOYED|Production environment (detected by HostFlavor)|\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Contents"
+    },
+    {
+        "title": "$:/todolist/data/tasks/Critical",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/status/Critical",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/priority/Critical",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/done/Critical",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/state/Critical",
+        "text": "{\n    \"itemtext\": \"\",\n    \"markall\": \"\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/tasks/High",
+        "text": "{\n    \"20260402020736000\": \"Fix FULL_GROUP_NAME for unbalanced/error OTHER workbooks (save_summary only runs when balanced==True)\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/status/High",
+        "text": "{\n    \"20260402020736000\": \"undone\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/priority/High",
+        "text": "{\n    \"20260402020736000\": \"none\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/done/High",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/state/High",
+        "text": "{\n    \"itemtext\": \"\",\n    \"markall\": \"\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/tasks/Medium",
+        "text": "{\n    \"20260402020736000\": \"Add SpreadsheetDiff option to skip first N header rows from comparison\",\n    \"20260402020737000\": \"Verify OTHER region end-to-end with at least one balanced workbook\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/status/Medium",
+        "text": "{\n    \"20260402020736000\": \"undone\",\n    \"20260402020737000\": \"undone\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/priority/Medium",
+        "text": "{\n    \"20260402020736000\": \"none\",\n    \"20260402020737000\": \"none\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/done/Medium",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/state/Medium",
+        "text": "{\n    \"itemtext\": \"\",\n    \"markall\": \"\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/tasks/Low",
+        "text": "{\n    \"20260402020736000\": \"Add test coverage for SpreadsheetDiff\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/status/Low",
+        "text": "{\n    \"20260402020736000\": \"undone\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/priority/Low",
+        "text": "{\n    \"20260402020736000\": \"none\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/done/Low",
+        "text": "{}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "$:/todolist/data/state/Low",
+        "text": "{\n    \"itemtext\": \"\",\n    \"markall\": \"\"\n}",
+        "type": "application/json",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "Dialog",
+        "text": "<div class=\"tc-table-of-contents\">\n\n<<toc-selective-expandable 'Dialog'>>\n\n<\/div>\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000"
+    },
+    {
+        "title": "Dialog 2026-04-02",
+        "text": "* I would like to create a python program that: given two spreadsheets, display all the differences in all the sheets. Please describe but don't create it yet\n** Described design: openpyxl or pandas, per-sheet comparison, flag missing sheets, header row option, output to HTML or file. Asked about header row, formatting, empty cells, output format, library choice.\n* use openpyxl. diff report to an html file, use header row, ignore formatting\n** Asked remaining questions: output location, how files are specified, column matching by name or position, row matching by position or key column, missing sheets behaviour.\n* same directory\n** Noted. Asked remaining four questions.\n* prompted at runtime, header name, key column, note missing sheet\n** Asked: auto-detect key column or prompt user?\n* Auto-detect\n** Built SpreadsheetDiff.py: tkinter file prompts, header-name column matching, first-column key matching, HTML report saved next to File A.\n* when you ask for the files, are you going to let the user browse to find the 2 files?\n** No -- currently accepts a typed path. Can add tkinter file browser dialog if you want.\n* yes\n** Added tkinter filedialog.askopenfilename() for both files, filtered to Excel types.\n* please add the program to git for review\n** Staged and committed SpreadsheetDiff.py.\n* Next time just add it to git, don't check-in. I want to look at everything before ci\n** Noted and saved to memory. Will only git add, never commit unless you say ci.\n* When you are done, please open the .html file in a browser\n** Added webbrowser.open(out_path) at end of main().\n* Please skip the sheets with no differences found\n** Updated: sheets with zero diffs are skipped in both HTML output and console log.\n* can we name the row and column for the differences instead?\n** Asked for clarification: rename table headers, show Excel-style position (C5), or something else?\n* Row Column, like C5\n** Confirmed: drop key-column matching, compare cell by cell, report each diff by Excel address (e.g. C5). Simplified table to Cell / File A / File B / Type.\n* let's see it\n** Rewrote compare_sheets and generate_html. Output table: Cell | File A | File B | Type, colour-coded rows.\n* can you create SpreadsheetDiff.bat that runs SpreadsheetDiff.py\n** Created SpreadsheetDiff.bat using %~dp0 to locate the script regardless of working directory.\n* ci\n** Committed both SpreadsheetDiff.py and SpreadsheetDiff.bat.\n* please explain the bat file line: python \"%~dp0SpreadsheetDiff.py\"\n** Explained: %~dp0 expands to the drive + path of the .bat file itself, so Python always finds the script even if run from a different directory.\n* what does %~dp0 mean?\n** Explained the modifier breakdown: %0 = batch file path, ~ = strip quotes, d = drive letter, p = path. Combined gives drive+folder with no filename.\n* Have you created a wiki page for this project?\n** No wiki exists yet. Asked whether to create one and where.\n* GitHub, and use all the rules that you use for the webdriver project\n** No memory of webdriver wiki rules. Asked which project.\n* another project in PycharmProjects\n** Found webdriver project. No GitHub wiki exists there either. Found create_wordlebot_wiki.py using TiddlyWiki / TiddlyFile pattern.\n* Yes, using webdriver's Empty Project.html\n** Copied Empty Project.html to Resources/. Created create_wiki.py modelled on create_wordlebot_wiki.py. Generated DirectoryChangeNotifier.html with six tiddlers.\n* I like what you did, but you didn't use the Default Tiddlers found in the special shadow tiddler GettingStarted yet\n** Updated $:/DefaultTiddlers to open four tiddlers on startup: DirectoryChangeNotifier, TODO, Peter Requests, Claude Requests -- matching the Adafruit wiki pattern.\n* Please create a Project wiki using Empty Project.html in webdriver as a model, and use the memory of Adafruit to help with formatting and guidance\n** Read all Adafruit tiddlers. Rewrote create_wiki.py using proper TiddlyWiki markup (!! headings, |!col| tables, * lists, [[links]]), Contents TOC, Goals, Acronyms, Peter/Claude Requests with dated entries.\n* The first task I want you to work on is the daily Dialog tiddler, to record the text I type here and your response, similar to what was done on the Adafruit project\n** Added Dialog parent tiddler (TOC) and Dialog {today} tiddler with today's full conversation. Peter entries use *, Claude entries use **. Added Dialog to $:/DefaultTiddlers.\n* I don't want you to change the GettingStarted tiddler, that is mine to change, and I have changed it. You may look at it, to see what I am paying attention to\n** Read $:/DefaultTiddlers from the wiki. Removed $:/DefaultTiddlers from create_wiki.py. Added missing tiddlers it referenced: Done since last check-in, TODO List, Ideas, Test Coverage.\n* Dialog looks good, please update it every time things are Ready for Review\n** Saved to memory. Will update Dialog and regenerate wiki whenever work is staged for review.\n* My first task is to get OTHER working. I am going to modify DriveLookup.py to use OTHER\n** Read DriveLookup.py, GroupFields.py, DirChangeNotifier.py. OTHER is a special region (\\Other\\) for groups outside the standard regional structure. Two TODO FIX ME comments exist in find_all_q4s_missing_todos and create_group_status_data.\n* A simple change, but ready to run\n** Moved PROCESS_NAME = OTHER to be the last (active) assignment, with PROCESS_NAME = ALL above it as the prior setting.\n* My goal is for OTHER to work similarly to RESOURCES, but the path I want it to get all the last year spreadsheets to look at and convert is \"A:\\East Kingdom Exchequer Test\\Other\\2025\\Quarterly Reports\"\n** Understood. Traced code path for OTHER to understand the full flow.\n* Can you look at the code path for OTHER and figure out why it produces more lines in \"Other Test Group Status.csv\" than the number of files in the Other Quarterly Reports folder\n** Root cause: find_all_q4s_missing_todos adds the same q4_path to q4_paths once per file (N times). create_group_status_data then calls append_other_status_rows N times, and each call iterates all N files in q4_fields. Result: N x N rows instead of N.\n* can you fix it, but not check-in\n** Fixed: added q4_path to q4_paths once before the file loop. Per-file calls to append_q4_missing_todos pass [] for q4_paths to prevent duplicate additions. Removed TODO FIX ME comment.\n* Missing: A:\\East Kingdom Exchequer Test\\Exchequer Reporting\\2026 Q1 Test Status\\Other Test To Convert.csv\n** save_to_convert deletes the file when to_convert is empty; create_status_report then calls shutil.copy2 on a non-existent file. Fixed with an exists() guard before the copy.\n* for OTHER, when it does append_other_status_rows, why doesn't q4_file_fields[FULL_GROUP_NAME] have the full group name from reading the workbook?\n** save_summary() is the only place that reads C8 from the workbook and updates fields[FULL_GROUP_NAME]. It is only called from save_new_data(), which is only called when balanced == True. If the workbook is out of balance, negative, or errors, save_summary() never runs and FULL_GROUP_NAME stays \"Other\" -- the folder-derived name.\n* I Fixed bug with 2 secondary accounts with hardcode data positions in Converter.py\n** In save_secondary_accounts, cell positions for bank account number, balance, ledger balance, signature requirement, and interest bearing were hardcoded (B26, C31, C32, B28, B29) instead of offset from new_row_start. Fixed to use dynamic positions (e.g. B{new_row_start+4}, C{new_row_start+9}). Also commented out a flawed STATE/FULL_GROUP_NAME guard in __init__.\n* I would like to have the TODO List from the Empty Project.html, and we can both update the priorities, but they are currently missing. Look at the webdriver project for details\n** Found AITheRed.html uses four named buckets (Critical/High/Medium/Low), each with its own <<todolist-ui caption:\"...\" width:\"\" base:\"...\">> macro. Added add_json_tiddler and add_todolist helpers. TODO List tiddler now uses the four-bucket format. Initial tasks seeded: one High (fix FULL_GROUP_NAME for unbalanced OTHER workbooks), two Medium, one Low.\n* I noticed and fixed a problem with the Peter/Claude Requests. Their daily tiddlers were tagged incorrectly. They need to be tagged with \"Peter Requests\" and \"Claude Requests\" not 2 tags (because of the space)\n** Fixed: tags for daily Peter Requests and Claude Requests tiddlers now use [[Peter Requests]] and [[Claude Requests]] so TiddlyWiki treats the space-containing name as a single tag.\n* I also fixed the Dialog to be with the correct date, since today is after midnight\n** Regenerated wiki and staged. Saved note to memory: sessions past midnight need the Dialog tiddler date corrected to the actual calendar date.\n* remember that too\n** Saved to feedback_dialog_tiddler.md memory: sessions past midnight need the Dialog tiddler date corrected to the actual calendar date.\n* ready for review\n** Updated Dialog with session exchanges, regenerated wiki, staged create_wiki.py and Resources/DirectoryChangeNotifier.html.\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "Dialog"
+    },
+    {
+        "title": "Peter Requests 2026-04-02",
+        "text": "* Create TiddlyWiki project documentation\n* Create SpreadsheetDiff tool -- compare two Excel workbooks, show differences as cell addresses (e.g. C5), output .xlsx with hyperlinks, open in Excel when done\n* Add .bat launcher for SpreadsheetDiff\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "[[Peter Requests]]"
+    },
+    {
+        "title": "Claude Requests 2026-04-02",
+        "text": "* Created SpreadsheetDiff.py with tkinter file browser, cell-by-cell comparison, .xlsx output with hyperlinks, colour-coded rows\n* Created SpreadsheetDiff.bat launcher\n* Created create_wiki.py and DirectoryChangeNotifier.html TiddlyWiki\n* Updated CLAUDE.md with project guidance\n",
+        "created": "20260402020736000",
+        "modified": "20260402020736000",
+        "tags": "[[Claude Requests]]"
     }
 ]</script>
 <div id="storeArea" style="display:none;"></div>

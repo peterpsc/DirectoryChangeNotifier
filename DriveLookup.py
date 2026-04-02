@@ -72,8 +72,6 @@ PROCESS_SPECIFIC = ["Hadchester", "Giggleswick", "Ravensbridge", "Panther Vale",
                     "EK College of Performers", "Hartshorn-dale", "Montevale", "Bergental"]
 PROCESS_SPECIFIC = ["Panther Vale", "Lions End"]
 
-PROCESS_NAME = OTHER
-
 PROCESS_SPECIFIC = ["Dragonship Haven"]
 PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_SPECIFIC = ["Mountain Freehold"]
@@ -90,12 +88,12 @@ PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
 PROCESS_SPECIFIC = ["Østgarðr"]
 PROCESS_NAME = SPECIFIC
 
-PROCESS_NAME = OTHER
+PROCESS_NAME = ALL
+PROCESS_SPECIFIC = None
+
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
-PROCESS_NAME = ALL
-PROCESS_SPECIFIC = None
 
 
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
@@ -209,11 +207,12 @@ class DriveLookup:
 
         for group_name in group_names:
             q4_path = self.group_names[group_name][Q4_PATH]
-            if status_report_name == OTHER:  # TODO FIX ME
+            if status_report_name == OTHER:
+                q4_paths.append(q4_path)
                 for q4_file_name in os.listdir(q4_path):
                     q4_file_path = os.path.join(q4_path, q4_file_name)
                     if os.path.isfile(q4_file_path):
-                        self.append_q4_missing_todos(q4_path, q4_file_name, q4_paths, q4_file_paths, missing, todos,
+                        self.append_q4_missing_todos(q4_path, q4_file_name, [], q4_file_paths, missing, todos,
                                                      status_report_name)
             else:
                 q4_file_name = self.find_q4_file_name(q4_path)
@@ -269,7 +268,8 @@ class DriveLookup:
     @staticmethod
     def get_other_q1_file(q4_file_path, q1_stem):
         q4_file_name = os.path.basename(q4_file_path)
-        q1_file_name = q1_stem.partition(OTHER)[0] + q4_file_name
+        q4_stem = os.path.splitext(q4_file_name)[0]
+        q1_file_name = q1_stem.partition(OTHER)[0] + q4_stem
         return q1_file_name
 
     @staticmethod
@@ -551,7 +551,79 @@ class DriveLookup:
             fields[E_REGION] = OTHER
             fields[FULL_GROUP_NAME] = group_name
 
-            self.append_status_row(formatted_rows, q4_path, missing, negative_reports, out_of_balance, host)
+            self.append_other_status_row(formatted_rows, q4_path, q4_file, missing, negative_reports, out_of_balance,
+                                         host)
+
+    def append_other_status_row(self, formatted_rows, q4_path, q4_file_name, missing, negative_reports, out_of_balance,
+                                host):
+        group_name, fields = self.get_group_fields(q4_path)
+
+        if q4_file_name is None:
+            q4_file_path = None
+        else:
+            q4_file_path = f"{q4_path}{q4_file_name}"
+            if not exists(q4_file_path) or q4_path in missing:
+                q4_file_path = None
+
+        q1_path = GroupFields.get_field(fields, Q1_PATH)
+        group_dir = q1_path.partition(f"{THIS_YEAR_DIR}{QUARTERLY_REPORTS}")[0] + "\\"
+
+        formatted_row = [""]
+
+        host_group_dir = HostFlavor.get_host_path(group_dir, host)
+        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)
+        hyperlink_group = Persistence.create_hyperlink(host_group_dir, f"{full_group_name}")
+        formatted_row.append(hyperlink_group)
+
+        host_q4_path = HostFlavor.get_host_path(q4_path, host)
+        hyperlink_last_dir = Persistence.create_hyperlink(host_q4_path, f"{LAST_YEAR} Q4 dir")
+        formatted_row.append(hyperlink_last_dir)
+
+        hyperlink_q4_negative = None
+        hyperlink_q4_oob = None
+
+        host_q4_file_path = HostFlavor.get_host_path(q4_file_path, host)  # TODO FIX ME hyperlink with filename
+        if q4_file_path is None:
+            formatted_row.append(MISSING)
+        elif q4_file_path in negative_reports:
+            hyperlink_q4_negative = Persistence.create_hyperlink(host_q4_file_path, NEGATIVE_REPORT)
+            formatted_row.append(hyperlink_q4_negative)
+        elif q4_file_path in out_of_balance:
+            hyperlink_q4_oob = Persistence.create_hyperlink(host_q4_file_path, OUT_OF_BALANCE)
+            formatted_row.append(hyperlink_q4_oob)
+        else:
+            hyperlink_q4 = Persistence.create_hyperlink(host_q4_file_path, q4_file_name)
+            formatted_row.append(hyperlink_q4)
+
+        host_q1_path = HostFlavor.get_host_path(q1_path, host)
+        hyperlink_q1_dir = Persistence.create_hyperlink(host_q1_path, f"{THIS_YEAR} Q1 dir")
+        formatted_row.append(hyperlink_q1_dir)
+
+        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)  # TODO FIX ME hyperlink
+        q1_stem = f"{THIS_YEAR_PREFIX}{full_group_name}"
+        q1_file_path = f"{q1_path}{q1_stem}.xlsx"
+        q1_data_path = f"{q1_path}{q1_stem}.csv"
+        hyperlink_status = None
+        if q4_file_path is None:
+            hyperlink_status = MISSING
+        elif exists(q1_file_path):
+            host_q1_file_path = HostFlavor.get_host_path(q1_file_path, host)
+            hyperlink_status = Persistence.create_hyperlink(host_q1_file_path, f"{q1_stem}.xlsx")
+        elif exists(q1_data_path):
+            host_q1_data_path = HostFlavor.get_host_path(q1_data_path, host)
+            hyperlink_status = Persistence.create_hyperlink(host_q1_data_path, TO_CONVERT)
+        elif hyperlink_q4_oob:
+            hyperlink_status = hyperlink_q4_oob
+        elif q4_file_path and q4_file_path in negative_reports:
+            hyperlink_status = hyperlink_q4_negative
+
+        if hyperlink_status:
+            formatted_row.append(hyperlink_status)
+        else:
+            formatted_row.append("BUG")
+
+        formatted_rows.append(formatted_row)
+
 
     def append_status_row(self, formatted_rows, q4_path, missing, negative_reports, out_of_balance, host):
         group_name, fields = self.get_group_fields(q4_path)
@@ -679,7 +751,8 @@ class DriveLookup:
     def create_status_report(self, name):
         to_convert_file_path = self.get_group_status_path(name, self.host, TO_CONVERT_CSV)
         all_to_convert_file_path = self.get_group_status_path(ALL, self.host, TO_CONVERT_CSV)
-        shutil.copy2(to_convert_file_path, all_to_convert_file_path)
+        if exists(to_convert_file_path):
+            shutil.copy2(to_convert_file_path, all_to_convert_file_path)
         status_file_path = self.get_group_status_path(name, self.host)
         os.startfile(status_file_path)
 
