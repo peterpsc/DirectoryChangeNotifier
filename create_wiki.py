@@ -115,7 +115,17 @@ def add_todolist(tiddlers, name, tasks):
         new_tasks = [t for t in tasks if t not in existing_values]
         if new_tasks:
             now = _ts()
-            ts = [_ts(i) for i in range(len(new_tasks))]
+            # Generate timestamps guaranteed not to collide with existing keys
+            used_keys = set(existing_tasks.keys())
+            new_keys = []
+            offset = 0
+            while len(new_keys) < len(new_tasks):
+                ts = _ts(offset)
+                if ts not in used_keys:
+                    new_keys.append(ts)
+                    used_keys.add(ts)
+                offset += 1
+            ts = new_keys
             existing_tasks.update({ts[i]: new_tasks[i] for i in range(len(new_tasks))})
             tasks_t["text"] = json.dumps(existing_tasks, indent=4)
             tasks_t["modified"] = now
@@ -499,6 +509,12 @@ DIALOG_TODAY = """\
 ** Identified: _now()/_ts() redundancy, add_json_tiddler silent skip on re-seed, missing EMPTY_HTML guard, build runs at module level, DIALOG_TODAY date not validated, add_or_update tiddler_type asymmetry. Prioritised: if __name__ guard and merge strategy.
 * do it
 ** Merged _now() into _ts(). Rewrote add_todolist with merge logic: first run creates all 5 tiddlers, subsequent runs append seed tasks not already present by value. Added EMPTY_HTML FileNotFoundError. Wrapped build section in if __name__ == "__main__":. Wiki regenerated successfully.
+* you were ready for review, I shouldn't have had to ask for it
+** Updated memory: "ready" and "ready for review" both trigger Dialog update + wiki regenerate + stage automatically.
+* how many tests are done
+** Zero -- no test files exist yet.
+* Please create some tests to avoid errors, and make sure code doesn't break when a change is made. I prefer TDD
+** Created test_create_wiki.py with 27 pytest tests covering _ts, _find, add_or_update, add_json_tiddler, add_todolist (first run and merge), and _load/_save round-trip. Tests caught a real bug: timestamp collision in merge path when add_todolist called twice within the same second. Fixed with collision-detection loop. All 27 pass.
 """
 
 PETER_REQUESTS = """\

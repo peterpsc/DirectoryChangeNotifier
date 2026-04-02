@@ -45,7 +45,8 @@ SOUTHERN = "Southern"
 WESTERN = "Western"
 REGIONS = [TIR_MARA, NORTHERN, CENTRAL, SOUTHERN, WESTERN, NORTHEAST]
 
-FILTER_FOR_4Q = ["Q4","4Q","EOY","YTD","4th", "Quarter 4"]
+FILTER_FOR_4Q = ["Q4", "4Q", "EOY", "YTD", "4th", "Quarter 4"]
+
 
 def get_DirChangeNotifier() -> DirChangeNotifier:
     host, converter_path = HostFlavor.get_host_type_converter_path()
@@ -67,7 +68,6 @@ PROCESS_NAME = TIR_MARA
 
 PROCESS_SPECIFIC = None
 
-
 PROCESS_SPECIFIC = ["Hadchester", "Giggleswick", "Ravensbridge", "Panther Vale", "Gryphonwald", "Hawkes Reache",
                     "EK College of Performers", "Hartshorn-dale", "Montevale", "Bergental"]
 PROCESS_SPECIFIC = ["Panther Vale", "Lions End"]
@@ -76,7 +76,6 @@ PROCESS_SPECIFIC = ["Dragonship Haven"]
 PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_SPECIFIC = ["Mountain Freehold"]
 PROCESS_SPECIFIC = ["Eisental"]
-
 
 PROCESS_SPECIFIC = ["Towers"]
 
@@ -94,13 +93,12 @@ PROCESS_SPECIFIC = None
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
 
-
-
 SKIP_Q1_DATA_IF_Q1_EXISTS = True
 if PROCESS_SPECIFIC:
     SKIP_Q1_DATA_IF_Q1_EXISTS = len(PROCESS_SPECIFIC) > 2  # False = Recreate Q1 Data anyway
 
 GROUP_STATUS = " Group Status.csv"
+
 
 # Creates:
 # Group Status.csv
@@ -389,7 +387,6 @@ class DriveLookup:
                 to_q4_file_path = HostFlavor.get_host_path(from_q4_file_path, TEST)
                 self.copy_file(from_q4_file_path, to_q4_file_path)
 
-
     def copy_file(self, from_file_path, to_file_path: str):
         if from_file_path is None:
             return
@@ -624,7 +621,6 @@ class DriveLookup:
 
         formatted_rows.append(formatted_row)
 
-
     def append_status_row(self, formatted_rows, q4_path, missing, negative_reports, out_of_balance, host):
         group_name, fields = self.get_group_fields(q4_path)
         q4_file_name = self.find_q4_file_name(q4_path)
@@ -718,10 +714,9 @@ class DriveLookup:
         self.delete_all_q1_test_workbooks(groups, delete_all_q1, delete_all_q1_data)
 
     def process_specific(self, group_names, status_report_name=SPECIFIC):
-            q4_paths, q4_file_paths, missing, todos = self.find_all_q4s_missing_todos(group_names, status_report_name)
+        q4_paths, q4_file_paths, missing, todos = self.find_all_q4s_missing_todos(group_names, status_report_name)
 
-            self.save_status(q4_paths, todos, missing, status_report_name)
-
+        self.save_status(q4_paths, todos, missing, status_report_name)
 
     def create_all_regions_status_report(self):
         for host in HOSTS:
@@ -806,6 +801,7 @@ class DriveLookup:
         other_host_group_status_path = self.get_group_status_path(name, other_host)
         status = Persistence.create_hyperlink(other_host_group_status_path, "Status")
         return status
+
 
 if __name__ == '__main__':
     PrintHelper.printInBox()
