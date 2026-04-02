@@ -39,14 +39,19 @@ def _ts(offset_seconds=0):
 def _load(path):
     with open(path, "r", encoding="utf-8") as f:
         html = f.read()
+    try:
+        start = html.index(STORE_OPEN) + len(STORE_OPEN)
+        end = html.index(STORE_CLOSE, start)
+    except ValueError:
+        raise ValueError(f"TiddlyWiki store markers not found in: {path}")
+    tiddlers = json.loads(html[start:end])
+    return html, tiddlers
+
+
+def _save(html, tiddlers, path):
+    new_json = json.dumps(tiddlers, ensure_ascii=False).replace('</', '<\\/')
     start = html.index(STORE_OPEN) + len(STORE_OPEN)
     end = html.index(STORE_CLOSE, start)
-    tiddlers = json.loads(html[start:end])
-    return html, tiddlers, start, end
-
-
-def _save(html, tiddlers, start, end, path):
-    new_json = json.dumps(tiddlers, ensure_ascii=False).replace('</', '<\\/')
     html = html[:start] + new_json + html[end:]
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
@@ -58,9 +63,9 @@ def add_or_update(tiddlers, title, text, tags=None, tiddler_type=None):
         if t.get("title") == title:
             t["text"] = text
             t["modified"] = now
-            if tags is not None:
+            if tags:
                 t["tags"] = tags
-            if tiddler_type is not None:
+            if tiddler_type:
                 t["type"] = tiddler_type
             return
     entry = {"title": title, "text": text, "created": now, "modified": now}
@@ -158,7 +163,9 @@ def add_todolist(tiddlers, name, tasks):
 # Session-specific content (tasks, dialog, requests) — edit each session
 # ---------------------------------------------------------------------------
 
-TASKS_CRITICAL = []
+TASKS_CRITICAL = [
+    'Add "Test Coverage" content',
+]
 
 TASKS_HIGH = [
     "Fix FULL_GROUP_NAME for unbalanced/error OTHER workbooks (save_summary only runs when balanced==True)",
@@ -180,7 +187,26 @@ DONE_SINCE_CHECKIN = ""
 
 IDEAS = ""
 
-TEST_COVERAGE = ""
+TEST_COVERAGE = """\
+Run: `pytest test_create_wiki.py -v`
+
+!!Coverage (38 tests)
+
+|!Area|!Tests|
+|`_ts`|17-digit format, offsets produce unique ordered values|
+|`_find`|Returns matching tiddler; returns None when absent|
+|`add_or_update`|Create / no-duplicate update / tags preserved when None / tags updated / spaced tag stored as single tag / no tags key when omitted / tiddler_type set on create / type preserved when None / empty string tags and type not stored on create or update|
+|`add_json_tiddler`|Creates with correct type; skips when already present|
+|`add_todolist` first run|Five tiddlers created; task values correct; status all undone; priority all none; keys consistent across tiddlers; empty task list no crash|
+|`add_todolist` merge|New task appended; no duplicate on same seed; keys consistent; new task is undone; existing status preserved; done tiddler unchanged; state tiddler unchanged; new keys are UUIDs|
+|`_load` / `_save`|Round-trip preserves data; `</script>` escaped; missing store markers raise ValueError; invalid JSON raises exception|
+
+!!Not Covered
+
+* `SpreadsheetDiff.py` -- no tests yet (Low priority TODO)
+* `DriveLookup.py` -- no tests
+* Full wiki build (integration test -- output HTML contains expected tiddlers)
+"""
 
 DIALOG_TODAY = """\
 * I would like to create a python program that: given two spreadsheets, display all the differences in all the sheets. Please describe but don't create it yet
@@ -299,6 +325,12 @@ DIALOG_TODAY = """\
 ** Peter/Claude Requests updated for this session. Dialog was lost because I deleted the output HTML to fix the list field -- that wiped your GettingStarted customizations including Dialog in DefaultTiddlers. Saved rule: never delete output HTML. You will need to re-add Dialog to GettingStarted manually.
 * If I say "ci n" it means "check-in", "Next"
 ** Saved to memory. ci n = commit then immediately start the next task.
+* You may have missed it, but I also added a critical item on the TODO list
+** Found it: 'Add "Test Coverage" content'. Added to TASKS_CRITICAL in create_wiki.py.
+* next
+** Fixed _load/_save offset fragility -- start/end re-computed at save time. Fixed add_or_update tags/tiddler_type asymmetry -- empty string now consistently treated as no-change on both paths. Added 2 tests; 38/38 pass. Filled in Test Coverage tiddler.
+* ci
+** Clearing DONE_SINCE_CHECKIN and committing.
 """
 
 PETER_REQUESTS_TODAY = """\
@@ -328,7 +360,7 @@ if __name__ == "__main__":
 
     if not os.path.exists(OUTPUT_HTML):
         shutil.copy(EMPTY_HTML, OUTPUT_HTML)
-    html, tiddlers, start, end = _load(OUTPUT_HTML)
+    html, tiddlers = _load(OUTPUT_HTML)
 
     today = datetime.now().strftime("%Y-%m-%d")
 
@@ -369,6 +401,6 @@ if __name__ == "__main__":
     add_or_update(tiddlers, "Claude Requests", CLAUDE_REQUESTS)
     add_or_update(tiddlers, f"Claude Requests {today}", CLAUDE_REQUESTS_TODAY, tags="[[Claude Requests]]")
 
-    _save(html, tiddlers, start, end, OUTPUT_HTML)
+    _save(html, tiddlers, OUTPUT_HTML)
 
     print(f"Wiki written to: {OUTPUT_HTML}")

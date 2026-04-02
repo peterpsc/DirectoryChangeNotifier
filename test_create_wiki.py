@@ -235,7 +235,7 @@ def _make_html(tiddlers):
 def test_load_parses_tiddlers(tmp_path):
     p = tmp_path / "wiki.html"
     p.write_text(_make_html([{"title": "T", "text": "hello"}]), encoding="utf-8")
-    _, tiddlers, _, _ = _load(str(p))
+    _, tiddlers = _load(str(p))
     assert tiddlers[0]["title"] == "T"
     assert tiddlers[0]["text"] == "hello"
 
@@ -243,19 +243,19 @@ def test_load_parses_tiddlers(tmp_path):
 def test_load_save_round_trip(tmp_path):
     p = tmp_path / "wiki.html"
     p.write_text(_make_html([{"title": "T", "text": "before"}]), encoding="utf-8")
-    html, tiddlers, start, end = _load(str(p))
+    html, tiddlers = _load(str(p))
     tiddlers[0]["text"] = "after"
-    _save(html, tiddlers, start, end, str(p))
-    _, tiddlers2, _, _ = _load(str(p))
+    _save(html, tiddlers, str(p))
+    _, tiddlers2 = _load(str(p))
     assert tiddlers2[0]["text"] == "after"
 
 
 def test_save_escapes_script_close_tag(tmp_path):
     p = tmp_path / "wiki.html"
     p.write_text(_make_html([{"title": "T", "text": "safe"}]), encoding="utf-8")
-    html, tiddlers, start, end = _load(str(p))
+    html, tiddlers = _load(str(p))
     tiddlers[0]["text"] = "</script>"
-    _save(html, tiddlers, start, end, str(p))
+    _save(html, tiddlers, str(p))
     raw = p.read_text(encoding="utf-8")
     store_section = raw.split(STORE_OPEN)[1].split(STORE_CLOSE)[0]
     assert "</script>" not in store_section
@@ -347,3 +347,17 @@ def test_add_or_update_empty_string_tags_not_stored_on_create():
     tiddlers = []
     add_or_update(tiddlers, "T", "text", tags="")
     assert "tags" not in tiddlers[0]
+
+
+def test_add_or_update_empty_string_tags_not_stored_on_update():
+    tiddlers = []
+    add_or_update(tiddlers, "T", "text", tags="Contents")
+    add_or_update(tiddlers, "T", "updated", tags="")
+    assert tiddlers[0]["tags"] == "Contents"  # preserved, not cleared
+
+
+def test_add_or_update_empty_string_type_not_stored_on_update():
+    tiddlers = []
+    add_or_update(tiddlers, "T", "text", tiddler_type="application/json")
+    add_or_update(tiddlers, "T", "updated", tiddler_type="")
+    assert tiddlers[0]["type"] == "application/json"  # preserved, not cleared
