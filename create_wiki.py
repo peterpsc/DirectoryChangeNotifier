@@ -10,7 +10,7 @@ Output: Resources/DirectoryChangeNotifier.html
 import json
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ---------------------------------------------------------------------------
 # Minimal TiddlyFile (inlined to avoid depending on webdriver/pyutils)
@@ -24,15 +24,9 @@ EMPTY_HTML = os.path.join(RESOURCES_DIR, "Empty Project.html")
 OUTPUT_HTML = os.path.join(RESOURCES_DIR, "DirectoryChangeNotifier.html")
 
 
-def _now():
-    return datetime.now().strftime("%Y%m%d%H%M%S") + "000"
-
-
 def _ts(offset_seconds=0):
-    """Unique timestamp for a todolist item, optionally offset by seconds."""
-    from datetime import timedelta
-    dt = datetime.now() + timedelta(seconds=offset_seconds)
-    return dt.strftime("%Y%m%d%H%M%S") + "000"
+    """Return a TiddlyWiki-format timestamp, optionally offset by N seconds."""
+    return (datetime.now() + timedelta(seconds=offset_seconds)).strftime("%Y%m%d%H%M%S") + "000"
 
 
 def _load(path):
@@ -52,7 +46,7 @@ def _save(html, tiddlers, start, end, path):
 
 
 def add_or_update(tiddlers, title, text, tags=None, tiddler_type=None):
-    now = _now()
+    now = _ts()
     for t in tiddlers:
         if t.get("title") == title:
             t["text"] = text
@@ -75,7 +69,7 @@ def add_json_tiddler(tiddlers, title, data):
     for t in tiddlers:
         if t.get("title") == title:
             return  # don't overwrite — user may have edited via UI
-    now = _now()
+    now = _ts()
     entry = {
         "title": title,
         "text": json.dumps(data, indent=4),
@@ -86,22 +80,59 @@ def add_json_tiddler(tiddlers, title, data):
     tiddlers.append(entry)
 
 
+def _find(tiddlers, title):
+    return next((t for t in tiddlers if t.get("title") == title), None)
+
+
 def add_todolist(tiddlers, name, tasks):
     """
-    Add all five data tiddlers for a todolist priority bucket.
-    tasks: list of str — the initial undone items.
-    Only adds if the tasks tiddler doesn't already exist (preserves UI edits).
+    Add or merge todolist data tiddlers for a priority bucket.
+    tasks: list of str — seed items.
+    First run: creates all 5 tiddlers.
+    Subsequent runs: appends any seed tasks not already present (by value),
+    leaving existing tasks/status/priority/done/state untouched.
     """
-    ts = [_ts(i) for i in range(len(tasks))]
-    add_json_tiddler(tiddlers, f"$:/todolist/data/tasks/{name}",
-                     {ts[i]: tasks[i] for i in range(len(tasks))})
-    add_json_tiddler(tiddlers, f"$:/todolist/data/status/{name}",
-                     {ts[i]: "undone" for i in range(len(tasks))})
-    add_json_tiddler(tiddlers, f"$:/todolist/data/priority/{name}",
-                     {ts[i]: "none" for i in range(len(tasks))})
-    add_json_tiddler(tiddlers, f"$:/todolist/data/done/{name}", {})
-    add_json_tiddler(tiddlers, f"$:/todolist/data/state/{name}",
-                     {"itemtext": "", "markall": ""})
+    tasks_title = f"$:/todolist/data/tasks/{name}"
+    status_title = f"$:/todolist/data/status/{name}"
+    priority_title = f"$:/todolist/data/priority/{name}"
+    done_title = f"$:/todolist/data/done/{name}"
+    state_title = f"$:/todolist/data/state/{name}"
+
+    tasks_t = _find(tiddlers, tasks_title)
+
+    if tasks_t is None:
+        # First run — create all five tiddlers from scratch
+        ts = [_ts(i) for i in range(len(tasks))]
+        add_json_tiddler(tiddlers, tasks_title, {ts[i]: tasks[i] for i in range(len(tasks))})
+        add_json_tiddler(tiddlers, status_title, {ts[i]: "undone" for i in range(len(tasks))})
+        add_json_tiddler(tiddlers, priority_title, {ts[i]: "none" for i in range(len(tasks))})
+        add_json_tiddler(tiddlers, done_title, {})
+        add_json_tiddler(tiddlers, state_title, {"itemtext": "", "markall": ""})
+    else:
+        # Subsequent runs — merge seed tasks not already present by value
+        existing_tasks = json.loads(tasks_t["text"])
+        existing_values = set(existing_tasks.values())
+        new_tasks = [t for t in tasks if t not in existing_values]
+        if new_tasks:
+            now = _ts()
+            ts = [_ts(i) for i in range(len(new_tasks))]
+            existing_tasks.update({ts[i]: new_tasks[i] for i in range(len(new_tasks))})
+            tasks_t["text"] = json.dumps(existing_tasks, indent=4)
+            tasks_t["modified"] = now
+
+            for title, update in ((status_title, {ts[i]: "undone" for i in range(len(new_tasks))}),
+                                  (priority_title, {ts[i]: "none" for i in range(len(new_tasks))})):
+                t = _find(tiddlers, title)
+                if t:
+                    existing = json.loads(t["text"])
+                    existing.update(update)
+                    t["text"] = json.dumps(existing, indent=4)
+                    t["modified"] = now
+                else:
+                    add_json_tiddler(tiddlers, title, update)
+        # done/state: add-only (never overwrite user edits)
+        add_json_tiddler(tiddlers, done_title, {})
+        add_json_tiddler(tiddlers, state_title, {"itemtext": "", "markall": ""})
 
 
 # ---------------------------------------------------------------------------
@@ -458,6 +489,16 @@ DIALOG_TODAY = """\
 ** Saved to feedback_dialog_tiddler.md memory: sessions past midnight need the Dialog tiddler date corrected to the actual calendar date.
 * ready for review
 ** Updated Dialog with session exchanges, regenerated wiki, staged create_wiki.py and Resources/DirectoryChangeNotifier.html.
+* if I type "review", I want you to give me a simple summary of the changes made since last check-in
+** Saved to memory. On "review", will run git diff and give a plain-language summary of staged changes.
+* review
+** DriveLookup.py: fixed PROCESS_NAME ordering, N×N rows bug, exists() guard on To Convert CSV copy. create_wiki.py: TODO List four-bucket format, initial task seeds, [[bracket]] tag fix, Dialog updated.
+* I also fixed the Dialog to be with the correct date, since today is after midnight / remember that too
+** Regenerated wiki, staged. Saved to memory: sessions past midnight need Dialog tiddler date corrected to actual calendar date.
+* please look at the code critically, and suggest bug fixes or improvements and test coverage
+** Identified: _now()/_ts() redundancy, add_json_tiddler silent skip on re-seed, missing EMPTY_HTML guard, build runs at module level, DIALOG_TODAY date not validated, add_or_update tiddler_type asymmetry. Prioritised: if __name__ guard and merge strategy.
+* do it
+** Merged _now() into _ts(). Rewrote add_todolist with merge logic: first run creates all 5 tiddlers, subsequent runs append seed tasks not already present by value. Added EMPTY_HTML FileNotFoundError. Wrapped build section in if __name__ == "__main__":. Wiki regenerated successfully.
 """
 
 PETER_REQUESTS = """\
@@ -489,48 +530,52 @@ CLAUDE_REQUESTS_TODAY = """\
 # Build the wiki
 # ---------------------------------------------------------------------------
 
-shutil.copy(EMPTY_HTML, OUTPUT_HTML)
-html, tiddlers, start, end = _load(OUTPUT_HTML)
+if __name__ == "__main__":
+    if not os.path.exists(EMPTY_HTML):
+        raise FileNotFoundError(f"Wiki template not found: {EMPTY_HTML}")
 
-today = datetime.now().strftime("%Y-%m-%d")
+    shutil.copy(EMPTY_HTML, OUTPUT_HTML)
+    html, tiddlers, start, end = _load(OUTPUT_HTML)
 
-add_or_update(tiddlers, "$:/SiteTitle", "DirectoryChangeNotifier")
-# $:/DefaultTiddlers is intentionally NOT set here -- managed by the user via GettingStarted
+    today = datetime.now().strftime("%Y-%m-%d")
 
-# Main pages (tagged 'Contents' so they appear in the Contents TOC)
-add_or_update(tiddlers, "DirectoryChangeNotifier", HOME)
-add_or_update(tiddlers, "Contents", CONTENTS)
-add_or_update(tiddlers, "Goals", GOALS)
-add_or_update(tiddlers, "Goals Overview", GOALS_MAIN, tags="Goals")
-add_or_update(tiddlers, "Running the Application", RUNNING, tags="Contents")
-add_or_update(tiddlers, "Configuration", CONFIGURATION, tags="Contents")
-add_or_update(tiddlers, "Architecture", ARCHITECTURE, tags="Contents")
-add_or_update(tiddlers, "Modules", MODULES, tags="Contents")
-add_or_update(tiddlers, "SpreadsheetDiff", SPREADSHEETDIFF, tags="Contents")
-add_or_update(tiddlers, "Acronyms", ACRONYMS, tags="Contents")
+    add_or_update(tiddlers, "$:/SiteTitle", "DirectoryChangeNotifier")
+    # $:/DefaultTiddlers is intentionally NOT set here -- managed by the user via GettingStarted
 
-# DefaultTiddlers-referenced pages
-add_or_update(tiddlers, "Done since last check-in", DONE_SINCE_CHECKIN)
-add_or_update(tiddlers, "TODO List", TODO_LIST)
-add_or_update(tiddlers, "Ideas", IDEAS)
-add_or_update(tiddlers, "Test Coverage", TEST_COVERAGE)
+    # Main pages (tagged 'Contents' so they appear in the Contents TOC)
+    add_or_update(tiddlers, "DirectoryChangeNotifier", HOME)
+    add_or_update(tiddlers, "Contents", CONTENTS)
+    add_or_update(tiddlers, "Goals", GOALS)
+    add_or_update(tiddlers, "Goals Overview", GOALS_MAIN, tags="Goals")
+    add_or_update(tiddlers, "Running the Application", RUNNING, tags="Contents")
+    add_or_update(tiddlers, "Configuration", CONFIGURATION, tags="Contents")
+    add_or_update(tiddlers, "Architecture", ARCHITECTURE, tags="Contents")
+    add_or_update(tiddlers, "Modules", MODULES, tags="Contents")
+    add_or_update(tiddlers, "SpreadsheetDiff", SPREADSHEETDIFF, tags="Contents")
+    add_or_update(tiddlers, "Acronyms", ACRONYMS, tags="Contents")
 
-# Todolist data tiddlers (only added if not already present — preserves UI edits)
-add_todolist(tiddlers, "Critical", TASKS_CRITICAL)
-add_todolist(tiddlers, "High", TASKS_HIGH)
-add_todolist(tiddlers, "Medium", TASKS_MEDIUM)
-add_todolist(tiddlers, "Low", TASKS_LOW)
+    # DefaultTiddlers-referenced pages
+    add_or_update(tiddlers, "Done since last check-in", DONE_SINCE_CHECKIN)
+    add_or_update(tiddlers, "TODO List", TODO_LIST)
+    add_or_update(tiddlers, "Ideas", IDEAS)
+    add_or_update(tiddlers, "Test Coverage", TEST_COVERAGE)
 
-# Dialog journal
-add_or_update(tiddlers, "Dialog", DIALOG)
-add_or_update(tiddlers, f"Dialog {today}", DIALOG_TODAY, tags="Dialog")
+    # Todolist data tiddlers (seed on first run; merge new items on subsequent runs)
+    add_todolist(tiddlers, "Critical", TASKS_CRITICAL)
+    add_todolist(tiddlers, "High", TASKS_HIGH)
+    add_todolist(tiddlers, "Medium", TASKS_MEDIUM)
+    add_todolist(tiddlers, "Low", TASKS_LOW)
 
-# Request journals
-add_or_update(tiddlers, "Peter Requests", PETER_REQUESTS)
-add_or_update(tiddlers, f"Peter Requests {today}", PETER_REQUESTS_TODAY, tags="[[Peter Requests]]")
-add_or_update(tiddlers, "Claude Requests", CLAUDE_REQUESTS)
-add_or_update(tiddlers, f"Claude Requests {today}", CLAUDE_REQUESTS_TODAY, tags="[[Claude Requests]]")
+    # Dialog journal
+    add_or_update(tiddlers, "Dialog", DIALOG)
+    add_or_update(tiddlers, f"Dialog {today}", DIALOG_TODAY, tags="Dialog")
 
-_save(html, tiddlers, start, end, OUTPUT_HTML)
+    # Request journals
+    add_or_update(tiddlers, "Peter Requests", PETER_REQUESTS)
+    add_or_update(tiddlers, f"Peter Requests {today}", PETER_REQUESTS_TODAY, tags="[[Peter Requests]]")
+    add_or_update(tiddlers, "Claude Requests", CLAUDE_REQUESTS)
+    add_or_update(tiddlers, f"Claude Requests {today}", CLAUDE_REQUESTS_TODAY, tags="[[Claude Requests]]")
 
-print(f"Wiki written to: {OUTPUT_HTML}")
+    _save(html, tiddlers, start, end, OUTPUT_HTML)
+
+    print(f"Wiki written to: {OUTPUT_HTML}")
