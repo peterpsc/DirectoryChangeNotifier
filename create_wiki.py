@@ -399,12 +399,7 @@ TASKS_LOW = [
     "Add test coverage for SpreadsheetDiff",
 ]
 
-DONE_SINCE_CHECKIN = """\
-* Created SpreadsheetDiff.py -- compare two Excel workbooks, output .xlsx with hyperlinks
-* Created SpreadsheetDiff.bat launcher
-* Created TiddlyWiki project documentation (create_wiki.py)
-* Updated CLAUDE.md
-"""
+DONE_SINCE_CHECKIN = ""
 
 IDEAS = ""
 
@@ -515,6 +510,8 @@ DIALOG_TODAY = """\
 ** Zero -- no test files exist yet.
 * Please create some tests to avoid errors, and make sure code doesn't break when a change is made. I prefer TDD
 ** Created test_create_wiki.py with 27 pytest tests covering _ts, _find, add_or_update, add_json_tiddler, add_todolist (first run and merge), and _load/_save round-trip. Tests caught a real bug: timestamp collision in merge path when add_todolist called twice within the same second. Fixed with collision-detection loop. All 27 pass.
+* Since you did the ci, why is Done since last check-in not cleared?
+** Cleared DONE_SINCE_CHECKIN. Should have been emptied automatically on ci.
 """
 
 PETER_REQUESTS = """\
