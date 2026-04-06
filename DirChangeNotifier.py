@@ -8,6 +8,7 @@ import GroupFields
 import HostFlavor
 import Persistence
 import PrintHelper
+from Converter import Converter
 from Gmail import Gmail
 from Substitutions import Substitutions
 
@@ -418,6 +419,24 @@ class DirChangeNotifier:
                 subdir = f'{current_year_directory}\\{directory_name}'
                 os.mkdir(subdir)
 
+    def update_version(self):
+        PrintHelper.printInBox("Updating version...")
+        needs_updatting = []
+        quarterly_report_file_paths = self.get_all_this_year_quarterly_report_file_paths()
+
+        for quarterly_report_file_path in quarterly_report_file_paths:
+            for file_name in os.listdir(quarterly_report_file_path):
+                if file_name.endswith(".xlsx") and not file_name.starts_with("STARTING "):
+                    version = Converter.get_version(quarterly_report_file_path)
+                    if self.needs_updating(version):
+                        needs_updatting.append(quarterly_report_file_path)
+
+        for file_path in needs_updatting:
+            PrintHelper.printInBox(f"Needs Updating: {file_path}")
+
+            PrintHelper.printInBox(f"file_path: {quarterly_report_file_path}")
+
+
     @classmethod
     def is_modified_since(cls, file_path, previous_date_string):
         last_modified_timestamp = get_last_modified_timestamp(file_path)
@@ -443,6 +462,22 @@ class DirChangeNotifier:
             if group_name not in result:  # avoid duplication
                 result.append(group_name)
         return result
+
+    def get_all_this_year_quarterly_report_file_paths(self):
+        quarterly_report_file_paths = []
+
+        for directory in self.all_directories:
+            if self.is_q1_dir(directory):
+                quarterly_report_file_paths.append(directory)
+        return quarterly_report_file_paths
+
+    def is_q1_dir(self, directory):
+        filter = f"{GroupFields.THIS_YEAR_DIR}Quarterly Reports"
+        return filter in directory
+
+    def needs_updating(self, version):
+        return not version.ends_with("-3D)")
+
 
 def get_last_modified_timestamp(file_path):
     m_t_obj = get_last_modified_time_obj(file_path)

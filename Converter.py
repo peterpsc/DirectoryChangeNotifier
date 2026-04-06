@@ -959,6 +959,14 @@ class Converter:
         status_report_path = "C:\\Users\\peter\\PycharmProjects\\DirectoryChangeNotifier\\Test Data\\"  # TODO FIX ME
         return status_report_path
 
+    @classmethod
+    def get_version(cls, quarterly_report_file_path):
+        q1_workbook = openpyxl.load_workbook(quarterly_report_file_path, data_only=True)
+        summary_sheet = q1_workbook["Summary"]
+        ver = summary_sheet["I2"]
+        return ver
+
+
 def main():
     # q4_file_paths = [r"A:\SourceCode\PycharmProjects\DirectoryChangeNotifier\Resources\Caer_Mear_2025_Q4.xlsm"]
     q4_path = Path("A:\\East Kingdom Exchequer Test\\Other\\2025\\Quarterly Reports")
