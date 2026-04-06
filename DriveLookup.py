@@ -83,8 +83,9 @@ PROCESS_SPECIFIC = ["Rusted Woodlands"]
 
 PROCESS_SPECIFIC = ["Eisental", "Hartshorn-dale"]
 PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
-
 PROCESS_SPECIFIC = ["Østgarðr"]
+
+PROCESS_SPECIFIC = ["Towers"]
 PROCESS_NAME = SPECIFIC
 
 PROCESS_NAME = ALL

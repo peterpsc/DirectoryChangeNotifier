@@ -71,8 +71,8 @@ class Converter:
 
         fields[Q4_FILENAME] = self.q4_stem
         fields[Q1_PATH] = q1_path
-        # if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] is not None:
-        #     fields[STATE] = self.get_state_from_path(q4_file_path)
+        if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] is not None:
+            fields[STATE] = self.get_state_from_path(q4_file_path)
         split_path = q1_path.split("\\")
         if len(split_path) > 3:
             name_of_branch = split_path[-4]
