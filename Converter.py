@@ -990,5 +990,5 @@ def main(other_subdir):
 
 if __name__ == '__main__':
     print("Converter.py")
-    main("Middle Kingdom")
-    main("Atlantia")
+    main("Kingdom of Midrealm")
+    main("Kingdom of Atlantia")
