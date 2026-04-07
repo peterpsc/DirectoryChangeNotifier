@@ -16,10 +16,10 @@ import openpyxl
 from openpyxl.utils.cell import get_column_letter
 
 import Persistence
+from GroupFields import ALL, READ_FROM_FILE_NAMES
 from GroupFields import (FULL_GROUP_NAME, GROUP_TYPE, Q4_PATH, Q4_FILENAME,
                          Q1_PATH, E_REGION, GroupFields)
-from GroupFields import LAST_YEAR, QUARTERLY_REPORTS, THIS_YEAR_PREFIX, Q1_STEM
-from GroupFields import OTHER, RESOURCES, ALL, READ_FROM_FILE_NAMES
+from GroupFields import LAST_YEAR, THIS_YEAR, QUARTERLY_REPORTS, THIS_YEAR_PREFIX, Q1_STEM
 from GroupFields import get_field
 from PrintHelper import print_red
 
@@ -40,7 +40,7 @@ TYPES = [TYPE, STRING, ZIP, INTEGER, CURRENCY, STATE, FORMULA, DATE]
 
 # if you get a new MASTER_WORKBOOK you also need to change 4 Files:
 # Converter the Red.lst, Converter the Red Test.lst, Converter the Red Resources.lst, Converter the Red Deployed.lst
-MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03-C.xlsx", Persistence.RESOURCE_PATH)
+MASTER_WORKBOOK_PATH = Persistence.get_file_path("SCA Exchequer Report - 2026-03-D.xlsx", Persistence.RESOURCE_PATH)
 
 # it is possible to not have Sheets: INVENTORY_DTL_6, REGALIA_SALES_7, DEPR_DTL_8
 
@@ -71,8 +71,9 @@ class Converter:
 
         fields[Q4_FILENAME] = self.q4_stem
         fields[Q1_PATH] = q1_path
-        if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] is not None:
-            fields[STATE] = self.get_state_from_path(q4_file_path)
+        if not self.is_other():
+            if STATE not in fields or FULL_GROUP_NAME not in fields and fields[FULL_GROUP_NAME] is not None:
+                fields[STATE] = self.get_state_from_path(q4_file_path)
         split_path = q1_path.split("\\")
         if len(split_path) > 3:
             name_of_branch = split_path[-4]
@@ -224,7 +225,7 @@ class Converter:
         name_of_group = self.get_text(ws_old_contents["C8"])
         name_of_group, self.fields = GroupFields.lookup_group_fields(name_of_group, self.q1_path, self.fields)
 
-        if self.name in READ_FROM_FILE_NAMES:  # get the fields from the Q4 workbook
+        if self.name in READ_FROM_FILE_NAMES or self.is_other():  # get the fields from the Q4 workbook
             self.group_name = name_of_group
             self.full_group_name = name_of_group
             self.fields[FULL_GROUP_NAME] = self.full_group_name
@@ -232,8 +233,8 @@ class Converter:
             self.fields[GROUP_TYPE] = self.group_type
             self.state = self.get_text(ws_old_contents["C15"])
             self.fields[STATE] = self.state
-            self.e_region = self.state
-            self.fields[E_REGION] = self.state
+            self.e_region = self.name
+            self.fields[E_REGION] = self.name
         else:  # use the EK Fields
             self.full_group_name = get_field(self.fields, FULL_GROUP_NAME)
             self.group_type = get_field(self.fields, GROUP_TYPE)
@@ -245,8 +246,8 @@ class Converter:
         self.remember_to_convert()
         print(f"Exchequer Region = {self.e_region}, Q1 stem filename = {self.q1_stem}")
         self.append_data("Summary", "D6", self.group_type)
-        if name_of_group == OTHER:
-            self.append_data("Summary", "D7", self.e_region)
+        if self.is_other():
+            self.append_data("Summary", "D7", self.name)
         else:
             self.append_data("Summary", "D7", self.KINGDOM)
 
@@ -828,14 +829,14 @@ class Converter:
         return None
 
     def get_state_from_path(self, old_workbook_file_path):
+        if self.is_other():
+            return None
         group_path = old_workbook_file_path.partition(f"\\{LAST_YEAR}\\{QUARTERLY_REPORTS}")[0]
         group_path_split = group_path.split("\\")
         for path_split in group_path_split:
             if path_split.endswith(" branches"):
                 state = path_split.split(" ")[0]
                 return self.states[state]
-            elif path_split == "Other":
-                return None
         return None
 
     def fix_state(self, state):
@@ -928,12 +929,10 @@ class Converter:
         return None
 
     @classmethod
-    def save_to_convert(cls, q4_file_paths, name):
+    def save_to_convert(cls, q4_file_paths, q1_path, name):
         file_name = f"{name} Test To Convert.csv"
-        q1_to_convert_paths = []
-        status_report_path = cls.get_status_report_path(name)
 
-        to_convert_file_path = Persistence.get_file_path(f"{status_report_path}{file_name}",
+        to_convert_file_path = Persistence.get_file_path(f"{q1_path}\\{file_name}",
                                                          Persistence.FILE_PATH)
         if not q4_file_paths:
             Persistence.remove_file(to_convert_file_path)
@@ -966,25 +965,30 @@ class Converter:
         ver = summary_sheet["I2"]
         return ver
 
+    def is_other(self):
+        return "\\Other\\" in self.q4_file_path
 
-def main():
+
+def main(other_subdir):
     # q4_file_paths = [r"A:\SourceCode\PycharmProjects\DirectoryChangeNotifier\Resources\Caer_Mear_2025_Q4.xlsm"]
-    q4_path = Path("A:\\East Kingdom Exchequer Test\\Other\\2025\\Quarterly Reports")
-    q4_file_paths = [f.resolve() for f in q4_path.iterdir() if f.is_file()]
+    q4_path = Path(f"A:\\East Kingdom Exchequer Test\\Other\\{LAST_YEAR}\\Quarterly Reports\\{other_subdir}\\")
+    q4_file_paths = [str(f.absolute()) for f in q4_path.iterdir() if f.is_file()]
+    q1_path = os.path.abspath(
+        f"A:\\East Kingdom Exchequer Test\\Other\\{THIS_YEAR}\\Quarterly Reports\\{other_subdir}") + "\\"
     for q4_file_path in q4_file_paths:
         basename = os.path.basename(q4_file_path)
         if basename.startswith(".~lock."):
             continue
-        q1_relative_path = "Test Data"
-        q1_path = os.path.abspath(q1_relative_path) + "\\"
+
         print(f"{q4_file_path} -> {q1_path}")
-        converter = Converter(q4_file_path, q1_path, RESOURCES)
+        converter = Converter(q4_file_path, q1_path, other_subdir)
         converter.save_new_data()
         if VERIFY_DATA_ONLY:
             converter.save_new_workbook()
-    Converter.save_to_convert(q4_file_paths, RESOURCES)
+    Converter.save_to_convert(q4_file_paths, q1_path, other_subdir)
 
 
 if __name__ == '__main__':
     print("Converter.py")
-    main()
+    main("Middle Kingdom")
+    main("Atlantia")
