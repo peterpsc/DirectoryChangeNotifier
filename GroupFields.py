@@ -76,6 +76,8 @@ class GroupFields:
     def lookup_group_fields(cls, name_of_branch, group_path, group_name_fields):
         group_name_data = []
         group_name = Persistence.remove_surrounding_parens(name_of_branch)
+        if "," in group_name:
+            group_name = group_name.split(",")[1].strip()  # remove things like "SCA Inc., "
         if group_name_fields == {}:
             group_name_fields[FULL_GROUP_NAME] = name_of_branch
             if group_name == OTHER:

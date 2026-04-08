@@ -112,7 +112,10 @@ Sub ConvertQ1s(sName)
 
 	Dim toConvertPath As String
 	toConvertPath = gTestStatusReportPath + sName + gToConvertSuffix
-	CheckFileExists(toConvertPath)
+	if not DoesFileExist(toConvertPath) Then
+	    print(toConvertPath + " does NOT exist")
+	    return
+	end if
     toConvertURL = ConvertToURL(toConvertPath)
    	oCSV = StarDesktop.loadComponentFromURL(toConvertURL, "_blank", 0, csvArgs())
     oCSVSheet = oCSV.Sheets(0)
