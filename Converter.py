@@ -16,12 +16,14 @@ import openpyxl
 from openpyxl.utils.cell import get_column_letter
 
 import Persistence
-from GroupFields import ALL, READ_FROM_FILE_NAMES
+from GroupFields import ALL, READ_FROM_FILE_NAMES, NUM_ACCOUNTS
 from GroupFields import (FULL_GROUP_NAME, GROUP_TYPE, Q4_PATH, Q4_FILENAME,
                          Q1_PATH, E_REGION, GroupFields)
 from GroupFields import LAST_YEAR, THIS_YEAR, QUARTERLY_REPORTS, THIS_YEAR_PREFIX, Q1_STEM
 from GroupFields import get_field
 from PrintHelper import print_red
+
+SKIP = "Skip"
 
 VERIFY_DATA_ONLY = False
 GROUP_TYPES = ["Barony", "Canton", "City", "College", "Event", "Kingdom", "Port", "Principality",
@@ -241,6 +243,8 @@ class Converter:
             self.e_region = get_field(self.fields, E_REGION)
 
         self.q1_stem = f"{THIS_YEAR_PREFIX}{self.full_group_name}"
+        self.q1_file_path = f"{self.q1_path}{self.q1_stem}.xlsx"
+
         self.fields[Q1_STEM] = self.q1_stem
 
         self.remember_to_convert()
@@ -380,6 +384,7 @@ class Converter:
         choice = self.get_choice(self.SIGNATORY_CHOICES, signature_requirement)
         self.append_data("Accounts", "B13", choice)
 
+        self.fields[NUM_ACCOUNTS] = "1"
         self.append_string(old_sheet["E16"], "Accounts", "B11")  # bank_account_number
         self.append_currency(old_sheet["H19"], "Accounts", "C16")  # balance
         self.append_currency(old_sheet["H37"], "Accounts", "C17")  # ledger_balance
@@ -433,6 +438,7 @@ class Converter:
             bank_name = self.get_text(old_sheet[f"{old_col}13"])
             if bank_name:
                 self.append_data("Accounts", f"B{new_row_start + 2}", bank_name)
+                self.fields[NUM_ACCOUNTS] = f"{int(self.fields[NUM_ACCOUNTS]) + 1}"
                 bank_account_type = self.get_text(old_sheet[f"{old_col}16"])
                 choice = self.get_choice(self.BANK_ACCOUNT_TYPE_CHOICES, bank_account_type, "Checking")
                 bank_account_title = f"{bank_name}, {choice}"
@@ -779,8 +785,9 @@ class Converter:
 
     def save_new_data(self):
         try:
-            self.save_notes()
             self.save_summary()
+            if os.path.exists(self.q1_file_path):
+                return SKIP
             self.save_exchequer()
             self.save_deputy_exchequer_1()
             self.save_deputy_exchequer_2()
@@ -793,6 +800,7 @@ class Converter:
             self.save_assets()
             self.save_depreciation_and_inventory()
             self.save_income()
+            self.save_notes()
             self.save_data()
             return None
         except Exception as e:
@@ -934,7 +942,7 @@ class Converter:
 
         to_convert_file_path = Persistence.get_file_path(f"{q1_path}\\{file_name}",
                                                          Persistence.FILE_PATH)
-        if not q4_file_paths:
+        if not q4_file_paths or len(q4_file_paths) == 0:
             Persistence.remove_file(to_convert_file_path)
             return
 
@@ -975,6 +983,7 @@ def main(other_subdir):
     q4_file_paths = [str(f.absolute()) for f in q4_path.iterdir() if f.is_file()]
     q1_path = os.path.abspath(
         f"A:\\East Kingdom Exchequer Test\\Other\\{THIS_YEAR}\\Quarterly Reports\\{other_subdir}") + "\\"
+    q4_to_convert_file_paths = []
     for q4_file_path in q4_file_paths:
         basename = os.path.basename(q4_file_path)
         if basename.startswith(".~lock."):
@@ -982,10 +991,15 @@ def main(other_subdir):
 
         print(f"{q4_file_path} -> {q1_path}")
         converter = Converter(q4_file_path, q1_path, other_subdir)
-        converter.save_new_data()
+
+        result = converter.save_new_data()
+        if result == SKIP:
+            continue
+        q4_to_convert_file_paths.append(q4_file_path)
         if VERIFY_DATA_ONLY:
             converter.save_new_workbook()
-    Converter.save_to_convert(q4_file_paths, q1_path, other_subdir)
+
+    Converter.save_to_convert(q4_to_convert_file_paths, q1_path, other_subdir)
 
 
 if __name__ == '__main__':

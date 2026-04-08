@@ -86,7 +86,8 @@ End Sub
 Sub ConvertOther()
 	sName = "Other"
 	InitializeAllConverterPath(sName)
-	ConvertQ1s(sName)
+	ConvertQ1s("Kingdom of Midrealm")
+	ConvertQ1s("Kingdom of Atlantia")
 End Sub
 
 Sub ConvertAll()

@@ -12,9 +12,10 @@ import HostFlavor
 import Persistence
 import PlaySound
 import PrintHelper
-from Converter import (Converter, THIS_YEAR_PREFIX, QUARTERLY_REPORTS)
+from Converter import (Converter, THIS_YEAR_PREFIX, QUARTERLY_REPORTS, SKIP)
 from DirChangeNotifier import DirChangeNotifier
-from GroupFields import (FULL_GROUP_NAME, GROUP_DIR, GROUP_TYPE, Q4_PATH, Q1_PATH, NOTE, E_REGION, LOCATION)
+from GroupFields import (FULL_GROUP_NAME, GROUP_DIR, GROUP_TYPE, Q4_PATH, Q1_PATH, NOTE, E_REGION, LOCATION,
+                         NUM_ACCOUNTS)
 from GroupFields import (LAST_YEAR, LAST_YEAR_DIR, THIS_YEAR, THIS_YEAR_DIR)
 from GroupFields import OTHER, ALL
 from HostFlavor import get_host_flavor, HOSTS, TEST, DEPLOYED
@@ -77,7 +78,6 @@ PROCESS_SPECIFIC = ["Settmour Swamp"]
 PROCESS_SPECIFIC = ["Mountain Freehold"]
 PROCESS_SPECIFIC = ["Eisental"]
 
-PROCESS_SPECIFIC = ["Towers"]
 
 PROCESS_SPECIFIC = ["Rusted Woodlands"]
 
@@ -88,8 +88,8 @@ PROCESS_SPECIFIC = ["Østgarðr"]
 PROCESS_SPECIFIC = ["Towers"]
 PROCESS_NAME = SPECIFIC
 
-PROCESS_NAME = ALL
 PROCESS_SPECIFIC = None
+PROCESS_NAME = ALL
 
 if PROCESS_NAME == OTHER:
     PROCESS_SPECIFIC = [OTHER]
@@ -329,6 +329,8 @@ class DriveLookup:
                 balanced, negative = converter.is_balanced_or_negative()
                 if balanced:
                     bug = converter.save_new_data()
+                    if bug == SKIP:
+                        continue
                     if bug:
                         bugs[todo[0]] = bug
                     else:
@@ -520,7 +522,7 @@ class DriveLookup:
                                  q4_fields, host):
         for q4_path in q4_paths:  # needed to keep track of missing
             group_name = self.get_group_from_g4_path(q4_path)
-            if group_name == OTHER:  # TODO FIX ME
+            if self.is_other(q4_path):
                 self.append_other_status_rows(formatted_rows, q4_path, missing, negative_reports, out_of_balance,
                                               q4_fields, host)
             else:
@@ -546,7 +548,8 @@ class DriveLookup:
         for q4_file in q4_fields:
             q4_file_fields = q4_fields[q4_file]
             group_name = q4_file_fields[FULL_GROUP_NAME]
-            fields[E_REGION] = OTHER
+            if self.is_other(q4_path):
+                fields[E_REGION] = q4_path.split("\\")[-1]
             fields[FULL_GROUP_NAME] = group_name
 
             self.append_other_status_row(formatted_rows, q4_path, q4_file, missing, negative_reports, out_of_balance,
@@ -650,7 +653,7 @@ class DriveLookup:
         hyperlink_q4_negative = None
         hyperlink_q4_oob = None
 
-        host_q4_file_path = HostFlavor.get_host_path(q4_file_path, host)  # TODO FIX ME hyperlink with filename
+        host_q4_file_path = HostFlavor.get_host_path(q4_file_path, host)
         if q4_file_path is None:
             formatted_row.append(MISSING)
         elif q4_file_path in negative_reports:
@@ -667,7 +670,7 @@ class DriveLookup:
         hyperlink_q1_dir = Persistence.create_hyperlink(host_q1_path, f"{THIS_YEAR} Q1 dir")
         formatted_row.append(hyperlink_q1_dir)
 
-        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)  # TODO FIX ME hyperlink
+        full_group_name = GroupFields.get_field(fields, FULL_GROUP_NAME)
         q1_stem = f"{THIS_YEAR_PREFIX}{full_group_name}"
         q1_file_path = f"{q1_path}{q1_stem}.xlsx"
         q1_data_path = f"{q1_path}{q1_stem}.csv"
@@ -690,6 +693,11 @@ class DriveLookup:
         else:
             formatted_row.append("BUG")
 
+        if NUM_ACCOUNTS in fields:
+            num_accounts = int(fields[NUM_ACCOUNTS])
+            if num_accounts > 1:
+                formatted_row.append(f"{num_accounts}")
+
         formatted_rows.append(formatted_row)
 
     def get_group_fields(self, q4_path, fields={}) -> tuple[Any, Any]:
@@ -708,7 +716,8 @@ class DriveLookup:
                             Q1_PATH: q1_path,
                             LOCATION: GroupFields.get_field(fields, LOCATION),
                             E_REGION: GroupFields.get_field(fields, E_REGION),
-                            NOTE: GroupFields.get_field(fields, NOTE)
+                            NOTE: GroupFields.get_field(fields, NOTE),
+                            NUM_ACCOUNTS: GroupFields.get_field(fields, NUM_ACCOUNTS)
                             }
 
     def delete_specific(self, groups, delete_all_q1, delete_all_q1_data):
@@ -802,6 +811,9 @@ class DriveLookup:
         other_host_group_status_path = self.get_group_status_path(name, other_host)
         status = Persistence.create_hyperlink(other_host_group_status_path, "Status")
         return status
+
+    def is_other(self, q4_file_path):
+        return "\\Other\\" in q4_file_path
 
 
 if __name__ == '__main__':
