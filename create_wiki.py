@@ -53,7 +53,7 @@ def _save(html, tiddlers, path):
     start = html.index(STORE_OPEN) + len(STORE_OPEN)
     end = html.index(STORE_CLOSE, start)
     html = html[:start] + new_json + html[end:]
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
 
 

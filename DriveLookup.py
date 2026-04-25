@@ -85,7 +85,7 @@ PROCESS_SPECIFIC = ["Eisental", "Hartshorn-dale"]
 PROCESS_SPECIFIC = ["Carillion", "Stonemarche"]
 PROCESS_SPECIFIC = ["Østgarðr"]
 
-PROCESS_SPECIFIC = ["Towers"]
+PROCESS_SPECIFIC = ["Iron Bog"]
 PROCESS_NAME = SPECIFIC
 
 PROCESS_SPECIFIC = None
@@ -693,7 +693,7 @@ class DriveLookup:
         else:
             formatted_row.append("BUG")
 
-        if NUM_ACCOUNTS in fields:
+        if NUM_ACCOUNTS in fields and fields[NUM_ACCOUNTS]:
             num_accounts = int(fields[NUM_ACCOUNTS])
             if num_accounts > 1:
                 formatted_row.append(f"{num_accounts}")
